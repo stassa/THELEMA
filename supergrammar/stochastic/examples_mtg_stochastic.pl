@@ -1,4 +1,4 @@
-:-module(examples_mtg_lexicalized, [language//0
+:-module(examples_mtg_lexicalized, [language//1
 				   ,terminal//0
 				   ,terminals//0
 				   ,nonterminal//0
@@ -20,7 +20,7 @@
 %!	language// is nondet.
 %
 %	A high-level specification of a language type.
-language --> nonterminal(nn(cardname)), nonterminal(ab(spell_ability)).
+language(P) --> nonterminal(nn(cardname)), nonterminal(ab(spell_ability)).
 language --> nonterminal(ab(spell_ability)).
 
 /*
