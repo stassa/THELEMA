@@ -1,12 +1,16 @@
 :-module(examples_mtg, [language//0
 		       ,terminal//0
+		       ,terminals//0
 		       ,partial_grammar//0
 		       ,nonterminal//0
+		       ,nonterminals//0
 		       ,cardname//0
 		       ,burn//0
 		       ,target//0
 		       ,example//0
 		       ,example_string/1]).
+
+:-dynamic nonterminal//0.
 
 %!	language// is nondet.
 %
@@ -24,6 +28,8 @@ language --> nonterminal, nonterminal.
 terminals --> [].
 terminals --> terminal, terminals.
 
+nonterminals --> [].
+nonterminals --> nonterminal, nonterminals.
 
 %!	terminal// is nondet.
 %
@@ -46,6 +52,25 @@ terminal --> [[creature]].
 terminal --> [[or]].
 terminal --> [[player]].
 
+terminal --> [[return]].
+terminal --> [[target]].
+terminal --> [[creature]].
+terminal --> [[to]].
+terminal --> [[its]].
+terminal --> [['owner''s']].
+terminal --> [[hand]].
+terminal --> [[destroy]].
+terminal --> [[target]].
+terminal --> [[creature]].
+terminal --> [[or]].
+terminal --> [[planeswalker]].
+terminal --> [[exile]].
+terminal --> [[target]].
+terminal --> [[creature]].
+terminal --> [[destroy]].
+terminal --> [[target]].
+terminal --> [[artifact]].
+
 
 partial_grammar --> cardname, burn.
 
@@ -63,6 +88,8 @@ partial_grammar --> cardname, burn.
 nonterminal --> [cardname].
 nonterminal --> [burn].
 nonterminal --> [target].
+
+nonterminal --> terminals.
 
 %!	cardname// is nondet.
 %
@@ -102,4 +129,8 @@ example --> {example_string(S)}, S.
 %       A set of example strings that we know belong to the language.
 example_string(['Lightning Bolt',deals,3,damage,to,target,creature,or,player]).
 example_string(['Fireball',deals,'X',damage,to,target,creature,or,player]).
+example_string([destroy,target,creature]).
+example_string([destroy,target,artifact]).
+example_string([exile,target,creature]).
+example_string([return,target,creature,to,its,'owner''s',hand]).
 

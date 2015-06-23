@@ -7,7 +7,7 @@ edit_source:-
 	,edit('supergrammar.pl')
 	,edit('configuration.pl')
 	%,edit('examples_simple.pl')
-	%,edit('examples_mtg.pl')
+	,edit('examples_mtg.pl')
 	,edit('examples_mtg_lexicalized.pl')
 	,edit('run_demo.pl').
 
