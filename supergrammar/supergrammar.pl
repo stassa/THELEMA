@@ -1,7 +1,7 @@
 ﻿:-module(supergrammar, [generate/4
 		       ,generate/3
 		       ,portray_productions/1
-		       ,new_rule/4
+		       ,new_production/4
 		       ,clear_productions/0
 		       ,remove_rule/1
 		       ,erase_rule/1]).
@@ -78,9 +78,9 @@ Pretty-print a list of productions derived so far.
 Genearate new productions for testing; they are not saved to the
 database at this point:
 
-    new_rule(Name,2,Rule,[bound(upper)]).
+    new_production(Name,2,Rule,[bound(upper)]).
 
-new_rule/4 is nondeterministic; press ';' to see more results at the
+new_production/4 is nondeterministic; press ';' to see more results at the
 listener prompt.
 
 Clear all new productions generated until now:
@@ -193,7 +193,7 @@ generate(_, _, _, _):-
 %
 %	Current options are:
 %	* bound(+Derivation:number), passed to bounded_derivation/5
-%	* bound(+Rule_length:number), passed to bounded_rule/4
+%	* bound(+Rule_length:number), passed to bounded_production/4
 %
 generate(C, Dl, Options):-
 	(   selectchk(derivation_bound(D_bound), Options, Options1)
@@ -205,7 +205,7 @@ generate(C, Dl, Options):-
 	 ;   P_bound = upper
 	)
 	,clear_productions
-	,new_rule(N, C, R, [production_bound(P_bound)])
+	,new_production(N, C, R, [production_bound(P_bound)])
 	,bounded_derivation(R, Dl, D, _Rest, [derivation_bound(D_bound)])
 	,example_string(Str)
 	,test(N, D, Str)
@@ -411,7 +411,7 @@ derivation((H:-T), D, Rest):-
 %	,H =.. [_N|[D|Rest]]. % Head is now bound
 
 
-%!	new_rule(?Name,+Complexity,-Rule,+Options) is nondet.
+%!	new_production(?Name,+Complexity,-Rule,+Options) is nondet.
 %
 %	Create a new production with the given Name as its head.
 %	If Name is unbound, a new Name will be generated using
@@ -423,7 +423,7 @@ derivation((H:-T), D, Rest):-
 %	Rule is bound to a new rule; for example:
 %
 %	==
-%	?- bounded_rule(a0, 2, R, _).
+%	?- new_production(a0, 2, R, _).
 %       R = (a0(_G1336, _G1337):-g1(_G1336, _G1337)) .
 %       ==
 %
@@ -434,19 +434,18 @@ derivation((H:-T), D, Rest):-
 %      KLUDGE: N is output, not a parameter- move after L (first
 %      actual parameter).
 %
-%      TODO: (H:-T) is left out after refactoring- not needed no more.
 %
-new_rule(N, L, (H:-T), Options):-
+new_production(N, L, R, Options):-
 	once(rule_name(N))
-	,bounded_rule(N, L, (H:-T), Options).
+	,bounded_production(N, L, R, Options).
 
 
-%!	bounded_rule(+Name,+Bound,-Rule,Options) is nondet.
+%!	bounded_production(+Name,+Bound,-Rule,Options) is nondet.
 %
-%	Business end of new_rule/4. Same thing but one clause per
+%	Business end of new_production/4. Same thing but one clause per
 %	option.
 %
-bounded_rule(N, L, R, [production_bound(upper)]):-
+bounded_production(N, L, R, [production_bound(upper)]):-
 	length(P, L1)
 	,(   L1 =< L
 	 ->  true
@@ -456,7 +455,7 @@ bounded_rule(N, L, R, [production_bound(upper)]):-
 	,list_tree(P, T)
 	,dcg_translate_rule(N --> T, R).
 
-bounded_rule(N, L, R, [production_bound(exact)]):-
+bounded_production(N, L, R, [production_bound(exact)]):-
 	length(P, L)
 	,phrase(language, P)
 	,list_tree(P, T)
