@@ -198,15 +198,21 @@ generate(_, _, _, _):-
 generate(C, Dl, Options):-
 	(   selectchk(derivation_bound(D_bound), Options, Options1)
 	->  true
-	;   D_bound = upper % default
+	;   D_bound = upper % default is to set upper bounds
+	    ,Options1 = Options
 	)
-	,(   memberchk(production_bound(P_bound), Options1)
+	,(   selectchk(production_bound(P_bound), Options1, Options2)
 	 ->  true
 	 ;   P_bound = upper
+	    ,Options2 = Options1
 	)
+	,(   memberchk(ground(Ground), Options2)
+	 ->  true
+	 ;   Ground = false % default is to not ground rules
+	 )
 	,clear_productions
 	,new_production(N, C, R, [production_bound(P_bound)])
-	,bounded_derivation(R, Dl, D, _Rest, [derivation_bound(D_bound)])
+	,bounded_derivation(R, Dl, D, _Rest, [derivation_bound(D_bound),ground(Ground)])
 	,example_string(Str)
 	,test(N, D, Str)
 	,rename_rule(R, Nn, Rr)
@@ -379,36 +385,41 @@ portray_production(Name):-
 %	Derivation, or an absolute length requirement. One of: [upper,
 %	exact] (for an upper and absolute limit respectively).
 %
-bounded_derivation(R, L, D, Rest, [derivation_bound(upper)]):-
+bounded_derivation(R, L, D, Rest, [derivation_bound(upper),Ground]):-
 	length(D, L1)
 	,(L1 =< L
 	 ->  true
 	 ;   !, fail
 	 )
-	,derivation(R, D, Rest).
+	,derivation(R, D, Rest, [Ground]).
 
-bounded_derivation((H:-T), L, D, Rest, [derivation_bound(exact)]):-
+bounded_derivation((H:-T), L, D, Rest, [derivation_bound(exact),Ground]):-
 	once(length(D, L))
-	,derivation((H:-T), D, Rest).
+	,derivation((H:-T), D, Rest, [Ground]).
 
 
-%!	derivation(+Rule,-Derivation,-Rest) is nondet.
+%!	derivation(+Rule,-Derivation,-Rest, Options) is nondet.
 %
 %	Business end of bounded_derivation/5.
 %
 %	Derivation is a difference list; remember that you can get rid
 %	of the variable in the tail by binding 'Rest' to [[]]:
 %
-derivation((H:-T), D, Rest):-
+%	Options:
+%	  ground(+Boolean): whether to bind variables in heads and
+%	  bodies in ground terms or not.
+%
+derivation((H:-T), D, Rest, [ground(false)]):-
 	duplicate_term((H:-T), (Hh:-Tt))
 	,configuration:examples_module(M)
 	,M:Tt % Call the tail
 	,Hh =.. [_N|[D|Rest]]. % Head is now bound
 
 % TODO: make this an option (ie, no vars in rule bodies)
-%derivation((H:-T), D, Rest):-
-%	T % Call the tail
-%	,H =.. [_N|[D|Rest]]. % Head is now bound
+derivation((H:-T), D, Rest, [ground(true)]):-
+	configuration:examples_module(M)
+	,M:T % Call the tail
+	,H =.. [_N|[D|Rest]]. % Head is now bound
 
 
 %!	new_production(?Name,+Complexity,-Rule,+Options) is nondet.

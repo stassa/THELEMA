@@ -20,7 +20,12 @@ prolog:message(supergrammar(generate,2)) --> ['========== Using language specifi
 	, Examples_lengths)
   ,reverse(Examples_lengths, [Longest_example|_Rest])
   ,writeln(examples_lengths:Examples_lengths)
-  ,forall(generate(Longest_example, Longest_example, 100_000, [production_bound(upper), derivation_bound(upper)]), true).
+  ,forall(generate(Longest_example, Longest_example,
+		   100_000 % Inference limit- exit if reached before end of generate-and-test cycle.
+		  , [production_bound(upper) % Make the number of tokens in a new production an upper bound; also accepts "exact"
+		    ,derivation_bound(upper) % Make the number of tokens in a parse an upper bound; also accepts "exact"
+		    ,ground(false) % Whether to ground terms in bodies of new productions; also accepts "true"
+		   ]), true).
 
 :-nl.
 prolog:message(supergrammar(reporting)) --> ['==================== Reporting new productions. ====================\n'].
