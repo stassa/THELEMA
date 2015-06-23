@@ -195,15 +195,22 @@ generate(_, _, _, _):-
 %	* bound(+Derivation:number), passed to bounded_derivation/5
 %	* bound(+Rule_length:number), passed to bounded_rule/4
 %
-generate(C, Dl, [Derivation,Rule]):-
-	clear_productions
-	,new_rule(N, C, R, [Rule])
-	,bounded_derivation(R, Dl, D, _Rest, [Derivation])
+generate(C, Dl, Options):-
+	(   selectchk(derivation_bound(D_bound), Options, Options1)
+	->  true
+	;   D_bound = upper % default
+	)
+	,(   memberchk(production_bound(P_bound), Options1)
+	 ->  true
+	 ;   P_bound = upper
+	)
+	,clear_productions
+	,new_rule(N, C, R, [production_bound(P_bound)])
+	,bounded_derivation(R, Dl, D, _Rest, [derivation_bound(D_bound)])
 	,example_string(Str)
 	,test(N, D, Str)
 	,rename_rule(R, Nn, Rr)
 	,add_new_production(Nn, Rr, D)
-	%,assert(Rr) % Now done in add_new_production/3 - remove from here
 	,configuration:examples_module(M)
 	,listing(M:Nn).
 
@@ -372,7 +379,7 @@ portray_production(Name):-
 %	Derivation, or an absolute length requirement. One of: [upper,
 %	exact] (for an upper and absolute limit respectively).
 %
-bounded_derivation(R, L, D, Rest, [bound(upper)]):-
+bounded_derivation(R, L, D, Rest, [derivation_bound(upper)]):-
 	length(D, L1)
 	,(L1 =< L
 	 ->  true
@@ -380,7 +387,7 @@ bounded_derivation(R, L, D, Rest, [bound(upper)]):-
 	 )
 	,derivation(R, D, Rest).
 
-bounded_derivation((H:-T), L, D, Rest, [bound(exact)]):-
+bounded_derivation((H:-T), L, D, Rest, [derivation_bound(exact)]):-
 	once(length(D, L))
 	,derivation((H:-T), D, Rest).
 
@@ -439,7 +446,7 @@ new_rule(N, L, (H:-T), Options):-
 %	Business end of new_rule/4. Same thing but one clause per
 %	option.
 %
-bounded_rule(N, L, R, [bound(upper)]):-
+bounded_rule(N, L, R, [production_bound(upper)]):-
 	length(P, L1)
 	,(   L1 =< L
 	 ->  true
@@ -449,7 +456,7 @@ bounded_rule(N, L, R, [bound(upper)]):-
 	,list_tree(P, T)
 	,dcg_translate_rule(N --> T, R).
 
-bounded_rule(N, L, R, [bound(exact)]):-
+bounded_rule(N, L, R, [production_bound(exact)]):-
 	length(P, L)
 	,phrase(language, P)
 	,list_tree(P, T)

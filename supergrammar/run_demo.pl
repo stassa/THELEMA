@@ -20,7 +20,7 @@ prolog:message(supergrammar(generate,2)) --> ['========== Using language specifi
 	, Examples_lengths)
   ,reverse(Examples_lengths, [Longest_example|_Rest])
   ,writeln(examples_lengths:Examples_lengths)
-  ,forall(generate(Longest_example, Longest_example, 100_000, [bound(upper), bound(upper)]), true).
+  ,forall(generate(Longest_example, Longest_example, 100_000, [production_bound(upper), derivation_bound(upper)]), true).
 
 :-nl.
 prolog:message(supergrammar(reporting)) --> ['==================== Reporting new productions. ====================\n'].
