@@ -1,5 +1,10 @@
 ﻿:-module(supergrammar, [generate/4
 		       ,generate/3
+		       ,rename_rule/3
+		       ,add_new_production/3
+		       ,given_production/2
+		       ,derived_production/2
+		       ,bounded_derivation/5
 		       ,portray_productions/1
 		       ,new_production/4
 		       ,clear_productions/0

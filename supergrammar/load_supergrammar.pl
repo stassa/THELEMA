@@ -5,6 +5,7 @@ edit_source:-
 	edit('load_supergrammar.pl')
 	,edit('utilities.pl')
 	,edit('supergrammar.pl')
+	,edit('stochastic_supergrammar.pl')
 	,edit('configuration.pl')
 	%,edit('examples_simple.pl')
 	,edit('examples_mtg.pl')
