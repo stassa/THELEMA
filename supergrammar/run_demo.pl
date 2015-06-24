@@ -21,7 +21,7 @@ prolog:message(supergrammar(generate,2)) --> ['========== Using language specifi
   ,reverse(Examples_lengths, [Longest_example|_Rest])
   ,writeln(examples_lengths:Examples_lengths)
   ,forall(generate(Longest_example, Longest_example,
-		   1_500_000 % Inference limit- exit if reached before end of generate-and-test cycle.
+		   50_000 % Inference limit- exit if reached before end of generate-and-test cycle.
 		  , [production_bound(upper) % Make the number of tokens in a new production an upper bound; also accepts "exact"
 		    ,derivation_bound(upper) % Make the number of tokens in a parse an upper bound; also accepts "exact"
 		    ,ground(false) % Whether to ground terms in bodies of new productions; also accepts "true"
