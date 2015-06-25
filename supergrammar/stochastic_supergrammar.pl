@@ -8,7 +8,8 @@
 initial_probability(0).
 
 
-generate_stochastic(_Rule_complexity,_Derivation_length,_Inference_limit,_Options):-
+% generate_stochastic(_Rule_complexity,_Derivation_length,_Inference_limit,_Options):-
+generate_stochastic(Example,Production,Probability,Augmented):-
 	clear_productions
 	% take the next example
 	,configuration:example_string(Example)
@@ -16,8 +17,9 @@ generate_stochastic(_Rule_complexity,_Derivation_length,_Inference_limit,_Option
 	% set its probability to 0
 	,empty_production(Production, Probability)
 	% take the next token (terminal or nonterminal)
+	,next_token(Example, Token)
 	% augment the new rule
-	,augmented_production(Production, Probability, Example, _Augmented)
+	,augmented_production(Production, Token, Augmented)
 	% calculate its probability
 	% compare the two probabilities
 	% Choose a rule (new or old)
@@ -42,24 +44,34 @@ empty_production(P, R):-
 	,dcg_translate_rule((N, [R] --> []), P).
 
 
-
-%!	augmented_production(+Rule:Probability,+Example,Augmented:Probability) is nondet.
+%!	next_token(+Example, -Token) is nondet.
 %
-%	Augment the rule with a single terminal or nonterminal (the
-%	termial is a token from the given Example)
-augmented_production(Production, _Probability, _, New_production):-
-	phrase(language, [Token])
-	,augmented_production(Production,Token, New_production).
-augmented_production(Production, _Probability, Example, New_production):-
-	member(Token, Example)
-	,augmented_production(Production, Token, New_production).
+%	Generates all terminals and nonterminals for augmenting a rule
+%	on subsequent backtracking.
+next_token(Example, Token):-
+	all_tokens(Example, Tokens)
+	,member(Token, Tokens).
+
+
+%!	all_tokens(+Example, -Tokens) is det.
+%
+%	Generate all tokens that are either part of Example or a
+%	nonterminal in the grammar of the target language.
+all_tokens(Example, Tokens):-
+	findall(N
+	       ,phrase(language, [N])
+	       ,Nonterminals)
+	,findall(T
+		,member(T, Example)
+		,Terminals)
+	,flatten([Nonterminals|Terminals], Tokens).
 
 
 %!	augmented_production(+Production,+Token,-New_production) is nondet.
 %
-%	Business end of augmented_production/4. Inserts the given token
-%	to the right end of the body of the given Production rule,
-%	producting a New_production.
+%	Augment the rule with a single terminal or nonterminal Inserts
+%	that Token to the right end of the body of the given Production
+%	rule, producting a New_production.
 augmented_production((H:-true), Token, Production):-
 	dcg_translate_rule((H --> [Token]), Production).
 augmented_production((H:-T), Token, Production):-

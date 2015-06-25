@@ -85,8 +85,8 @@ register_examples(Examples_module, Renamed_predicates):-
 	,! % Green cut
 	.
 
-%:-register_examples(examples_simple
-:-register_examples(examples_mtg_lexicalized
+:-register_examples(examples_simple
+%:-register_examples(examples_mtg_lexicalized
 %:-register_examples(examples_mtg
 		,[language//0 as language
 		 ,terminal//0 as terminal
