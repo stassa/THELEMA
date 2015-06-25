@@ -1,15 +1,187 @@
-:-module(utilities, [list_tree/2
+:-module(utilities, [diff_list/2
+		    ,pdcg_parses/3
+		    ,pdcg_parse/2
+		    ,max_key/2
+		    ,list_tree/2
 		    ,rule_name/1
 		    ,generate_alphanumeric/2
 		    ,permute/2]).
 
+/** <module> Utility predicates used in supergrammar module.
+*/
+
+
+%!	diff_list(+List,-Difference_list) is nondet.
+%
+%	Difference_list is List with a free variable at the end.
 diff_list(L, Diff):-
 	phrase(diff_list(L), Diff, _).
 
 diff_list(L) --> L.
 
-/** <module> Utility predicates used in supergrammar module.
-*/
+
+
+%!	pdcg_parses(+Production,+Cutoff,-Derivation) is nondet.
+%
+%	Derivation is a term P-D where P the probability of D and D a
+%	derivation of the rewrite rule Production.
+%
+%	Each possible P-D pair is generated on subsequent backtracking.
+pdcg_parses(Rule, Cutoff, P-D):-
+	findall(Probability-Parse
+	       ,phrase(Rule, Parse, Probability)
+	       ,Parses)
+	,ground_kvps(Parses, Ground)
+	,aggregated_keys(Ground, KVPs)
+	,member(P-D, KVPs)
+	,P >= Cutoff.
+
+
+
+%, or the list of derivations of Production by order
+%	of probability.
+%
+
+%!	pdcg_parse(+Production,-Derivation) is det.
+%
+%	True when Derivation is the most probable derivation of
+%	Production
+%	Derivation is of the form: P-D, where P is the probability of D.
+%
+pdcg_parse(Rule, Parse):-
+	findall(Probability-Parse
+		% Hm. This will not work if Probability wound not be []
+	       ,phrase(Rule, Parse, Probability)
+	       ,Parses)
+	,most_likely(Parses, Parse).
+
+
+%!	most_likely(+Parses, -Parse) is det.
+%
+%	Parses is a list of key-value pairs of the form:
+%
+%	[P1,P2, ..., Pn]-[V1,V2, ..., Vn]
+%
+%	Where P1...Pn is a list of numbers representing the joint (?)
+%	probabilities of V1...Vn and each Vi is a token in the
+%	derivation V1...Vn.
+%
+%	True when Parse is the element of Parses with the highest
+%	probability.
+most_likely(Parses, Parse):-
+	ground_kvps(Parses, Gs)
+	,aggregated_keys(Gs, Ps)
+	,max_key(Ps, Parse).
+
+
+%!	ground_kvps(+KVPs, -Ground_kvps) is det.
+%
+%	True when KVPs is a difference list of key-value pairs delimited
+%	by '-' and Ground_kvps is the same list with tail-variables
+%	removed.
+ground_kvps(KVPs, Ground):-
+	ground_kvps(KVPs, [], Ground).
+
+%!	ground_kvps(+KVPs,+Temp,-Acc) is det.
+%
+%	Business end of ground_kvps/2.
+ground_kvps([], Gs, Gs).
+ground_kvps([K-V|Ls], Temp, Acc):-
+	once(phrase(K, Kk, []))
+	,once(phrase(V, Vv, []))
+	,ground_kvps(Ls, [Kk-Vv|Temp], Acc).
+
+
+%!	aggregated_keys(+Keys_values_pairs,-Key_value_pairs) is det.
+%
+%	Convert between a list of key-value pairs where each key is a
+%	list of numbers to one where each key is a single number.
+aggregated_keys(Kvps, Product):-
+	aggregated_keys(Kvps, [], Product).
+
+%!	aggregated_keys(+Keys,+Temp,-Acc) is det.
+%
+%	Business end of aggregated_keys/2.
+aggregated_keys([], Ks, Ks).
+aggregated_keys([K-V|KVPs], Temp, Acc):-
+	foldl(multiplication, K, 1, P)
+	,aggregated_keys(KVPs, [P-V|Temp], Acc).
+
+
+:-begin_tests(multiplication).
+
+test(multiplication_mode_var_var_ground_1
+    ,[throws(error(instantiation_error,_))]):-
+	multiplication(_, 2, _).
+
+test(multiplication_mode_var_var_ground_2
+    ,[throws(error(instantiation_error,_))]):-
+	multiplication(1, _, _).
+
+% Don't use to verify multiplication of two numbers
+test(multiplication_mode_var_var_ground_3
+    ,[throws(error(uninstantiation_error(2),_))]):-
+	multiplication(1, 2, 2).
+
+test(multiplication_three_numbers, []):-
+	multiplication(3, 4, R)
+	,R = 12.
+
+test(multiplication_alpha_number, []):-
+	multiplication(abc, 4, R)
+	,R = 4.
+
+test(multiplication_number_alpha, []):-
+	multiplication(5, def, R)
+	,R = 5.
+
+test(multiplication_two_alphas, []):-
+	multiplication(abc, def, R)
+	,R = 1.
+
+:-end_tests(multiplication).
+
+%!	multiplication(+A,+B,-C) is det.
+%
+%	True when C is A * B, given that both A and B are numbers.
+%
+%	If either A or B is not a number C is bound to the one that is a
+%	number.
+%
+%	If both A and B are not numbers, C is bound to 1.
+%
+multiplication(A, B, C):-
+	must_be(nonvar, A)
+	,must_be(nonvar,B)
+	,must_be(var, C)
+	,fail.
+multiplication(A, B, B):-
+	\+ number(A)
+	,number(B)
+	,!.
+multiplication(A, B, A):-
+	\+ number(B)
+	,number(A)
+	,!.
+multiplication(A, B, 1):-
+	 \+ number(A)
+	,\+ number(B)
+	,!.
+multiplication(A, B, C):-
+	number(A)
+	,number(B)
+	,C is A * B.
+
+
+
+%!	keymax(+Keys,-Max) is det.
+%
+%	Max is the kvp with the largest key in Keys.
+max_key(Keys, Max):-
+	keysort(Keys, Sorted)
+	,reverse(Sorted, [Max|_Reversed]).
+
+
 
 %!	list_tree(+List, -Tree) is nondet.
 %
