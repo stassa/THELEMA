@@ -3,7 +3,7 @@
 :-add_import_module(stochastic_supergrammar, supergrammar, start).
 
 
-generate(_Rule_complexity,_Derivation_length,_Inference_limit,_Options):-
+generate_stochastic(_Rule_complexity,_Derivation_length,_Inference_limit,_Options):-
 	clear_productions
 	% take the next example
 	,configuration:example_string(Example)
@@ -40,7 +40,7 @@ augmented_production((H:-T):Probability, _, P:Probability):-
 augmented_production((H:-T):Probability, Example, P:Probability):-
 	member(E, Example)
 	,T =.. [Name|Args]
-	,reverse([E|Args], New) % Place new token at right
+	,reverse([E|Args], New)
 	,Tt =.. [Name|New]
 	,dcg_translate_rule(H --> Tt, P).
 

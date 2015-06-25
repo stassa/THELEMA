@@ -1,5 +1,6 @@
 
 :-use_module(supergrammar).
+:-use_module(stochastic_supergrammar).
 
 edit_source:-
 	edit('load_supergrammar.pl')
@@ -10,6 +11,7 @@ edit_source:-
 	%,edit('examples_simple.pl')
 	,edit('examples_mtg.pl')
 	,edit('examples_mtg_lexicalized.pl')
+	,edit('examples_mtg_stochastic.pl')
 	,edit('run_demo.pl')
 	%,edit('C:\\Users\\spatsant\\AppData\\Roaming\\SWI-Prolog\\swipl.ini')
 	.
