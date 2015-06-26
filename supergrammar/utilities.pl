@@ -1,4 +1,5 @@
-:-module(utilities, [diff_list/2
+﻿:-module(utilities, [diff_list/3
+		    ,diff_append/3
 		    ,pdcg_parses/3
 		    ,pdcg_parse/2
 		    ,max_key/2
@@ -10,14 +11,113 @@
 /** <module> Utility predicates used in supergrammar module.
 */
 
-
-%!	diff_list(+List,-Difference_list) is nondet.
+%!	diff_list(+List,-Difference_list,?Tail) is nondet.
 %
-%	Difference_list is List with a free variable at the end.
-diff_list(L, Diff):-
-	phrase(diff_list(L), Diff, _).
+%	Difference_list is List and Tail is its Tail.
+%
+%	To produce ground list bind Tail to [], as in:
+%	  diff_list([a,b,c],Dif,[]).
+%
+diff_list(L, Diff, Tail):-
+	once(phrase(diff_list_0(L), Diff, Tail)).
 
-diff_list(L) --> L.
+diff_list_0(L) --> L.
+
+
+%tail([], S, T):-
+%	!,
+%	reverse(S, T).
+tail([H], T, [H|T]).
+tail([H|T], Temp, Acc):-
+	tail(T,	Temp, Acc1)
+	,tail([H], Acc1, Acc).
+
+
+%!	diff_append(?L1,?L2,?L3) is nondet.
+%
+%	Difference list version of append/3.
+%
+%	Example usage:
+%
+%	You can concatenate two difference lists:
+%
+%	==
+%       ?-diff_append([a,b|A]-A,[c,d|B]-B,T-B).
+%       A = [c, d|B],
+%       T = [a, b, c, d|B].
+%       ==
+%
+%	Or three of them:
+%
+%       ==
+%       ?- diff_append([a,b|A]-A,[c,d|B]-B,T-[e,f|C]).
+%       A = [c, d, e, f|C],
+%       B = [e, f|C],
+%       T = [a, b, c, d, e, f|C].
+%       ==
+%
+%	Or one difference list and one ground list, to obtain a ground
+%	list:
+%
+%       ==
+%	?- diff_append([a,b|B]-B, [c,d]-T, A-T).
+%	B = [c, d],
+%       A = [a, b, c, d].
+%       ==
+%
+%       You can split two lists:
+%
+%	==
+%       ?- utilities:diff_append([a,b|B]-B, B-T, [a,b,c,d|T]-T).
+%       B = [c, d|T].
+%       ==
+%
+%	You can ignore the tail of the ground list, or bind it to [],
+%	or indeed any term you want to carry around:
+%
+%       ==
+%	?- diff_append([a,b|B]-B, [c,d]-[], A-_).
+%	B = [c, d],
+%       A = [a, b, c, d].
+%
+%	?- diff_append([a,b|B]-B, [c,d]-[abc],	A-[abc]).
+%       B = [c, d],
+%       A = [a, b, c, d].
+%       ==
+%
+%	You can also concatenate trees in the same manner:
+%
+%	==
+%	?- diff_append((a,b,A)-A,(c,d,B)-B,T-B).
+%       A = (c, d, B),
+%       T = (a, b, c, d, B).
+%
+%	?- diff_append((a,b,A)-A,(c,d)-B,T-B).
+%	A = (c, d),
+%       T = (a, b, c, d).
+%
+%       diff_append((a,b,A)-A,(c,d,B)-B,T-(e,f,C)).
+%       A = (c, d, e, f, C),
+%       B = (e, f, C),
+%       T = (a, b, c, d, e, f, C).
+%       ==
+%
+%       Or any two (or three) terms really:
+%
+%       ==
+%       ?- diff_append(f(a,b,A)-A,g(c,d,B)-B,T-B).
+%       A = g(c, d, B),
+%       T = f(a, b, g(c, d, B)).
+%
+%       ?- diff_append(f(a,b,A)-A,g(c,d,B)-B,T-v(e,f,C)).
+%       A = g(c, d, v(e, f, C)),
+%       B = v(e, f, C),
+%       T = f(a, b, g(c, d, v(e, f, C)))
+%       ==
+%
+%	TODO: Move to libraries
+%
+diff_append(A-B, B-T, A-T).
 
 
 
@@ -185,7 +285,7 @@ max_key(Keys, Max):-
 
 %!	list_tree(+List, -Tree) is nondet.
 %
-%	Convert a tree to a list. Doesn't go the other way. Don't try
+%	Convert a list to a tree. Doesn't go the other way. Don't try
 %	it.
 %
 %	Warned you.

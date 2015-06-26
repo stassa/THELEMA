@@ -2,10 +2,12 @@
 
 :-add_import_module(stochastic_supergrammar, supergrammar, start).
 
+:-use_module(utilities).
+
 %!	initial_probability(?P) is det.
 %
 %      Starting probability of a new production.
-initial_probability(0).
+initial_probability(-1).
 
 
 % generate_stochastic(_Rule_complexity,_Derivation_length,_Inference_limit,_Options):-
@@ -44,6 +46,24 @@ empty_production(P, R):-
 	,dcg_translate_rule((N, [R] --> []), P).
 
 
+empty_production(P:-true):-
+	% An empty production has the default number of constituents
+	% and the default initial score.
+	initial_probability(S)
+	,P =..[_Name, [], [S]].
+
+
+augment_production(Production, Example, Augmented_production):-
+	all_tokens(Example, Tokens)
+	,augment_production(Production, Tokens, _, Augmented_production).
+
+augment_production(Production, [Token], Augmented_production, Augmented_production):-
+	augmented_production(Production, Token, Augmented_production).
+augment_production(Production, [Token|Tokens], Temp, Acc):-
+	augmented_production(Production,Token,Augmented_production)
+	,augment_production(Augmented_production, Tokens, Temp, Acc).
+
+
 %!	next_token(+Example, -Token) is nondet.
 %
 %	Generates all terminals and nonterminals for augmenting a rule
@@ -61,10 +81,12 @@ all_tokens(Example, Tokens):-
 	findall(N
 	       ,phrase(language, [N])
 	       ,Nonterminals)
-	,findall(T
+	,findall([T] % Add as terminals!
 		,member(T, Example)
 		,Terminals)
-	,flatten([Nonterminals|Terminals], Tokens).
+	,diff_list(Nonterminals, Nonterminals_diff, T1)
+	,diff_list(Terminals, Terminals_diff, T2)
+	,diff_append(Nonterminals_diff-T1, Terminals_diff-T2, Tokens-[]).
 
 
 %!	augmented_production(+Production,+Token,-New_production) is nondet.
@@ -72,14 +94,33 @@ all_tokens(Example, Tokens):-
 %	Augment the rule with a single terminal or nonterminal Inserts
 %	that Token to the right end of the body of the given Production
 %	rule, producting a New_production.
-augmented_production((H:-true), Token, Production):-
-	dcg_translate_rule((H --> [Token]), Production).
-augmented_production((H:-T), Token, Production):-
-	is_list(T) % The rule is a nonterminal.
-	,T =.. [Name|Args]
-	,reverse([Token|Args], New) % Place new token on right end
-	,Tt =.. [Name|New]
-	,dcg_translate_rule((H --> Tt), Production).
+augmented_production((H:-true), [Token], Production):-
+	H =.. [Name,[],Score]
+	,dcg_translate_rule((Name, Score --> [Token]), Production).
+augmented_production((H:-true), [Token], Production):-
+	H =.. [Name,Tokens,Score]
+	,diff_list(Tokens,Tokens_diff, D)
+	,diff_append(Tokens_diff-D, [Token]-[], Tt-[])
+	,dcg_translate_rule((Name, Score --> Tt),Production).
+ augmented_production((H:-((Terminals,Nonterminals),Score)), Nonterminal, Production):-
+	H =.. [Name|_]
+	,dcg_translate_rule((Name, Score --> Terminals,Nonterminals,Nonterminal),Production).
+
+/*
+2[debug] 232 ?- dcg_translate_rule((a0,[-1] --> [a,b],c,d), H:-T), T = ((Terminals,Nonterminals),Score).
+H = a0(_G6289, _G6290),
+T = ((_G6289=[a, b|_G6302], c(_G6302, _G6311), d(_G6311, _G6314)), _G6290=[-1|_G6314]),
+Terminals = (_G6289=[a, b|_G6302]),
+Nonterminals = (c(_G6302, _G6311), d(_G6311, _G6314)),
+Score = (_G6290=[-1|_G6314]).
+	*/
+
+%augmented_production((H:-T), Token, Production):-
+%	is_list(T) % The rule is a nonterminal.
+%	,T =.. [Name|Args]
+%	,reverse([Token|Args], New) % Place new token on right end
+%	,Tt =.. [Name|New]
+%	,dcg_translate_rule((H --> Tt), Production).
 
 
 
