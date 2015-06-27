@@ -1,6 +1,6 @@
 :-module(stochastic_supergrammar, [empty_production/2
 				  ,next_token/2
-				  ,augmented_production/3]).
+				  ,augmented_production/6]).
 
 :-add_import_module(stochastic_supergrammar, supergrammar, start).
 
@@ -13,17 +13,18 @@ initial_score(-1).
 
 
 % generate_stochastic(_Rule_complexity,_Derivation_length,_Inference_limit,_Options):-
-generate_stochastic(Example,Production,Score,Augmented):-
+generate_stochastic(Example,Name,Score,Augmented):-
 	clear_productions
 	% take the next example
 	,configuration:example_string(Example)
 	% create a new rule
 	% set its probability to 0
-	,empty_production(Production, Score)
+	,once(rule_name(Name))
+	,initial_score(Score)
 	% take the next token (terminal or nonterminal)
 	,next_token(Example, Token)
 	% augment the new rule
-	,augmented_production(Production, Token, Augmented)
+	,augmented_production(Name, [], [], [Score], Token, Augmented)
 	% calculate its probability
 	% compare the two probabilities
 	% Choose a rule (new or old)
@@ -49,13 +50,16 @@ empty_production(H:-true, R):-
 	,H =.. [N,[],[R]].
 
 
+%!	empty_production(P) is det.
+%
+%	True when P is the empty production.
 empty_production(P:-true):-
 	% An empty production has the default number of constituents
 	% and the default initial score.
 	initial_score(S)
 	,P =..[_Name, [], [S]].
 
-
+/*
 augment_production(Production, Example, Augmented_production):-
 	all_tokens(Example, Tokens)
 	,augment_production(Production, Tokens, _, Augmented_production).
@@ -65,7 +69,7 @@ augment_production(Production, [Token], Augmented_production, Augmented_producti
 augment_production(Production, [Token|Tokens], Temp, Acc):-
 	augmented_production(Production,Token,Augmented_production)
 	,augment_production(Augmented_production, Tokens, Temp, Acc).
-
+*/
 
 %!	next_token(+Example, -Token) is nondet.
 %
@@ -93,38 +97,80 @@ all_tokens(Example, Tokens):-
 	,diff_append(Nonterminals_diff-T1, Terminals_diff-T2, Tokens-[]).
 
 
+:-begin_tests(augmented_production).
 
-%!	augmented_production(+Production,+Token,-New_production) is nondet.
+test(augmented_production_augment_empty_production_with_a_nonterminal):-
+	dcg_translate_rule((a0, [-1] --> g1), R)
+	,augmented_production(a0, [], [], [-1], g1, R).
+
+test(augmented_production_augment_empty_production_with_a_terminal):-
+	dcg_translate_rule((a0, [-1] --> [a]), R)
+	,augmented_production(a0, [], [], [-1], [a], R).
+
+test(augmented_production_augment_single_nonterminal_with_a_nonterminal):-
+	dcg_translate_rule((a0, [-1] --> g1, g2), R)
+	,augmented_production(a0, [g1|T]-T, [], [-1], g2, R).
+
+test(augmented_production_augment_single_nonterminal_with_a_terminal):-
+	dcg_translate_rule((a0, [-1] --> g1, [a]), R)
+	,augmented_production(a0, [g1|T]-T, [], [-1], [a], R).
+
+test(augmented_production_augment_nonterminals_with_a_nonterminal):-
+	dcg_translate_rule((a0, [-1] --> g1, g2, g3), R)
+	,augmented_production(a0, [g1,g2|T]-T, [], [-1], g3, R).
+
+test(augmented_production_augment_nonterminals_with_a_terminal):-
+	dcg_translate_rule((a0, [-1] --> g1, g2, [a]), R)
+	,augmented_production(a0, [g1,g2|T]-T, [], [-1], [a], R).
+
+test(augmented_production_augment_nonterminals_and_terminals_with_a_terminal):-
+	dcg_translate_rule((a0, [-1] --> g1, g2, [a, b]), R)
+	,augmented_production(a0, [g1,g2|T1]-T1, [a|T2]-T2, [-1], [b], R).
+
+test(augmented_production_augment_nonterminals_and_terminals_with_a_nonterminal):-
+	dcg_translate_rule((a0, [-1] --> g1, g2, g3, [a, b]), R)
+	,augmented_production(a0, [g1,g2|T1]-T1, [a,b|T2]-T2, [-1], g3, R).
+
+:-end_tests(augmented_production).
+
+
+%!	augmented_production(+Name,+Nonterminals,+Terminals,+Score,+Token,-New_production) is det.
 %
-%	Augment the rule with a single terminal or nonterminal Inserts
-%	that Token to the right end of the body of the given Production
-%	rule, producting a New_production.
-augmented_production((H:-true), [Token], Production):-
-	H =.. [Name,[],Score]
-	,dcg_translate_rule((Name, Score --> [Token]), Production)
-	,!.
-augmented_production((H:-true), [Token], Production):-
-	H =.. [Name,Tokens,Score]
-	,diff_list(Tokens,Tokens_diff, D)
-	,diff_append(Tokens_diff-D, [Token]-[], Tt-[])
-	,dcg_translate_rule((Name, Score --> Tt),Production)
-	,!.
-% Token is a nonterminal and the rule is only terminals.
-augmented_production((H:-true), Token, Production):-
-	H =.. [Name,Tokens,Score]
-	% Ground the tokens list to avoid adding '$append'/3 call in body of rule.
-	,diff_list(Tokens,Ground_tokens, [])
-	,dcg_translate_rule((Name, Score --> Ground_tokens, Token),Production)
+%	Augment the Named production with a single terminal or
+%	nonterminal.
+%
+%       Inserts that Token to the right end of the body of
+%	the Named rule, producting a New_production.
+%
+%	Nonterminals and Terminals are difference lists with a
+%	tail-variable attached, for example:
+%	[g1,g2|T]-T
+%
+%	Score is the scoring value of the Named rule to be preserved in
+%	the New_production.
+%
+augmented_production(Name, [], [], Score, Token, Production):-
+	dcg_translate_rule((Name, Score --> Token), Production)
 	,!.
 
-% Token is a nonterminal and the rule has a mix of teminals and
-% nonterminals
-augmented_production((H:-((Terminals=Terminals,Nonterminals),Score=Score)), Token, Production):-
-	H =.. [Name,Terminals,_]
-	,terms_functors(Nonterminals, Token, Augmented_nonterminals)
-	,diff_list(Terminals, Ground_terminals, [])
-	,diff_list(Score, Ground_score, [])
-	,dcg_translate_rule((Name, Ground_score --> Ground_terminals,Augmented_nonterminals),Production).
+augmented_production(Name, Ns, [], Score, Token, Production):-
+	diff_append(Ns, [Token]-[], Ts-[])
+	,list_tree(Ts, Tokens)
+	,dcg_translate_rule((Name, Score --> Tokens), Production)
+	,!.
+
+augmented_production(Name, Ns, Ts, Score, [T], Production):-
+	diff_append(Ts, [T]-[], Terminals-[])
+	,diff_append(Ns, [Terminals]-[], Tokens-[])
+	,list_tree(Tokens, Body)
+	,dcg_translate_rule((Name, Score --> Body), Production)
+	,!.
+
+augmented_production(Name, Ns, Ts, Score, Token, Production):-
+	diff_append(Ts, []-[], Terminals-[])
+	,diff_append(Ns, [Token|T]-T, Tokens-[Terminals])
+	,list_tree(Tokens, Body)
+	,dcg_translate_rule((Name, Score --> Body), Production).
 
 
 
