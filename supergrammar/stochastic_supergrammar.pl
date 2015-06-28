@@ -181,15 +181,21 @@ test(augmented_production_augment_nonterminals_and_single_terminal_with_a_termin
 	augmented_production((a0, [-1] --> g1, g2, [a]), [b], Production)
 	,Production = (a0, [-1] --> g1, g2, [a,b]).
 
-% This one should actually fail - can't add nonterminals to right of
-% terminal.
-test(augmented_production_augment_nonterminals_and_single_terminal_with_a_nonterminal
-    ,[blocked('Too much work'), fail]):-
-	augmented_production((a0, [-1] --> g1, g2, g3, [a]), g4, _).
-
 test(augmented_production_augment_nonterminals_and_terminals_with_a_terminal):-
 	augmented_production((a0, [-1] --> g1, g2, [a, b]), [c], Augmented)
 	,Augmented = (a0, [-1] --> g1, g2, [a, b, c]).
+
+test(augmented_production_augment_single_terminal_with_a_terminal
+    ,[]):-
+	augmented_production((a0, [-1] --> [a]), [b], Augmented)
+	,Augmented = (a0, [-1] --> [a,b]).
+
+% Illegal augmentations.
+
+% Can't add nonterminals to right of terminal.
+test(augmented_production_augment_nonterminals_and_single_terminal_with_a_nonterminal
+    ,[blocked('Too much work'), fail]):-
+	augmented_production((a0, [-1] --> g1, g2, g3, [a]), g4, _).
 
 % Again: nonterminals may not follow a terminal
 test(augmented_production_augment_nonterminals_and_terminals_with_a_nonterminal
@@ -202,10 +208,7 @@ test(augmented_production_augment_single_terminal_with_a_nonterminal
     ,[blocked('Too much work'),fail]):-
 	augmented_production((a0, [-1] --> [a]), g1, _).
 
-test(augmented_production_augment_single_terminal_with_a_terminal
-    ,[blocked(needs_fixin)]):-
-	augmented_production((a0, [-1] --> [a]), [b], Augmented)
-	,Augmented = (a0, [-1] --> [a,b]).
+
 
 :-end_tests(augmented_production).
 
@@ -252,6 +255,13 @@ test(augmented_production_augment_single_terminal_with_a_terminal
 augmented_production(ypsilon, Token, (Name, Score --> Token)):-
 	empty_production((Name, Score --> [])).
 
+augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Augmented_tokens)):-
+	is_list(Tokens)
+	,(   Token = [_]
+	 ->  once(append(Tokens, Token, Augmented_tokens))
+	 ;   Token \= [_]
+	    ,once(append([Token], Tokens, Augmented_tokens))
+	 ).
 
 % Current Tokens: one or more nonterminals.
 augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Tokens_tree)):-
@@ -261,7 +271,7 @@ augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Tokens_tr
 	,once(append(Nonterminals, [Token], Augmented_nonterminals))
 	,list_tree(Augmented_nonterminals, Tokens_tree).
 
-% Current Tokens:
+% Current Tokens: one or more terminals
 augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Tokens_tree)):-
 	tree_list(Tokens, Tokens_list)
 	,once(phrase(symbols(nonterminal,Nonterminals), Tokens_list, [Rest]))
@@ -271,6 +281,7 @@ augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Tokens_tr
 	 ->  once(append(Terminals, Token, Augmented_terminals))
 	    ,once(append(Nonterminals, [Augmented_terminals], New_tokens))
 
+	 % Watchit: this will never be true; don't you want to use \=?
 	 ;   Token \== [_] % Token is a non-terminal; explicitly for clarity
 	->   once(append(Nonterminals, [Token], Augmented_nonterminals))
 	    ,once(append(Augmented_nonterminals, Terminals, New_tokens))
