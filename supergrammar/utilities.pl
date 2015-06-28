@@ -4,6 +4,7 @@
 		    ,pdcg_parse/2
 		    ,max_key/2
 		    ,list_tree/2
+		    ,tree_list/2
 		    ,rule_name/1
 		    ,generate_alphanumeric/2
 		    ,permute/2]).
@@ -23,14 +24,18 @@ diff_list(L, Diff, Tail):-
 
 diff_list_0(L) --> L.
 
+/*
+DCG version is actually slightly faster.
 
-%tail([], S, T):-
-%	!,
-%	reverse(S, T).
+diff_list(List, Diff, Tail):-
+	tail(List, Tail, Diff).
+
 tail([H], T, [H|T]).
 tail([H|T], Temp, Acc):-
 	tail(T,	Temp, Acc1)
 	,tail([H], Acc1, Acc).
+*/
+
 
 
 %!	diff_append(?L1,?L2,?L3) is nondet.
@@ -303,6 +308,43 @@ list_tree([N], Ns, (N,Ns)).
 list_tree([N|Ns], Temp, Acc):-
 	list_tree(Ns, (N,Temp), Acc).
 
+
+
+%!	tree_list(+Tree,-List) is det.
+%
+%	Convert between a Tree and a List.
+tree_list(Tree, List):-
+	Tree =.. Terms_list
+	,tree_list(Terms_list, [], List)
+	,!.
+
+tree_list(Tree, Diff_list-Tail):-
+	Tree =.. Terms_list
+	,tree_list(Terms_list, [], List)
+	,diff_list(List, Diff_list, Tail).
+
+
+%!	tree_list(+Terms_list,+Temp,-Acc) is nondet.
+%
+%	Business end of tree_list/2. Remove functor heads of
+%	parenthesised terms and lists from a list of terms obtained by
+%	=../2.
+tree_list([], Sl, Ls):-
+	reverse(Sl, Ls).
+tree_list([T|Ts], Temp, Acc):-
+	(   T = ','
+	;   T = '[|]')
+	,!
+	,tree_list(Ts, Temp, Acc).
+tree_list([T|Ts], Temp, Acc):-
+	compound(T) % Nested parens
+	,\+ is_list(T) % Leave lists unopened.
+	,!
+	,T =.. Cs
+	,append(Cs, Ts, Tts)
+	,tree_list(Tts, Temp, Acc).
+tree_list([T|Ts], Temp, Acc):-
+	tree_list(Ts, [T|Temp], Acc).
 
 
 
