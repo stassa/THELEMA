@@ -252,6 +252,9 @@ test(augmented_production_augment_single_terminal_with_a_nonterminal
 %
 %	... well, it _should_ anyway :D
 %
+%	TODO: see fourth clause- I removed a whole branch and tests pass
+%	anyway. This takes a lot of refactoring still.
+%
 augmented_production(ypsilon, Token, (Name, Score --> Token)):-
 	empty_production((Name, Score --> [])).
 
@@ -280,11 +283,12 @@ augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Tokens_tr
 	,(   Token = [_] % Token is a terminal
 	 ->  once(append(Terminals, Token, Augmented_terminals))
 	    ,once(append(Nonterminals, [Augmented_terminals], New_tokens))
+	 ;   true
 
 	 % Watchit: this will never be true; don't you want to use \=?
-	 ;   Token \== [_] % Token is a non-terminal; explicitly for clarity
-	->   once(append(Nonterminals, [Token], Augmented_nonterminals))
-	    ,once(append(Augmented_nonterminals, Terminals, New_tokens))
+	 %;   Token \== [_] % Token is a non-terminal; explicitly for clarity
+	%->   once(append(Nonterminals, [Token], Augmented_nonterminals))
+	 %   ,once(append(Augmented_nonterminals, Terminals, New_tokens))
 	)
 
 	,list_tree(New_tokens, Tokens_tree).
