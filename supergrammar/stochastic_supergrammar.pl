@@ -123,13 +123,30 @@ test(augmented_production_augment_nonterminals_with_a_terminal):-
 	dcg_translate_rule((a0, [-1] --> g1, g2, [a]), R)
 	,augmented_production(a0, [g1,g2|T]-T, [], [-1], [a], R).
 
-test(augmented_production_augment_nonterminals_and_terminals_with_a_terminal):-
-	dcg_translate_rule((a0, [-1] --> g1, g2, [a, b]), R)
+test(augmented_production_augment_nonterminals_and_single_terminal_with_a_terminal):-
+	dcg_translate_rule((a0, [-1] --> g1, g2, [a,b]), R)
 	,augmented_production(a0, [g1,g2|T1]-T1, [a|T2]-T2, [-1], [b], R).
+
+test(augmented_production_augment_nonterminals_and_single_terminal_with_a_nonterminal):-
+	dcg_translate_rule((a0, [-1] --> g1, g2, g3, [a]), R)
+	,augmented_production(a0, [g1,g2|T1]-T1, [a|T2]-T2, [-1], g3, R).
+
+test(augmented_production_augment_nonterminals_and_terminals_with_a_terminal):-
+	dcg_translate_rule((a0, [-1] --> g1, g2, [a, b, c]), R)
+	,augmented_production(a0, [g1,g2|T1]-T1, [a,b|T2]-T2, [-1], [c], R).
 
 test(augmented_production_augment_nonterminals_and_terminals_with_a_nonterminal):-
 	dcg_translate_rule((a0, [-1] --> g1, g2, g3, [a, b]), R)
 	,augmented_production(a0, [g1,g2|T1]-T1, [a,b|T2]-T2, [-1], g3, R).
+
+% Nonterminals must precede terminals!
+test(augmented_production_augment_single_terminal_with_a_nonterminal, [fail]):-
+	dcg_translate_rule((a0, [-1] --> g1, [a]), R)
+	,augmented_production(a0, [], [a|T]-T, [-1], g1, R).
+
+test(augmented_production_augment_single_terminal_with_a_terminal, [fail]):-
+	dcg_translate_rule((a0, [-1] --> [a,b]), R)
+	,augmented_production(a0, [], [a|T]-T, [-1], [c], R).
 
 :-end_tests(augmented_production).
 
