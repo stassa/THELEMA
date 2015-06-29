@@ -134,6 +134,11 @@ all_tokens(Example, Tokens):-
 	,diff_append(Nonterminals_diff-T1, Terminals_diff-T2, Tokens-[]).
 
 
+% Rename this -it's the main loop I guess.
+augment_production([], Production, Production).
+augment_production([Token|Tokens], Production, Acc):-
+	augmented_production(Production, Token, Augmented)
+	,augment_production(Tokens, Augmented, Acc).
 
 
 %!	augmented_production(?Production, ?Token, ?Augmented) is nondet.
