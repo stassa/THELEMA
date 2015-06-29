@@ -314,37 +314,30 @@ list_tree([N|Ns], Temp, Acc):-
 %
 %	Convert between a Tree and a List.
 tree_list(Tree, List):-
-	Tree =.. Terms_list
-	,tree_list(Terms_list, [], List)
-	,!.
-
-tree_list(Tree, Diff_list-Tail):-
-	Tree =.. Terms_list
-	,tree_list(Terms_list, [], List)
-	,diff_list(List, Diff_list, Tail).
-
+	must_be(nonvar, Tree)
+	%,must_be(var, List)
+	,tree_list(Tree, [], Tsil)
+	,reverse(Tsil, List).
 
 %!	tree_list(+Terms_list,+Temp,-Acc) is nondet.
 %
-%	Business end of tree_list/2. Remove functor heads of
-%	parenthesised terms and lists from a list of terms obtained by
-%	=../2.
-tree_list([], Sl, Ls):-
-	reverse(Sl, Ls).
-tree_list([T|Ts], Temp, Acc):-
-	(   T = ','
-	;   T = '[|]')
-	,!
-	,tree_list(Ts, Temp, Acc).
-tree_list([T|Ts], Temp, Acc):-
-	compound(T) % Nested parens
-	,\+ is_list(T) % Leave lists unopened.
-	,!
-	,T =.. Cs
-	,append(Cs, Ts, Tts)
-	,tree_list(Tts, Temp, Acc).
-tree_list([T|Ts], Temp, Acc):-
-	tree_list(Ts, [T|Temp], Acc).
+%	Business end of tree_list/2. Split an n-tuple by recursive
+%	matching to terms with ',' as the principal functor.
+%
+%	Examples of use:
+%	==
+%       [debug] 63 ?- utilities:tree_list((a,b,c), [a,b,c]).
+%       true.
+%
+%	[debug] 64 ?- utilities:tree_list((a,b,t(e,f,g),c,d,[1,2,3]),
+%	L).
+%       L = [a, b, t(e, f, g), c, d, [1, 2, 3]].
+%	==
+%
+tree_list(','(H,T), Temp, Acc):-
+	!,
+	tree_list(T, [H|Temp], Acc).
+tree_list(T, Temp, [T|Temp]).
 
 
 
