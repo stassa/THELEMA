@@ -136,12 +136,65 @@ all_tokens(Example, Tokens):-
 
 :-begin_tests(augmented_production).
 
+% ========  Legal augmentations  ========
+
+% Tests for case: [] -> n | t (empty production augmented by any token)
 test(augmented_production_augment_empty_production_with_a_nonterminal, [nondet]):-
 	augmented_production(ypsilon, g1, (a0, [-1] --> g1)).
 
 test(augmented_production_augment_empty_production_with_a_terminal, [nondet]):-
 	augmented_production(ypsilon, [a], Production)
 	,Production = (a0, [-1] --> [a]).
+
+% Tests for case: n+ -> n | t.
+test(augmented_production_augment_single_nonterminal_with_a_nonterminal,[nondet]):-
+	augmented_production((a0, [-1] --> g1), g2, Augmented)
+	,Augmented = (a0, [-1] --> g1, g2).
+
+test(augmented_production_augment_single_nonterminal_with_a_terminal,[nondet]):-
+	augmented_production((a0, [-1] --> g1), [a], Augmented)
+	,Augmented = (a0, [-1] --> g1, [a]).
+
+test(augmented_production_augment_nonterminals_with_a_nonterminal, [nondet]):-
+	augmented_production((a0, [-1] --> g1, g2), g3, Augmented)
+	,Augmented = (a0, [-1] --> g1, g2, g3).
+
+test(augmented_production_augment_nonterminals_with_a_terminal, [nondet]):-
+	augmented_production((a0, [-1] --> g1, g2), [a], Augmented)
+	,Augmented = (a0, [-1] --> g1, g2, [a]).
+
+% Tests for case: n* t+ -> n | t
+test(augmented_production_augment_nonterminals_and_single_terminal_with_a_terminal):-
+	augmented_production((a0, [-1] --> g1, g2, [a]), [b], Production)
+	,Production = (a0, [-1] --> g1, g2, [a,b]).
+
+test(augmented_production_augment_nonterminals_and_terminals_with_a_terminal):-
+	augmented_production((a0, [-1] --> g1, g2, [a, b]), [c], Augmented)
+	,Augmented = (a0, [-1] --> g1, g2, [a, b, c]).
+
+test(augmented_production_augment_single_terminal_with_a_terminal
+    ,[]):-
+	augmented_production((a0, [-1] --> [a]), [b], Augmented)
+	,Augmented = (a0, [-1] --> [a,b]).
+
+
+% ======== Illegal augmentations. ========
+
+% Can't add nonterminals to right of terminal.
+test(augmented_production_augment_nonterminals_and_single_terminal_with_a_nonterminal,[fail]):-
+	augmented_production((a0, [-1] --> g1, g2, g3, [a]), g4, _).
+
+% Again: nonterminals may not follow a terminal
+test(augmented_production_augment_nonterminals_and_terminals_with_a_nonterminal,[fail]):-
+	augmented_production((a0, [-1] --> g1, g2, [a, b]), g3, Augmented)
+	,Augmented = (a0, [-1] --> g1, g2, g3, [a, b]).
+
+% Nonterminals must precede terminals!
+test(augmented_production_augment_single_terminal_with_a_nonterminal,[fail]):-
+	augmented_production((a0, [-1] --> [a]), g1, _).
+
+
+% ======== Tests for ancestry inference or verification. ========
 
 test(augmented_production_verify_augmenting_empty_production_with_a_nonterminal, [nondet]):-
 	augmented_production(ypsilon, [a], (a0, [-1] --> [a])).
@@ -160,55 +213,6 @@ test(augmented_production_infer_terminal_from_empty_production_and_augmented_pro
 test(augmented_production_infer_score_from_empty_production_and_augmented_production, [nondet]):-
 	augmented_production(ypsilon, g1, (a0, Score --> g1))
 	,Score = [-1].
-
-test(augmented_production_augment_single_nonterminal_with_a_nonterminal,[nondet]):-
-	augmented_production((a0, [-1] --> g1), g2, Augmented)
-	,Augmented = (a0, [-1] --> g1, g2).
-
-test(augmented_production_augment_single_nonterminal_with_a_terminal,[nondet]):-
-	augmented_production((a0, [-1] --> g1), [a], Augmented)
-	,Augmented = (a0, [-1] --> g1, [a]).
-
-test(augmented_production_augment_nonterminals_with_a_nonterminal, [nondet]):-
-	augmented_production((a0, [-1] --> g1, g2), g3, Augmented)
-	,Augmented = (a0, [-1] --> g1, g2, g3).
-
-test(augmented_production_augment_nonterminals_with_a_terminal, [nondet]):-
-	augmented_production((a0, [-1] --> g1, g2), [a], Augmented)
-	,Augmented = (a0, [-1] --> g1, g2, [a]).
-
-test(augmented_production_augment_nonterminals_and_single_terminal_with_a_terminal):-
-	augmented_production((a0, [-1] --> g1, g2, [a]), [b], Production)
-	,Production = (a0, [-1] --> g1, g2, [a,b]).
-
-test(augmented_production_augment_nonterminals_and_terminals_with_a_terminal):-
-	augmented_production((a0, [-1] --> g1, g2, [a, b]), [c], Augmented)
-	,Augmented = (a0, [-1] --> g1, g2, [a, b, c]).
-
-test(augmented_production_augment_single_terminal_with_a_terminal
-    ,[]):-
-	augmented_production((a0, [-1] --> [a]), [b], Augmented)
-	,Augmented = (a0, [-1] --> [a,b]).
-
-% Illegal augmentations.
-
-% Can't add nonterminals to right of terminal.
-test(augmented_production_augment_nonterminals_and_single_terminal_with_a_nonterminal
-    ,[blocked('Too much work'), fail]):-
-	augmented_production((a0, [-1] --> g1, g2, g3, [a]), g4, _).
-
-% Again: nonterminals may not follow a terminal
-test(augmented_production_augment_nonterminals_and_terminals_with_a_nonterminal
-    ,[blocked('Too much work'), fail]):-
-	augmented_production((a0, [-1] --> g1, g2, [a, b]), g3, Augmented)
-	,Augmented = (a0, [-1] --> g1, g2, g3, [a, b]).
-
-% Nonterminals must precede terminals!
-test(augmented_production_augment_single_terminal_with_a_nonterminal
-    ,[blocked('Too much work'),fail]):-
-	augmented_production((a0, [-1] --> [a]), g1, _).
-
-
 
 :-end_tests(augmented_production).
 
@@ -258,40 +262,60 @@ test(augmented_production_augment_single_terminal_with_a_nonterminal
 augmented_production(ypsilon, Token, (Name, Score --> Token)):-
 	empty_production((Name, Score --> [])).
 
-augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Augmented_tokens)):-
-	is_list(Tokens)
-	,(   Token = [_]
-	 ->  once(append(Tokens, Token, Augmented_tokens))
-	 ;   Token \= [_]
-	    ,once(append([Token], Tokens, Augmented_tokens))
-	 ).
+augmented_production((Name, Score --> Body), Token, (Name, Score --> Augmented)):-
+	tree_list(Body, Tokens)
+	,once(phrase(symbols(nonterminal, Nonterminals), Tokens, Terminals))
+	,augmented_production(Nonterminals, Terminals, Tokens, Token, Augmented).
 
-% Current Tokens: one or more nonterminals.
-augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Tokens_tree)):-
-	tree_list(Tokens, Tokens_list)
-	,once(phrase(symbols(nonterminal,Nonterminals), Tokens_list, Rest))
-	,once(phrase(symbols(terminal,[]), Rest, []))
-	,once(append(Nonterminals, [Token], Augmented_nonterminals))
-	,list_tree(Augmented_nonterminals, Tokens_tree).
 
-% Current Tokens: one or more terminals
-augmented_production((Name, Score --> Tokens), Token, (Name, Score --> Tokens_tree)):-
-	tree_list(Tokens, Tokens_list)
-	,once(phrase(symbols(nonterminal,Nonterminals), Tokens_list, [Rest]))
-	,once(phrase(symbols(terminal,Terminals), Rest, []))
+%!	augmented_production(+Nonterminals,+Terminals,+Body,+Token,-Augmented)	is nondet.
+%
+%	Business end of augmented_production/3. Handles each separate
+%	case of current production - new token in turn.
+%
+%	In general, there are three possible cases of a current
+%	production and its augmentation:
+%
+%	| Current production |  Augmented production  |
+%	| ------------------ |	--------------------  |
+%	| []		     |	n \ t                 |
+%	| n+		     |	n \ t                 |
+%	| n* t+		     |	t                     |
+%
+%	The empty-production case is handled in the first clause of
+%	augmented_production/3.
+%
+%	The remaining cases are broken down for convenience. In
+%	particular, "n* t+ --> t" is handled by two clauses, one for "t
+%	--> t", one for "n+ --> t" and one for "n+ t+ --> t".
+%
+%	As detailed in augmented_production/3 a nonterminal is never
+%	allowed to follow a terminal.
+%
 
-	,(   Token = [_] % Token is a terminal
-	 ->  once(append(Terminals, Token, Augmented_terminals))
-	    ,once(append(Nonterminals, [Augmented_terminals], New_tokens))
-	 ;   true
+% Case: n+ --> n | t (one or more terminals augmented by any token).
+augmented_production([_|_], [], Body, Token, Augmented):-
+	% Call with once/1 to avoid infinitely appending difflist Ns
+	once(append(Body, [Token], Tokens))
+	,list_tree(Tokens, Augmented).
 
-	 % Watchit: this will never be true; don't you want to use \=?
-	 %;   Token \== [_] % Token is a non-terminal; explicitly for clarity
-	%->   once(append(Nonterminals, [Token], Augmented_nonterminals))
-	 %   ,once(append(Augmented_nonterminals, Terminals, New_tokens))
-	)
+% Case: t --> t (one terminal, augmented by one terminal)
+augmented_production([], [[T]], _Body, [Token], Augmented):-
+	once(append([T], [Token], Augmented))
+	,!.
 
-	,list_tree(New_tokens, Tokens_tree).
+% Case: n+ t --> t (one or more nonterminals followed by one terminal,
+% augmented by one terminal)
+augmented_production([N|Ns], [[T]], _Body, [Token], Augmented):-
+	once(append([N|Ns], [[T|Token]], Tokens))
+	,list_tree(Tokens, Augmented).
+
+% Case: n+ t+ --> t (one or more nonterminals followed by one or more
+% terminals, augmented by one terminal.
+augmented_production([N|Ns], [[T|Ts]], _Body, [Token], Augmented):-
+	once(append([T|Ts], [Token], Terminals))
+	,once(append([N|Ns], [Terminals], Tokens ))
+	,list_tree(Tokens, Augmented).
 
 
 
