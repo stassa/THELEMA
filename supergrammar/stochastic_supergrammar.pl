@@ -184,10 +184,10 @@ augmented_production(ypsilon, Token, (Name, Score --> Token)):-
 augmented_production((Name, Score --> Body), Token, (Name, Score --> Augmented)):-
 	tree_list(Body, Tokens)
 	,once(phrase(symbols(nonterminal, Nonterminals), Tokens, Terminals))
-	,augmented_production(Nonterminals, Terminals, Tokens, Token, Augmented).
+	,augmented_production(Nonterminals, Terminals, Token, Tokens, Augmented).
 
 
-%!	augmented_production(+Nonterminals,+Terminals,+Body,+Token,-Augmented)	is nondet.
+%!	augmented_production(+Nonterminals,+Terminals,+Token,+Body,-Augmented)	is nondet.
 %
 %	Business end of augmented_production/3. Handles each separate
 %	case of current production - new token in turn.
@@ -213,28 +213,23 @@ augmented_production((Name, Score --> Body), Token, (Name, Score --> Augmented))
 %
 
 % Case: n+ --> n | t (one or more terminals augmented by any token).
-augmented_production([_|_], [], Body, Token, Augmented):-
+augmented_production([_|_], [], Token, Body, Augmented):-
 	% Call with once/1 to avoid infinitely appending difflist Ns
 	once(append(Body, [Token], Tokens))
 	,list_tree(Tokens, Augmented).
 
 % Case: t --> t (one terminal, augmented by one terminal)
-augmented_production([], [[T]], _Body, [Token], Augmented):-
+augmented_production([], [[T]], [Token], _Body, Augmented):-
 	once(append([T], [Token], Augmented))
 	,!.
 
 % Case: n+ t* --> t (one or more nonterminals followed by one or more
 % terminals, augmented by one terminal.
-augmented_production([N|Ns], [[T|Ts]], _Body, [Token], Augmented):-
+augmented_production([N|Ns], [[T|Ts]], [Token], _Body, Augmented):-
 	once(append([T|Ts], [Token], Terminals))
 	,once(append([N|Ns], [Terminals], Tokens ))
 	,list_tree(Tokens, Augmented).
 
-% Case: n+ t --> t (one or more nonterminals followed by one terminal,
-% augmented by one terminal)
-%augmented_production([N|Ns], [[T]], _Body, [Token], Augmented):-
-%	once(append([N|Ns], [[T|Token]], Tokens))
-%	,list_tree(Tokens, Augmented).
 
 
 %!	production// is nondet.
