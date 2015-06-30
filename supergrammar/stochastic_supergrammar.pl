@@ -1,4 +1,5 @@
-﻿:-module(stochastic_supergrammar, [empty_production_rule/2
+﻿:-module(stochastic_supergrammar, [generate_and_test/0
+				   ,empty_production_rule/2
 				  ,next_token/2
 				  ,augmented_production/3
 				  ]).
@@ -12,27 +13,73 @@
 %      Starting score of a new production.
 initial_score(-1).
 
-/*
-% generate_stochastic(_Rule_complexity,_Derivation_length,_Inference_limit,_Options):-
-generate_stochastic(Example,Name,Score,Augmented):-
+
+
+generate_and_test:-
 	clear_productions
-	% take the next example
-	,configuration:example_string(Example)
-	% create a new rule
-	% set its probability to 0
-	,once(rule_name(Name))
-	,initial_score(Score)
-	% take the next token (terminal or nonterminal)
-	,next_token(Example, Token)
-	% augment the new rule
-	,augmented_production(Name, [], [], [Score], Token, Augmented)
-	% calculate its probability
-	% compare the two probabilities
-	% Choose a rule (new or old)
-	% repeat from augment step
-	% prune the examples
-	% repeat from the top
-	% exit if there are no more examples.
+	% generate_example
+	,example_string(Example)
+	% empty_production (implicit)
+	% generate_token
+	,all_tokens(Example, [T|Tokens])
+%	% augment_production
+	,once(augmented_production(ypsilon, T, Production))
+	,generate_and_test(Tokens,Production,Final_production)
+	% score_production
+%	,production_score(Augmented, 0, Example, _Score)
+	% finalize_production
+	,finalize_production(Final_production, New_name)
+	,writeln(finalized:Final_production-as:New_name)
+%	,finalize_production(Augmented)
+	% prune_corpus
+	.
+
+generate_and_test([], Production, Production).
+generate_and_test([Token|Tokens], Production_temp, Acc):-
+	augmented_production(Production_temp, Token, Augmented_production)
+	,production_score(Augmented_production, Scored_production)
+	,best_scored_production(Production_temp, Scored_production, Best_production)
+	,generate_and_test(Tokens, Best_production, Acc).
+
+production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
+	configuration:examples_module(M)
+	,dcg_translate_rule((Name --> Body), (_H:-B))
+	,findall(B
+	       ,M:B
+		,Parses)
+	,length(Parses, Score).
+
+%best_scored_production(Production, Augmented, Best_production).
+best_scored_production((N1, [S1] --> B1), (_N2, [S2] --> _B2), (N1, [S1] --> B1)):-
+	S1 >= S2
+	,!.
+best_scored_production(_, (N2, S2 --> B2), (N2, S2 --> B2)).
+
+% Seems to be working OK.
+finalize_production((Name, Score --> Body), (New_name, Score --> Body)):-
+	dcg_translate_rule((Name, Score --> Body), (H:-B))
+	,rename_rule((H:-B), New_name, Renamed_rule)
+	% TESTING: ADD PROPER DERIVATION WHEN TESTED
+	,add_new_production(New_name, Renamed_rule, [])
+%	,writeln(renamed_rule:Name-as:New_name/Renamed_rule)
+	.
+
+
+/*
+finalize_production(Production, Renamed_production):-
+	Production = (_Name, Score --> Body)
+	,Renamed_production = (New_name, Score --> Body)
+	,once(rename_production(Production, Renamed_production))
+	,dcg_translate_rule(Renamed_production, Renamed_rule)
+	% TESTING: ADD PROPER DERIVATION WHEN TESTED
+	,add_new_production(New_name, Renamed_rule, [])
+	.
+
+% Copy-pasta from supergrammar module.
+rename_production((_, Score --> Body), (New_name, Score --> Body)):-
+	rule_name(New_name)
+	,configuration:examples_module(M)
+	,\+ phrase(M:nonterminal, [New_name])
 	.
 */
 
@@ -73,6 +120,7 @@ empty_production_rule(P:-true):-
 empty_production((N, [R] --> [])):-
 	var(N)
 	,once(rule_name(N))
+	% Need to check that rule name is unique.
 	,initial_score(R).
 
 empty_production((N, [R] --> [])):-
@@ -95,18 +143,6 @@ production_name(N):-
 	,char_type(A, lower)
 	,forall(member(C, Atomic), (char_type(C, alnum); C = '_')).
 
-
-/*
-augment_production(Production, Example, Augmented_production):-
-	all_tokens(Example, Tokens)
-	,augment_production(Production, Tokens, _, Augmented_production).
-
-augment_production(Production, [Token], Augmented_production, Augmented_production):-
-	augmented_production(Production, Token, Augmented_production).
-augment_production(Production, [Token|Tokens], Temp, Acc):-
-	augmented_production(Production,Token,Augmented_production)
-	,augment_production(Augmented_production, Tokens, Temp, Acc).
-*/
 
 %!	next_token(+Example, -Token) is nondet.
 %
@@ -133,12 +169,6 @@ all_tokens(Example, Tokens):-
 	,diff_list(Terminals, Terminals_diff, T2)
 	,diff_append(Nonterminals_diff-T1, Terminals_diff-T2, Tokens-[]).
 
-
-% Rename this -it's the main loop I guess.
-augment_production([], Production, Production).
-augment_production([Token|Tokens], Production, Acc):-
-	augmented_production(Production, Token, Augmented)
-	,augment_production(Tokens, Augmented, Acc).
 
 
 %!	augmented_production(?Production, ?Token, ?Augmented) is nondet.

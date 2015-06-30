@@ -10,7 +10,7 @@ edit_source:-
 	,edit('stochastic_supergrammar.pl')
 	,edit('stochastic_supergrammar.plt')
 	,edit('configuration.pl')
-	%,edit('examples_simple.pl')
+	,edit('examples_simple.pl')
 	,edit('examples_mtg.pl')
 	,edit('examples_mtg_lexicalized.pl')
 	,edit('examples_mtg_stochastic.pl')

@@ -15,8 +15,9 @@
 %!	language// is nondet.
 %
 %	A high-level specification of a language type.
-language --> [].
-language --> nonterminal, nonterminal.
+language --> nonterminal.
+%language --> [].
+%language --> nonterminal, nonterminal.
 %language --> nonterminal, terminals.
 %language --> terminals, nonterminal, terminals.
 
@@ -89,7 +90,7 @@ nonterminal --> [cardname].
 nonterminal --> [burn].
 nonterminal --> [target].
 
-nonterminal --> terminals.
+%nonterminal --> terminals.
 
 %!	cardname// is nondet.
 %

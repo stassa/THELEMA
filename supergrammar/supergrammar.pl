@@ -345,17 +345,23 @@ given_production(P, D):-
 %
 %	- is true.
 %
+%	TODO: See notes inline.
 %
 derived_production(P, D):-
 	(   phrase(nonterminal, [P])
 	,   production(P, _, _)
 	)
+	% Hey, do I need to do all this stuff? Can't I just get the rule Head from production/3?
 	,rule_complexity(C)
 	,length(Args, C)
 	,H =.. [P|Args]
 	,configuration:examples_module(M)
 	,clause(M:H, _)
-	,phrase(M:P, D).
+	% phrase/2 leaves out stochastic_supergrammar rules
+	% Where the "Rest" clause is the production Score.
+	% Think of whether this should be allowed or not.
+%	,phrase(M:P, D).
+	,phrase(M:P, D, _).
 
 
 %!	portray_production(+Name) is det.
