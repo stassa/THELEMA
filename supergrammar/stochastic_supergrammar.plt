@@ -38,10 +38,15 @@ test(augmented_production_augment_nonterminals_and_terminals_with_a_terminal):-
 	augmented_production((a0, [-1] --> g1, g2, [a, b]), [c], Augmented)
 	,Augmented = (a0, [-1] --> g1, g2, [a, b, c]).
 
-test(augmented_production_augment_single_terminal_with_a_terminal
-    ,[]):-
+test(augmented_production_augment_single_terminal_with_a_terminal,[]):-
 	augmented_production((a0, [-1] --> [a]), [b], Augmented)
+	,!
 	,Augmented = (a0, [-1] --> [a,b]).
+
+test(augmented_production_augment_terminals_with_a_terminal,[]):-
+	augmented_production((a0, [-1] --> [a,b]), [c], Augmented)
+	,!
+	,Augmented = (a0, [-1] --> [a,b,c]).
 
 
 % ======== Illegal augmentations. ========
@@ -89,8 +94,11 @@ test(augmented_production_verify_augmenting_nonterminals_with_a_terminal, []):-
 test(augmented_production_verify_augmenting_nonterminals_and_terminals_with_a_terminal, []):-
 	augmented_production((a0, [-1] --> g1, g2, [a, b]), [c], (a0, [-1] --> g1, g2, [a, b, c])).
 
-test(augmented_production_verify_augmenting_single_terminal_with_a_terminal,[]):-
+test(augmented_production_verify_augmenting_single_terminal_with_a_terminal,[nondet]):-
 	augmented_production((a0, [-1] --> [a]), [b], (a0, [-1] --> [a,b])).
+
+test(augmented_production_verify_augmenting_terminals_with_a_terminal,[nondet]):-
+	augmented_production((a0, [-1] --> [a,b]), [c], (a0, [-1] --> [a,b,c])).
 
 % Tests for inferring ancestral token when augmenting empty production.
 test(augmented_production_infer_ancestral_nonterminal_from_empty_production_and_augmented_production, []):-
@@ -140,6 +148,10 @@ test(augmented_production_infer_ancestral_token_from_single_terminal_augmented_w
 	,!
 	,Token=[b].
 
+test(augmented_production_infer_ancestral_token_from_terminals_augmented_with_a_terminal,[]):-
+	augmented_production((a0, [-1] --> [a,b]), Token, (a0, [-1] --> [a,b,c]))
+	,!
+	,Token=[c].
 
 % ========== Illegal mode tests: ========== %
 

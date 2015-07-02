@@ -66,7 +66,7 @@ production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
 best_scored_production((N1, [S1] --> B1), (_N2, [S2] --> _B2), (N1, [S1] --> B1)):-
 	S1 > S2
 	,!.
-best_scored_production(_, (N2, S2 --> B2), (N2, S2 --> B2)).
+best_scored_production(_, Augmented_production, Augmented_production).
 
 % Seems to be working OK.
 finalize_production((Name, Score --> Body), (New_name, Score --> Body)):-
@@ -153,6 +153,17 @@ next_token(Example, Token):-
 %
 %	Generate all tokens that are either part of Example or a
 %	nonterminal in the grammar of the target language.
+%
+%	TODO: This is kinda wrong. We may have both terminals and
+%	nonterminals as background knowledge encoded in language//0. I
+%	need to find a way to add known terminals to the tokens passed
+%	to the generate-and-test loop.
+%
+%	In general the idea is to be able to make best use of a partial
+%	background grammar- you can't do this without also using
+%	terminals. Although I _do_ want to learn terminals from
+%	examples.
+%
 all_tokens(Example, Tokens):-
 	findall(N
 	       ,phrase(language, [N])
@@ -211,6 +222,9 @@ all_tokens(Example, Tokens):-
 augmented_production(ypsilon, Token, (Name, Score --> Token)):-
 	empty_production((Name, Score --> [])).
 
+augmented_production((Name, Score --> [T|Terminals]), Token, (Name, Score --> Augmented)):-
+	augmented_production([], [T|Terminals], Token, [T|Terminals], Augmented).
+
 augmented_production((Name, Score --> Body), Token, (Name, Score --> Augmented)):-
 	tree_list(Body, Tokens)
 	,once(phrase(symbols(nonterminal, Nonterminals), Tokens, Terminals))
@@ -251,6 +265,10 @@ augmented_production([_|_], [], Token, Body, Augmented):-
 % Case: t --> t (one terminal, augmented by one terminal)
 augmented_production([], [[T]], [Token], _Body, Augmented):-
 	once(append([T], [Token], Augmented))
+	,!.
+
+augmented_production([], [T|Tokens], [Token], _Body, Augmented):-
+	once(append([T|Tokens], [Token], Augmented))
 	,!.
 
 % Case: n+ t* --> t (one or more nonterminals followed by one or more
