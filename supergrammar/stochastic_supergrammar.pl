@@ -2,21 +2,30 @@
 				   ,empty_production_rule/2
 				  ,next_token/2
 				  ,augmented_production/3
+				  ,clear_temporary_productions/0
 				  ]).
 
 :-add_import_module(stochastic_supergrammar, supergrammar, start).
 
 :-use_module(utilities).
 
+:-dynamic production_scoring/3.
+
 %!	initial_score(?P) is det.
 %
 %      Starting score of a new production.
 initial_score(-1).
 
+%!	termporary_production(?Name) is det.
+%
+%	Name of the temporary production term used in
+%	production_scoring/2.
+temporary_production(production_scoring).
 
 
 generate_and_test:-
 	clear_productions
+	,clear_temporary_productions
 	% generate_example
 	,example_string(Example)
 	% empty_production (implicit)
@@ -35,23 +44,27 @@ generate_and_test:-
 	.
 
 generate_and_test([], Production, Production).
-generate_and_test([Token|Tokens], Production_temp, Acc):-
-	augmented_production(Production_temp, Token, Augmented_production)
+generate_and_test([Token|Tokens], Production, Acc):-
+	augmented_production(Production, Token, Augmented_production)
 	,production_score(Augmented_production, Scored_production)
-	,best_scored_production(Production_temp, Scored_production, Best_production)
+	,best_scored_production(Production, Scored_production, Best_production)
 	,generate_and_test(Tokens, Best_production, Acc).
 
 production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
 	configuration:examples_module(M)
-	,dcg_translate_rule((Name --> Body), (_H:-B))
-	,findall(B
-	       ,M:B
+	,dcg_translate_rule((production_scoring(Name) --> Body), R)
+	,asserta(M:R)
+	,findall(Example
+		,(example_string(Example)
+		 ,phrase(M:production_scoring(Name), Example)
+		)
 		,Parses)
 	,length(Parses, Score).
 
+
 %best_scored_production(Production, Augmented, Best_production).
 best_scored_production((N1, [S1] --> B1), (_N2, [S2] --> _B2), (N1, [S1] --> B1)):-
-	S1 >= S2
+	S1 > S2
 	,!.
 best_scored_production(_, (N2, S2 --> B2), (N2, S2 --> B2)).
 
@@ -64,24 +77,6 @@ finalize_production((Name, Score --> Body), (New_name, Score --> Body)):-
 %	,writeln(renamed_rule:Name-as:New_name/Renamed_rule)
 	.
 
-
-/*
-finalize_production(Production, Renamed_production):-
-	Production = (_Name, Score --> Body)
-	,Renamed_production = (New_name, Score --> Body)
-	,once(rename_production(Production, Renamed_production))
-	,dcg_translate_rule(Renamed_production, Renamed_rule)
-	% TESTING: ADD PROPER DERIVATION WHEN TESTED
-	,add_new_production(New_name, Renamed_rule, [])
-	.
-
-% Copy-pasta from supergrammar module.
-rename_production((_, Score --> Body), (New_name, Score --> Body)):-
-	rule_name(New_name)
-	,configuration:examples_module(M)
-	,\+ phrase(M:nonterminal, [New_name])
-	.
-*/
 
 %!	empty_production_rule(-Production, -Probability) is det.
 %
@@ -376,6 +371,16 @@ terms_functors_([Term|Fs], Temp, Acc):-
 	,terms_functors_([Term], Acc1, Acc).
 
 
+%!	clear_temporary_productions is det.
+%
+%	Remove temporary productions used for scoring from the database.
+clear_temporary_productions:-
+	configuration:examples_module(M)
+	,rule_complexity(C)
+	,A is C + 1
+	,temporary_production(N)
+	,functor(T, N, A)
+	,retractall(M:T).
 
 
 
@@ -383,4 +388,34 @@ terms_functors_([Term|Fs], Temp, Acc):-
 
 
 
+/*
+production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
+	configuration:examples_module(M)
+	,rule_complexity(C)
+	,functor(H, Name, C)
+	, H =.. [Name|[_|[[_]]]]
+	,dcg_translate_rule((Name --> Body), (H:-B))
+	,setof(B
+	       ,M:B
+		,Parses)
+	,length(Parses, Score).
+*/
+
+/*
+finalize_production(Production, Renamed_production):-
+	Production = (_Name, Score --> Body)
+	,Renamed_production = (New_name, Score --> Body)
+	,once(rename_production(Production, Renamed_production))
+	,dcg_translate_rule(Renamed_production, Renamed_rule)
+	% TESTING: ADD PROPER DERIVATION WHEN TESTED
+	,add_new_production(New_name, Renamed_rule, [])
+	.
+
+% Copy-pasta from supergrammar module.
+rename_production((_, Score --> Body), (New_name, Score --> Body)):-
+	rule_name(New_name)
+	,configuration:examples_module(M)
+	,\+ phrase(M:nonterminal, [New_name])
+	.
+*/
 
