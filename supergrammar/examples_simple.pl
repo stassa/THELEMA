@@ -1,4 +1,5 @@
 :-module(examples_simple, [language//0
+			  ,start//0
 			  ,terminal//0
 			  ,terminals//0
 			  ,nonterminal//0
@@ -14,6 +15,8 @@
 % Or: production --> ... etc?
 language --> [].
 language --> terminals, nonterminal, terminals.
+
+start --> [s].
 
 terminals --> [].
 terminals --> terminal, terminals.

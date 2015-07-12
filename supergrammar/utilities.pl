@@ -1,4 +1,5 @@
-﻿:-module(utilities, [diff_list/3
+﻿:-module(utilities, [all_slices_of/2
+		    ,diff_list/3
 		    ,diff_append/3
 		    ,pdcg_parses/3
 		    ,pdcg_parse/2
@@ -8,9 +9,87 @@
 		    ,rule_name/1
 		    ,generate_alphanumeric/2
 		    ,permute/2]).
-
 /** <module> Utility predicates used in supergrammar module.
 */
+
+
+%!	all_slices_of(+List,-Slices) is det.
+%
+%	Slices a list in every possible way while maintaining the
+%	ordering of its elements.
+%
+%	For example, the list [a,b,c] can be sliced in three sub-lists
+%	of length 1, two sub-lists of length 2 and one sub-list of
+%	length 3:
+%
+%	==
+%	[[a], [b], [c], [a, b], [b, c]], [a, b, c]]
+%	==
+%
+all_slices_of(List, Slices):-
+	length(List, List_length)
+	,Stop_slicing_at is List_length - 1
+	,all_slices_of(List, List, Stop_slicing_at, List_length, List_length, List_length, [], Secils)
+	,reverse(Secils, Slices).
+
+
+%!	all_slices_of(+List,+Initial_list,+Stop_slicing_at,+List_length,+Initial_list_length,+Slice_length,+Temp,-Acc) is semidet.
+%
+%	Business end of all_slices_of/2. Slices a list in slices of
+%	successively smaller Slice_length starting with a Slice_lenth
+%	equal to the length of the list.
+%
+%	To find all slices of the input list, we start with a slice
+%	length that is equal to the length of the list and therefore
+%	obtain a slice that is the list itself. Then we decrement the
+%	slice-length by 1, get all possible slices of the list of that
+%	length and continue until the Slice_length value is 1 (we also
+%	keep the slices of length 1).
+%
+%	Because we go through the list by picking it apart element-by
+%	-element, we need to keep a backup of the ful list in
+%	Initial_list. We reset the list to this initial value every time
+%	Slice_length changes.
+%
+%	In order to avoid having to count the remaining elements of the
+%	input list (so that we know when to stop slicing it) we keep a
+%	counter in the variable List_length, equal to the length of the
+%	list. This is decremented at each step through the list so we
+%	need to set it back to the initial length of the list when it
+%	reaches 1. The initial length of the list is kept for this
+%	purpose in the variable Initial_list_length.
+%
+all_slices_of(_, _, Stop_slicing_at, Stop_slicing_at, _, 1, Slices, Slices).
+all_slices_of(_, List, Stop_slicing_at, Stop_slicing_at, List_length, Slice_length, Temp, Acc):-
+	Slice_length_dd is Slice_length - 1
+	,Stop_slicing_at_dd is Stop_slicing_at - 1
+	,all_slices_of(List, List, Stop_slicing_at_dd, List_length, List_length, Slice_length_dd, Temp, Acc).
+all_slices_of([L|List], Initial_list, Stop_slicing_at, List_length, Initial_list_length, Slice_length, Temp, Acc):-
+	slice_of([L|List], Slice_length, Slice)
+	,New_list_length is List_length - 1
+	,all_slices_of(List, Initial_list, Stop_slicing_at, New_list_length, Initial_list_length, Slice_length, [Slice|Temp], Acc).
+
+
+%!	slice_of(+List,+Length,-Slice) is semidet.
+%
+%	Take a Slice of the given Length from the input List.
+%
+%	Fails silently if Length is higher than the number of elements
+%	in List.
+slice_of(List, Length, Slice):-
+	length(Slice, Length)
+	,slice_off(List,[], Ecils)
+	,reverse(Ecils, Slice).
+
+
+%!	slice_off(+List,+Length,-Slice) is semidet.
+%
+%	Business end of slice_of/3.
+slice_off(_, Slice, Slice).
+slice_off([L|Ls], Temp, Acc):-
+	slice_off(Ls, [L|Temp], Acc).
+
+
 
 %!	diff_list(+List,-Difference_list,?Tail) is nondet.
 %

@@ -26,6 +26,7 @@ temporary_production(production_scoring).
 generate_and_test:-
 	clear_productions
 	,clear_temporary_productions
+	,assert_unpruned_corpus_length
 	% generate_example
 	,example_string(Example)
 	% empty_production (implicit)
@@ -50,16 +51,6 @@ generate_and_test([Token|Tokens], Production, Acc):-
 	,best_scored_production(Production, Scored_production, Best_production)
 	,generate_and_test(Tokens, Best_production, Acc).
 
-production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
-	configuration:examples_module(M)
-	,dcg_translate_rule((production_scoring(Name) --> Body), R)
-	,asserta(M:R)
-	,findall(Example
-		,(example_string(Example)
-		 ,phrase(M:production_scoring(Name), Example)
-		)
-		,Parses)
-	,length(Parses, Score).
 
 
 %best_scored_production(Production, Augmented, Best_production).
@@ -139,6 +130,9 @@ production_name(N):-
 	,forall(member(C, Atomic), (char_type(C, alnum); C = '_')).
 
 
+
+
+
 %!	next_token(+Example, -Token) is nondet.
 %
 %	Generates all terminals and nonterminals for augmenting a rule
@@ -174,6 +168,90 @@ all_tokens(Example, Tokens):-
 	,diff_list(Nonterminals, Nonterminals_diff, T1)
 	,diff_list(Terminals, Terminals_diff, T2)
 	,diff_append(Nonterminals_diff-T1, Terminals_diff-T2, Tokens-[]).
+
+
+
+:- dynamic unpruned_corpus_length/1.
+
+assert_unpruned_corpus_length:-
+	findall(Example, example_string(Example), Examples)
+	,length(Examples, L)
+	,assert(unpruned_corpus_length(L))
+	%,compile_predicates([unpruned_corpus_length/1])
+	.
+
+
+%!	production_score(+Production,-Updated_production) is det.
+%
+%	Update the score of the given production to the proportion of
+%	examples it can parse at least partially.
+%
+production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
+	configuration:examples_module(M)
+	,dcg_translate_rule((production_scoring(Name) --> Body), R)
+	,asserta(M:R)
+	,findall(Example
+		,(example_string(Example)
+		 ,phrase(M:production_scoring(Name), Example)
+		)
+		,Parsed)
+	,length(Parsed, Parses)
+	,unpruned_corpus_length(Unpruned_length)
+	,Score is Parses / Unpruned_length.
+
+
+
+%!	updated_grammar(+Production,+Grammar,-Updated_grammar) is det.
+%
+%	Update the current grammar with a newly learned production.
+%
+updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,Ps_]):-
+	append(Ps, Production, Ps_)
+	,tree_list(Production, Tokens)
+	,once(phrase(symbols(nonterminal, P_Ns), Tokens, P_Ts))
+	,append(Ns, P_Ns, Ns_)
+	,append(Ts, P_Ts, Ts_).
+
+
+
+%!	grammar(-Start,-Nonterminals,-Terminals,-Productions) is det.
+%
+%	A grammar, as a quadruple consisting of a Start symbol, a set of
+%	Nonterminals, a set of Terminals and a set of Productions.
+%
+%	@TODO: need a good way to get productions. I'd like to store
+%	them in a nice production/2 term with a first argument for the
+%	name and a second for the whole production, or even one with
+%	args for nonterminals and terminals (and score) but this risks
+%	clashing with production/2 here and production/3 in supergrammar
+%	module. Also, examples modules will need to declare a clause of
+%	that predicate for each given production, otherwise I'll have to
+%	do something typically complicated to create those clauses at
+%	startup.
+%
+grammar(Start,Nonterminals,Terminals,Productions):-
+	once(phrase(start, [Start]))
+	,findall(N, phrase(nonterminal, [N]), Nonterminals)
+	,findall(T,phrase(terminal, [T]), Terminals)
+	%Empty for now- see todo above.
+	,Productions = [].
+
+
+
+%!	updated_augmentation_set(+Example,-Augset) is det.
+%
+%	Build up the set of augmentation terms, as a list of:
+%	[Ns,Ts,Ex]
+%
+%	Where Ns is nonterminals, Ts nonterminals, Ex the tokens from a
+%	single example.
+%
+updated_augmentation_set(Example, Augset):-
+	findall(N, phrase(nonterminal, [N]), Ns)
+	,findall(T,phrase(terminal, [T]), Ts)
+	,findall([Token], member(Token, Example),Tokens)
+	,append(Ns, Ts, S1)
+	,append(S1, Tokens, Augset).
 
 
 
@@ -401,10 +479,14 @@ clear_temporary_productions:-
 	,retractall(M:T).
 
 
+unload_examples_module:-
+	configuration:examples_module(Module)
+	,forall(current_predicate(Module:P/A)
+	       ,abolish(Module:P/A)).
 
-
-
-
+reload_examples_module:-
+	configuration:examples_module(Module)
+	,consult(Module).
 
 /*
 production_score((Name, _S --> Body), (Name, [Score] --> Body)):-

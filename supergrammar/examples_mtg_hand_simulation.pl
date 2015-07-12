@@ -1,4 +1,5 @@
 :-module(examples_mtg_hand_simulation, [language//0
+				       ,start//0
 				       ,terminal//0
 				       ,terminals//0
 				       ,nonterminal//0
@@ -12,6 +13,11 @@
 %
 %	A high-level specification of a language type.
 language --> nonterminal.
+
+
+
+start --> [ability].
+
 
 
 %!	terminals// is nondet.
