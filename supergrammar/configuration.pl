@@ -198,13 +198,6 @@ assert_given_productions:-
 %	Convert between a grammar rule in normal Prolog form and its
 %	equivalent DCG notation.
 %
-%	@TODO: this can be generalised a bit perhaps, to allow for
-%	productions that don't conform to the
-%	nonterminals-then-terminals rule. For example, instead of
-%	getting two lists out of production_term//2, get a single list,
-%	skip the append (in the second clause of prolog_dcg/2) and just
-%	turn it into a tree.
-%
 prolog_dcg(Head:-true, (Name --> Ts_Diff)):-
 	! % Green cut- avoids errors in next clause when the rule has only
 	% terminals on the right hand side.
@@ -222,19 +215,43 @@ prolog_dcg(Head:-Body, (Name --> Tokens_)):-
 	,list_tree(Tokens, Tokens_).
 
 
-%!	production_term(Tokens)// is nondet.
+%!	production_term(-Tokens)// is nondet.
 %
 %	A short DCG production grammar (as in, a grammar for Definite
 %	Clause Grammar productions). The single argument gathers a list
 %	of all tokens in the right-hand side of the rule.
 production_term(Ts) --> tokens(Ts).
 
+%!	tokens(-Tokens)// is nondet.
+%
+%	The list of Tokens in the input rule.
 tokens([]) --> [].
 tokens([T|Ts]) --> nonterminal_term(T),tokens(Ts).
 tokens([T|Ts]) --> terminals_list(T),tokens(Ts).
 
+%!	nonterminal_term(-Nonterminals)// is nondet.
+%
+%	A Nonterminal token in the right-hand side of the input rule.
 nonterminal_term(N) --> [T], { T \= [_|_], functor(T,N,_), N \== =}.
 
+%!	terminals_list(-Terminals)// is nondet.
+%
+%	A list of (one or more) terminals in the right-hand side of the
+%	input rule.
+%
+%	There's a bit that probably looks arcane in there; this one:
+%	==
+%	[_=Ts]
+%	==
+%
+%	That's there because when a list of terminals follows any number
+%	of tokens in the right-hand side of a rule it's unified with the
+%	difference-variable of the last token. The unification is done
+%	using =\2 and we want to get rid of it to only keep the meat and
+%	potatoes, ie the actual list of terminals.
+%
+%	Hence, that arcane bit.
+%
 terminals_list(Ls) --> [_=Ts], {diff_list(Ts,Ls,[])}.
 terminals_list(Ts) --> [Ts], {is_list(Ts)}.
 
