@@ -19,28 +19,6 @@
 :-dynamic
 	production_scoring/3.
 
-%!	given_production(?Name,?Production,?Arguments) is  det.
-%
-%	Dynamic term used to keep track of given productions.
-:- dynamic
-	given_production/3.
-
-%!	derived_production(?Name,?Production,?Arguments) is  det.
-%
-%	Dynamic term used to keep track of derived productions.
-:- dynamic
-	derived_production/3.
-
-%!	nonterminal_arity(?Arity) is semidet.
-%
-%	Rule head arity, including variables automatically added by
-%	dcg_translate_rule/2 during grammar clause expansion.
-rule_complexity(2).
-
-%!	initial_score(?P) is det.
-%
-%      Starting score of a new production.
-initial_score(-1).
 
 %!	termporary_production(?Name) is det.
 %

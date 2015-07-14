@@ -1,8 +1,13 @@
-:-module(configuration, []).
-
-:- dynamic examples_module/1.
+:-module(configuration, [rule_complexity/1
+			,initial_score/1
+			,assert_given_productions/0
+			]).
 
 /** <module> Configuration for supergrammar generate-and-test cycles.
+
+Note: this needs updating after changing this module to configure a
+language module and an example module separate from each other
+(although pertaining to the same world).
 
 This module allows the user to plug in a different examples module
 with its own language and example strings without having to modify
@@ -53,30 +58,101 @@ Then it should also declare a rule for that nonterminal, for example:
 g1 --> [a,b,c].
 
 
-TODO: Complete this.
+@TODO: Complete this.
+
+@TODO: make this configurable outside Prolog - eg, read in the name of
+the examples module from an xml or other config file.
 
  */
 
+:-use_module(utilities, [diff_list/3]).
 
-% TODO: make this configurable outside Prolog - eg, read in the name of
-% the examples module from an xml or other config file.
+%!	examples_module(?Examples_module).
+%
+%	Dynamic term
+:- dynamic examples_module/1.
 
-%!	register_examples(+Module, +Predicates) is det.
+:- dynamic language_module/1.
+
+%!	given_production(?Name,?Production,?Arguments) is  det.
 %
-%	Reexport Module renaming each Predicate to avoid name clashes.
-%	Predicates is a list of terms:
-%	  Predicate_indicator as New_predicate_name
+%	Dynamic term used to keep track of given productions.
+:- dynamic
+	given_production/3.
+
+%!	derived_production(?Name,?Production,?Arguments) is  det.
 %
-%      The new name can be the same as the current name- this is a bit
-%      of a hack but the effect is that we can load a different module
-%      just by modifying and then consulting this file (rather than
-%      having to exit).
+%	Dynamic term used to keep track of derived productions.
+:- dynamic
+	derived_production/3.
+
+%!	nonterminal_arity(?Arity) is semidet.
 %
-%      Note: this works in Swi 7.* but I can't guarantee it will work in
-%      anything earlier than that.
+%	Rule head arity, including variables automatically added by
+%	dcg_translate_rule/2 during grammar clause expansion.
+rule_complexity(2).
+
+%!	initial_score(?P) is det.
 %
-register_examples(Examples_module, Renamed_predicates):-
-	reexport(Examples_module, except(Renamed_predicates))
+%      Starting score of a new production.
+initial_score(-1).
+
+
+
+%!	register_world(+Language_module,+Language_predicates,+Examples_module) is det.
+%
+%	Reexport Language_module renaming each predicate in the list
+%	of Language_predicates to avoid name clashes. Also reexport
+%	Examples_module renaming example_string/1 to example_string/1.
+%	Hack to convince Swi to load a different module simply by
+%	modifying and consulting this file.
+%
+%	Note: this works in Swi 7.* but I can't guarantee it will work
+%	in anything earlier than that.
+%
+register_world(Language_module, Renamed_predicates, Examples_module):-
+	register_language(Language_module, Renamed_predicates)
+	,register_examples(Examples_module).
+
+
+
+%!	register_language(+Language_module,+Language_predicates) is det.
+%
+%	Reexport Language_module renaming each predicate in the list
+%	of Language_predicates to avoid name clashes.
+%
+%	Language_predicates should be a list of terms:
+%	Predicate_indicator as New_predicate_name
+%
+%	Where Predicate_indicator is a name/arity term for a DCG rule:
+%	Name//Arity
+%
+%	The new name can be the same as the current name- this is a bit
+%	of a hack but the effect is that we can load a different module
+%	just by modifying and then consulting this file (rather than
+%	having to exit).
+%
+%	@SEE register_world.
+%
+register_language(Language_module, Renamed_predicates):-
+	reexport(Language_module, except(Renamed_predicates))
+	,(  language_module(_)
+	->  retract(language_module(_))
+	;   true
+	)
+	,assert(language_module(Language_module))
+	,! % Green cut
+	.
+
+
+
+%!	register_examples(+Examples_module) is det.
+%
+%	Reexport Examples_module renaming example_string/1 to
+%	example_string/1. Same hack as for register_language/2.
+%
+register_examples(Examples_module):-
+	reexport(Examples_module, except([example_string/1 as example_string]))
 	,(  examples_module(_)
 	->  retract(examples_module(_))
 	;   true
@@ -85,16 +161,50 @@ register_examples(Examples_module, Renamed_predicates):-
 	,! % Green cut
 	.
 
-:-register_examples(examples_simple
-%:-register_examples(examples_mtg_lexicalized
-%:-register_examples(examples_mtg
-%:-register_examples(examples_mtg_hand_simulation
+
+:-register_world(language_simple
+%:-register_world(language_mtg_lexicalized
+%:-register_world(language_mtg
+%:-register_world(language_mtg_hand_simulation
 		,[language//0 as language
 		 ,terminal//0 as terminal
 		 ,terminals//0 as terminals
 		 ,nonterminal//0 as nonterminal
 		 ,nonterminals//0 as nonterminals
-		 ,example_string/1 as example_string
-		 ] ).
+		 ]
+		,examples_simple).
+%		,examples_mtg_lexicalized).
+%		,examples_mtg).
+%		,examples_mtg_hand_simulation).
 
 
+assert_given_productions:-
+	rule_complexity(C)
+	,language_module(M)
+	,forall((phrase(M:nonterminal, [N])
+		 ,functor(T,N,C)
+		,clause(M:T,B)
+		)
+		%,assert(given_production(N,B))
+		,writeln(given_production(N,B))
+	       ).
+
+
+%	prolog_dcg(+Prolog,-DCG) is det.
+%
+%	Convert between a grammar rule in normal Prolog form and its
+%	equivalent DCG notation.
+%prolog_dcg(Body, DCG):-
+%	Body =.. [Funct|Args].
+
+production_term(Ns,Ts) --> tokens(Ns,Ts).
+
+tokens([],[]) --> [].
+tokens([N|Ns],Ts) --> nonterminal_term(N),tokens(Ns,Ts).
+tokens(Ns,[T|Ts]) --> terminals_list(T),tokens(Ns,Ts).
+
+nonterminal_term(N) --> [T], {functor(T,N,_), N \== =}.
+
+terminals_list(Ls) --> [_=Ts], {diff_list(Ts,Ls,[])}.
+
+% diff_list( [b,c,d|_G1670], D, []).
