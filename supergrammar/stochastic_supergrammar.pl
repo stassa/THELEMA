@@ -72,7 +72,8 @@ finalize_production((Name, Score --> Body), (New_name, Score --> Body)):-
 %	,writeln(renamed_rule:Name-as:New_name/Renamed_rule)
 	.
 
-
+rename_rule(_,_,_).
+add_new_production(_,_,_).
 
 
 %!	production_name(+Name) is det.
@@ -173,6 +174,9 @@ a_production(Name,Production,Constituents):-
 a_production(Name,Production,Constituents):-
 	derived_production(Name,Production,Constituents).
 
+
+given_production(_,_,_).
+derived_production(_,_,_).
 
 
 %!	empty_production(?Ypsilon) is nondet.

@@ -1,6 +1,7 @@
 :-module(configuration, [rule_complexity/1
 			,initial_score/1
 			,assert_given_productions/0
+			,prolog_dcg/2
 			]).
 
 /** <module> Configuration for supergrammar generate-and-test cycles.
@@ -205,28 +206,152 @@ assert_given_productions:-
 %	turn it into a tree.
 %
 prolog_dcg(Head:-true, (Name --> Ts_Diff)):-
-	! % Green cut
+	! % Green cut- avoids errors in next clause when the rule has only
+	% terminals on the right hand side.
 	,Head =.. [Name|[Ts|_]]
-	,diff_list(Ts, Ts_Diff, [])
-	.
+	,diff_list(Ts, Ts_Diff, []).
 prolog_dcg(Head:-Body, (Name --> Tokens_)):-
-	Head =.. [Name|_]
-	,tree_list(Body, Args)
-	,phrase(production_term(Ns,Ts),	Args)
-	,append(Ns, Ts, Tokens)
+	Head =.. [Name|[Head_args|_]]
+	,tree_list(Body, Body_args)
+	,(   \+ var(Head_args)
+	 ->  diff_list(Head_args,Head_args_,[])
+	   ,append([Head_args_],Body_args,Args)
+	;   Args = Body_args
+	)
+	,phrase(production_term(Tokens), Args)
 	,list_tree(Tokens, Tokens_).
 
-production_term(Ns,Ts) --> tokens(Ns,Ts).
 
-tokens([],[]) --> [].
-tokens([N|Ns],Ts) --> nonterminal_term(N),tokens(Ns,Ts).
-tokens(Ns,[T|Ts]) --> terminals_list(T),tokens(Ns,Ts).
+%!	production_term(Tokens)// is nondet.
+%
+%	A short DCG production grammar (as in, a grammar for Definite
+%	Clause Grammar productions). The single argument gathers a list
+%	of all tokens in the right-hand side of the rule.
+production_term(Ts) --> tokens(Ts).
 
-nonterminal_term(N) --> [T], {functor(T,N,_), N \== =}.
+tokens([]) --> [].
+tokens([T|Ts]) --> nonterminal_term(T),tokens(Ts).
+tokens([T|Ts]) --> terminals_list(T),tokens(Ts).
+
+nonterminal_term(N) --> [T], { T \= [_|_], functor(T,N,_), N \== =}.
 
 terminals_list(Ls) --> [_=Ts], {diff_list(Ts,Ls,[])}.
+terminals_list(Ts) --> [Ts], {is_list(Ts)}.
 
-% diff_list( [b,c,d|_G1670], D, []).
+
+:-begin_tests(prolog_dcg).
+
+test(prolog_dcg_single_terminal, []):-
+	DCG = (single_terminal --> [t])
+	,dcg_translate_rule(DCG, R)
+	,once(prolog_dcg(R, DCG)).
+
+test(prolog_dcg_terminals, []):-
+	DCG = (terminals --> [t_1,t_2,t_3])
+	,dcg_translate_rule(DCG, R)
+	,once(prolog_dcg(R, DCG)).
+
+test(prolog_dcg_single_nonterminal, []):-
+	DCG = (single_nonterminal --> n)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_nonterminals, []):-
+	DCG = (nonterminals --> n_1, n_2, n_3, n_4)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_single_terminal_single_nonterminal_, []):-
+	DCG = (terminal_nonterminal --> [t], n) % one-one
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_terminals_single_nonterminal, []):-
+	DCG = (terminals_nonterminal --> [t_1,t_2,t_3], n) % many - one
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_terminals_nonterminals, []):- % many - many
+	DCG = (terminals_nonterminals --> [t_1,t_2,t_3], n_1, n_2)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_single_terminal_nonterminals, []):- % one - many
+	DCG = (terminal_nonterminals --> [t], n_1, n_2)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_single_nonterminal_single_terminal, []):-
+	DCG = (nonterminal_terminal --> n, [t]) % one - one
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_nonterminals_single_terminal, []):- % many - one
+	DCG = (nonterminal_terminal --> n_1, n_2, n_3, n_4, [t])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_nonterminals_single_terminal, []):- % many - many
+	DCG = (nonterminal_terminal --> n_1, n_2, n_3, [t_1,t_2,t_3,t_4])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_nonterminals_single_terminal, []):- % one - many
+	DCG = (nonterminal_terminal --> n, [t_1,t_2,t_3])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+% These are kinda random- sure there's a good way to generate series of
+% examples.
+
+test(prolog_dcg_mixed_1, []):-
+	DCG = (nonterminal_terminal --> n_1, [t_1,t_2], n_2, n_3, [t_3])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_2, []):-
+	DCG = (nonterminal_terminal --> n_1, n_2,[t_1,t_2],n_3, n_4,[t_3])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_3, []):-
+	DCG = (nonterminal_terminal --> n_1, [t_1], n_2, [t_2,t_3], n_3)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_4, []):-
+	DCG = (nonterminal_terminal -->
+	      n_1,n_2,[t_1],n_3,n_4,n_5,[t_2,t_3,t_4],n_6,n_7)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_5, []):-
+	DCG = (nonterminal_terminal -->
+	      [t_1,t_2,t_3],n_1,n_2,n_3,[t_4,t_5,t_6],n_4,n_5)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_6, []):-
+	DCG = (nonterminal_terminal -->
+	      [t_1],n_1,n_2,n_3,[t_1,t_2,t_3],n_4,n_5,[t_4,t_5])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_7, []):-
+	DCG = (nonterminal_terminal --> [t_1],n_1,[t_2],n_2,[t_3])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_8, []):-
+	DCG = (nonterminal_terminal --> [t_1],n_1,n_2,[t_2,t_3],n_3,[t_4])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+:-end_tests(prolog_dcg).
+
+
+
+
 
 
 
