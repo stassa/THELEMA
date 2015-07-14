@@ -65,7 +65,9 @@ the examples module from an xml or other config file.
 
  */
 
-:-use_module(utilities, [diff_list/3]).
+:-use_module(utilities, [diff_list/3
+			,tree_list/2
+			,list_tree/2]).
 
 %!	examples_module(?Examples_module).
 %
@@ -194,8 +196,25 @@ assert_given_productions:-
 %
 %	Convert between a grammar rule in normal Prolog form and its
 %	equivalent DCG notation.
-%prolog_dcg(Body, DCG):-
-%	Body =.. [Funct|Args].
+%
+%	@TODO: this can be generalised a bit perhaps, to allow for
+%	productions that don't conform to the
+%	nonterminals-then-terminals rule. For example, instead of
+%	getting two lists out of production_term//2, get a single list,
+%	skip the append (in the second clause of prolog_dcg/2) and just
+%	turn it into a tree.
+%
+prolog_dcg(Head:-true, (Name --> Ts_Diff)):-
+	! % Green cut
+	,Head =.. [Name|[Ts|_]]
+	,diff_list(Ts, Ts_Diff, [])
+	.
+prolog_dcg(Head:-Body, (Name --> Tokens_)):-
+	Head =.. [Name|_]
+	,tree_list(Body, Args)
+	,phrase(production_term(Ns,Ts),	Args)
+	,append(Ns, Ts, Tokens)
+	,list_tree(Tokens, Tokens_).
 
 production_term(Ns,Ts) --> tokens(Ns,Ts).
 
@@ -208,3 +227,10 @@ nonterminal_term(N) --> [T], {functor(T,N,_), N \== =}.
 terminals_list(Ls) --> [_=Ts], {diff_list(Ts,Ls,[])}.
 
 % diff_list( [b,c,d|_G1670], D, []).
+
+
+
+
+
+
+
