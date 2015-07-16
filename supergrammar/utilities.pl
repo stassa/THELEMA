@@ -19,21 +19,50 @@
 %	Convert between a grammar rule in normal Prolog form and its
 %	equivalent DCG notation.
 %
-prolog_dcg(Head:-true, (Name --> Ts_Diff)):-
+prolog_dcg(Head:-true, DCG):-
 	! % Green cut- avoids errors in next clause when the rule has only
 	% terminals on the right hand side.
-	,Head =.. [Name|[Ts|_]]
-	,diff_list(Ts, Ts_Diff, []).
-prolog_dcg(Head:-Body, (Name --> Tokens_)):-
+	,Head =.. [Name|[Ts|P]]
+	,prolog_dcg(Name, [], Ts, P, DCG).
+
+prolog_dcg(Head:-Body, Prod):-
+	Head =.. [Name|[Head_args|Rest]]
+	,tree_list(Body, Body_args)
+	,prolog_dcg(Name,Body_args, Head_args, Rest, Prod).
+
+prolog_dcg_(Head:-Body, (Name --> Tokens_)):-
 	Head =.. [Name|[Head_args|_]]
 	,tree_list(Body, Body_args)
-	,(   \+ var(Head_args)
+	,(   \+ var(Head_args) % First token is a list of terminals
 	 ->  diff_list(Head_args,Head_args_,[])
-	   ,append([Head_args_],Body_args,Args)
-	;   Args = Body_args
+	    ,append([Head_args_],Body_args,Args)
+	;    Args = Body_args
 	)
 	,phrase(production_term(Tokens), Args)
 	,list_tree(Tokens, Tokens_).
+
+
+prolog_dcg(Name, Body_args, [], [[]], Name --> Body):-
+	phrase(production_term(Tokens), Body_args)
+	,list_tree(Tokens, Body).
+
+prolog_dcg(Name, [], Head_args, [[]], Name --> Head_diff):-
+	diff_list(Head_args, Head_diff, []).
+
+prolog_dcg(Name, [], Head_args, [[P|T]], (Name, [P|T] --> Head_diff)):-
+	% []'ing the diff-var in Head_args also []'s it in [P|T] (since they share it)
+	diff_list(Head_args, Head_diff, []).
+
+/*
+You are here and the tests are passing, but it's going to be a mindfuck
+:D
+	*/
+
+prolog_dcg(Name, Body_args, Head_args, [[]], Name --> Body):-
+	diff_list(Head_args,Head_args_,[])
+	,append([Head_args_],Body_args,Args)
+	,phrase(production_term(Tokens), Args)
+	,list_tree(Tokens, Body).
 
 
 %!	production_term(-Tokens)// is nondet.
@@ -84,13 +113,28 @@ test(prolog_dcg_single_terminal, []):-
 	,dcg_translate_rule(DCG, R)
 	,once(prolog_dcg(R, DCG)).
 
+test(prolog_dcg_single_terminal_with_pushback, []):-
+	DCG = (single_terminal, [p] --> [t])
+	,dcg_translate_rule(DCG, R)
+	,once(prolog_dcg(R, DCG)).
+
 test(prolog_dcg_terminals, []):-
 	DCG = (terminals --> [t_1,t_2,t_3])
 	,dcg_translate_rule(DCG, R)
 	,once(prolog_dcg(R, DCG)).
 
+test(prolog_dcg_terminals_with_pushback, []):-
+	DCG = (terminals, [p] --> [t_1,t_2,t_3])
+	,dcg_translate_rule(DCG, R)
+	,once(prolog_dcg(R, DCG)).
+
 test(prolog_dcg_single_nonterminal, []):-
 	DCG = (single_nonterminal --> n)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_single_nonterminal_with_pushback, []):-
+	DCG = (single_nonterminal, [p] --> n)
 	,dcg_translate_rule(DCG, Rule)
 	,once(prolog_dcg(Rule,DCG)).
 
