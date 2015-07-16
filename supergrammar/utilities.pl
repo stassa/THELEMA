@@ -1,4 +1,5 @@
-﻿:-module(utilities, [all_slices_of/2
+﻿:-module(utilities, [prolog_dcg/2
+		    ,all_slices_of/2
 		    ,diff_list/3
 		    ,diff_append/3
 		    ,pdcg_parses/3
@@ -11,6 +12,181 @@
 		    ,permute/2]).
 /** <module> Utility predicates used in supergrammar module.
 */
+
+
+%	prolog_dcg(+Prolog,-DCG) is det.
+%
+%	Convert between a grammar rule in normal Prolog form and its
+%	equivalent DCG notation.
+%
+prolog_dcg(Head:-true, (Name --> Ts_Diff)):-
+	! % Green cut- avoids errors in next clause when the rule has only
+	% terminals on the right hand side.
+	,Head =.. [Name|[Ts|_]]
+	,diff_list(Ts, Ts_Diff, []).
+prolog_dcg(Head:-Body, (Name --> Tokens_)):-
+	Head =.. [Name|[Head_args|_]]
+	,tree_list(Body, Body_args)
+	,(   \+ var(Head_args)
+	 ->  diff_list(Head_args,Head_args_,[])
+	   ,append([Head_args_],Body_args,Args)
+	;   Args = Body_args
+	)
+	,phrase(production_term(Tokens), Args)
+	,list_tree(Tokens, Tokens_).
+
+
+%!	production_term(-Tokens)// is nondet.
+%
+%	A short DCG production grammar (as in, a grammar for Definite
+%	Clause Grammar productions). The single argument gathers a list
+%	of all tokens in the right-hand side of the rule.
+production_term(Ts) --> tokens(Ts).
+
+%!	tokens(-Tokens)// is nondet.
+%
+%	The list of Tokens in the input rule.
+tokens([]) --> [].
+tokens([T|Ts]) --> nonterminal_term(T),tokens(Ts).
+tokens([T|Ts]) --> terminals_list(T),tokens(Ts).
+
+%!	nonterminal_term(-Nonterminals)// is nondet.
+%
+%	A Nonterminal token in the right-hand side of the input rule.
+nonterminal_term(N) --> [T], { T \= [_|_], functor(T,N,_), N \== =}.
+
+%!	terminals_list(-Terminals)// is nondet.
+%
+%	A list of (one or more) terminals in the right-hand side of the
+%	input rule.
+%
+%	There's a bit that probably looks arcane in there; this one:
+%	==
+%	[_=Ts]
+%	==
+%
+%	That's there because when a list of terminals follows any number
+%	of tokens in the right-hand side of a rule it's unified with the
+%	difference-variable of the last token. The unification is done
+%	using =\2 and we want to get rid of it to only keep the meat and
+%	potatoes, ie the actual list of terminals.
+%
+%	Hence, that arcane bit.
+%
+terminals_list(Ls) --> [_=Ts], {diff_list(Ts,Ls,[])}.
+terminals_list(Ts) --> [Ts], {is_list(Ts)}.
+
+
+:-begin_tests(prolog_dcg).
+
+test(prolog_dcg_single_terminal, []):-
+	DCG = (single_terminal --> [t])
+	,dcg_translate_rule(DCG, R)
+	,once(prolog_dcg(R, DCG)).
+
+test(prolog_dcg_terminals, []):-
+	DCG = (terminals --> [t_1,t_2,t_3])
+	,dcg_translate_rule(DCG, R)
+	,once(prolog_dcg(R, DCG)).
+
+test(prolog_dcg_single_nonterminal, []):-
+	DCG = (single_nonterminal --> n)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_nonterminals, []):-
+	DCG = (nonterminals --> n_1, n_2, n_3, n_4)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_single_terminal_single_nonterminal_, []):-
+	DCG = (terminal_nonterminal --> [t], n) % one-one
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_terminals_single_nonterminal, []):-
+	DCG = (terminals_nonterminal --> [t_1,t_2,t_3], n) % many - one
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_terminals_nonterminals, []):- % many - many
+	DCG = (terminals_nonterminals --> [t_1,t_2,t_3], n_1, n_2)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_single_terminal_nonterminals, []):- % one - many
+	DCG = (terminal_nonterminals --> [t], n_1, n_2)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_single_nonterminal_single_terminal, []):-
+	DCG = (nonterminal_terminal --> n, [t]) % one - one
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_nonterminals_single_terminal, []):- % many - one
+	DCG = (nonterminal_terminal --> n_1, n_2, n_3, n_4, [t])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_nonterminals_single_terminal, []):- % many - many
+	DCG = (nonterminal_terminal --> n_1, n_2, n_3, [t_1,t_2,t_3,t_4])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_nonterminals_single_terminal, []):- % one - many
+	DCG = (nonterminal_terminal --> n, [t_1,t_2,t_3])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+% These are kinda random- sure there's a good way to generate series of
+% examples.
+
+test(prolog_dcg_mixed_1, []):-
+	DCG = (nonterminal_terminal --> n_1, [t_1,t_2], n_2, n_3, [t_3])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_2, []):-
+	DCG = (nonterminal_terminal --> n_1, n_2,[t_1,t_2],n_3, n_4,[t_3])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_3, []):-
+	DCG = (nonterminal_terminal --> n_1, [t_1], n_2, [t_2,t_3], n_3)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_4, []):-
+	DCG = (nonterminal_terminal -->
+	      n_1,n_2,[t_1],n_3,n_4,n_5,[t_2,t_3,t_4],n_6,n_7)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_5, []):-
+	DCG = (nonterminal_terminal -->
+	      [t_1,t_2,t_3],n_1,n_2,n_3,[t_4,t_5,t_6],n_4,n_5)
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_6, []):-
+	DCG = (nonterminal_terminal -->
+	      [t_1],n_1,n_2,n_3,[t_1,t_2,t_3],n_4,n_5,[t_4,t_5])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_7, []):-
+	DCG = (nonterminal_terminal --> [t_1],n_1,[t_2],n_2,[t_3])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+test(prolog_dcg_mixed_8, []):-
+	DCG = (nonterminal_terminal --> [t_1],n_1,n_2,[t_2,t_3],n_3,[t_4])
+	,dcg_translate_rule(DCG, Rule)
+	,once(prolog_dcg(Rule,DCG)).
+
+:-end_tests(prolog_dcg).
+
 
 
 %!	all_slices_of(+List,-Slices) is det.
@@ -439,6 +615,140 @@ rule_name(F):-
 	,atomic_list_concat(H,F).
 
 
+%!	generate_alphanumeric(-New,+Options) is nondet.
+%
+%	Generate a list of alphanumeric characters. Options determine
+%	the type of characters to produce and whether numbers should be
+%	generated as atoms or numbers.
+%
+%	With no options (Options = []) a list of (not too) randomly
+%	selected upper- and lower-case digits, followed by exactly one
+%	number is generated with a starting length of 2 increasing on
+%	backtracking.
+%
+%	With option generate(+What) and argument 'alnums' this generates
+%	a mix of upper- or lower-case letters and numbers from 0 to 9.
+%	With 'alphas' this generates a list of alphanumeric characters.
+%	alpha generates a single alphabetic character, generating more
+%	on backtracking; nums generates a list of numbers from 0 to 9
+%	and num generates a single number from 0 to 9 and more on
+%	backtracking.
+%
+%	Options:
+%	* generate(+What), what to generate; one of: [alnums, alphas,
+%	alpha, nums, num]. Default is alnums.
+%	* case(+Case), the case of alphabetic characters to generate;
+%	one of: [upper,lower,mixed]. Default is lower.
+%	* number_format(+Format), one of: [atom,number] whether to
+%	generate numbers as atoms or numbers. Default is atom.
+%	* length(+Length:number), the length of the list to generate;
+%	this only makes sense if option generate is given with
+%	arguments from the list [alphas,nums,alnums]. The default is to
+%	begin generating a single character and increasing the length of
+%	the output as backtracking continues.
+%       * scramble(+Bool), whether to generate random
+%	permutations or alphabetically orderd strings; default is true.
+%	Alphabetically ordered strings tend to be long string sof 'a'
+%	followed by a single other letter or number.
+%
+generate_alphanumeric(Options,List):-
+	must_be(var, List)
+	% Handle length first to avoid blocking on length/2
+	,(   selectchk(length(L), Options, Processed_length)
+	 ->  (length(Ls, L)
+	     ->	  true
+	     ;	  !, fail
+	     )
+	 ;   Ls = [_,_] % default to one letter followed by one number.
+	     ,Processed_length = Options
+	)
+	,(   selectchk(generate(What), Processed_length, Processed_generate)
+	->  generate_alphanumeric(What, Ls, Processed_generate)
+	;   generate_alphanumeric(alnums, Ls, Processed_length)
+	    ,Processed_generate = Processed_length
+	)
+	,(   \+ selectchk(scramble(false), Processed_generate, _)
+	->   random_permutation(Ls, List)
+	 ;   List = Ls
+	).
+
+generate_alphanumeric(alphas,As,Options):-
+	(   memberchk(case(Case), Options)
+	->  phrase(letters(Case),As)
+	;   phrase(letters(lower), As)
+	).
+
+% Hey- this is the same as generate(alphas) + length(1). It's nice to
+% have separate clauses to clarify stuff but think about making them
+% one.
+generate_alphanumeric(alpha,A,Options):-
+	(   memberchk(case(Case), Options)
+	->  phrase(letter(Case), A)
+	;   phrase(letter(lower), A)
+	).
+
+generate_alphanumeric(alnums,An,Options):-
+	(   memberchk(case(Case), Options)
+	->   true
+	;   Case = lower
+	)
+	,(   memberchk(number_format(Format), Options)
+	->  true
+	;   Format = atom
+	)
+	,phrase(letters_number(Case, Format), An).
+
+generate_alphanumeric(nums,Ns,Options):-
+	(   memberchk(number_format(Format), Options)
+	->  phrase(numbers(Format), Ns)
+	;   phrase(numbers(atom), Ns)
+	).
+
+% See clause for generate(alpha); this is the same as generate(nums) +
+% length(1).
+generate_alphanumeric(num,N,Options):-
+	(   memberchk(number_format(F), Options)
+	->  phrase(number(F), N)
+	;   phrase(number(atom), N)
+	).
+
+
+%!	letters_number// is nondet.
+%
+%	A list of one or more lower or upper case letters followed by
+%	exactly one number. Use as the name of a nonterminal in the
+%	grammar.
+letters_number --> letters(_), number(_).
+
+letters_number(Case,Format) --> letters(Case), number(Format).
+
+%!	letters// is nondet.
+%
+%	One or more upper- or lower- case letters.
+letters(Case) --> [L], {phrase(letter(Case), [L])}.
+letters(Case) --> letter(Case), letters(Case).
+
+%!	letter// is nondet.
+%
+%	Exactly one upper- or lower-case letter.
+letter(mixed) --> letter(lower) | letter(upper).
+letter(lower) --> [a]|[b]|[c]|[d]|[e]|[f]|[g]|[h]|[i]|[j]|[k]|[l]|[m]|[n]|[o]|[p]|[q]|[r]|[s]|[t]|[u]|[v]|[w]|[x]|[y]|[z].
+letter(upper) --> ['A']|['B']|['C']|['D']|['E']|['F']|['G']|['H']|['I']|['J']|['K']|['L']|['M']|['N']|['O']|['P']|['Q']|['R']|['S']|['T']|['U']|['V']|['W']|['X']|['Y']|['Z'].
+
+%!	numbers// is nondet.
+%
+%	One or more single-digit numbers.
+numbers(Format) --> [N], {phrase(number(Format), [N])}.
+numbers(Format) --> number(Format), numbers(Format).
+
+%!	number// is nondet.
+%
+%	Exactly one number. Note this actually gets atomic forms of
+%	numbers to avoid issues with atom-code conversion.
+number(atom) --> ['0']|['1']|['2']|['3']|['4']|['5']|['6']|['7']|['8']|['9'].
+number(number) --> [0]|[1]|[2]|[3]|[4]|[5]|[6]|[7]|[8]|[9].
+
+
 :-begin_tests(generate_alphanumeric).
 
 /* Tests for all-default options */
@@ -648,139 +958,6 @@ is_set_of(Ls, L, Character_type):-
 	,forall(member(S,Ls),char_type(S, Character_type)).
 
 :-end_tests(generate_alphanumeric).
-
-%!	generate_alphanumeric(-New,+Options) is nondet.
-%
-%	Generate a list of alphanumeric characters. Options determine
-%	the type of characters to produce and whether numbers should be
-%	generated as atoms or numbers.
-%
-%	With no options (Options = []) a list of (not too) randomly
-%	selected upper- and lower-case digits, followed by exactly one
-%	number is generated with a starting length of 2 increasing on
-%	backtracking.
-%
-%	With option generate(+What) and argument 'alnums' this generates
-%	a mix of upper- or lower-case letters and numbers from 0 to 9.
-%	With 'alphas' this generates a list of alphanumeric characters.
-%	alpha generates a single alphabetic character, generating more
-%	on backtracking; nums generates a list of numbers from 0 to 9
-%	and num generates a single number from 0 to 9 and more on
-%	backtracking.
-%
-%	Options:
-%	* generate(+What), what to generate; one of: [alnums, alphas,
-%	alpha, nums, num]. Default is alnums.
-%	* case(+Case), the case of alphabetic characters to generate;
-%	one of: [upper,lower,mixed]. Default is lower.
-%	* number_format(+Format), one of: [atom,number] whether to
-%	generate numbers as atoms or numbers. Default is atom.
-%	* length(+Length:number), the length of the list to generate;
-%	this only makes sense if option generate is given with
-%	arguments from the list [alphas,nums,alnums]. The default is to
-%	begin generating a single character and increasing the length of
-%	the output as backtracking continues.
-%       * scramble(+Bool), whether to generate random
-%	permutations or alphabetically orderd strings; default is true.
-%	Alphabetically ordered strings tend to be long string sof 'a'
-%	followed by a single other letter or number.
-%
-generate_alphanumeric(Options,List):-
-	must_be(var, List)
-	% Handle length first to avoid blocking on length/2
-	,(   selectchk(length(L), Options, Processed_length)
-	 ->  (length(Ls, L)
-	     ->	  true
-	     ;	  !, fail
-	     )
-	 ;   Ls = [_,_] % default to one letter followed by one number.
-	     ,Processed_length = Options
-	)
-	,(   selectchk(generate(What), Processed_length, Processed_generate)
-	->  generate_alphanumeric(What, Ls, Processed_generate)
-	;   generate_alphanumeric(alnums, Ls, Processed_length)
-	    ,Processed_generate = Processed_length
-	)
-	,(   \+ selectchk(scramble(false), Processed_generate, _)
-	->   random_permutation(Ls, List)
-	 ;   List = Ls
-	).
-
-generate_alphanumeric(alphas,As,Options):-
-	(   memberchk(case(Case), Options)
-	->  phrase(letters(Case),As)
-	;   phrase(letters(lower), As)
-	).
-
-% Hey- this is the same as generate(alphas) + length(1). It's nice to
-% have separate clauses to clarify stuff but think about making them
-% one.
-generate_alphanumeric(alpha,A,Options):-
-	(   memberchk(case(Case), Options)
-	->  phrase(letter(Case), A)
-	;   phrase(letter(lower), A)
-	).
-
-generate_alphanumeric(alnums,An,Options):-
-	(   memberchk(case(Case), Options)
-	->   true
-	;   Case = lower
-	)
-	,(   memberchk(number_format(Format), Options)
-	->  true
-	;   Format = atom
-	)
-	,phrase(letters_number(Case, Format), An).
-
-generate_alphanumeric(nums,Ns,Options):-
-	(   memberchk(number_format(Format), Options)
-	->  phrase(numbers(Format), Ns)
-	;   phrase(numbers(atom), Ns)
-	).
-
-% See clause for generate(alpha); this is the same as generate(nums) +
-% length(1).
-generate_alphanumeric(num,N,Options):-
-	(   memberchk(number_format(F), Options)
-	->  phrase(number(F), N)
-	;   phrase(number(atom), N)
-	).
-
-
-%!	letters_number// is nondet.
-%
-%	A list of one or more lower or upper case letters followed by
-%	exactly one number. Use as the name of a nonterminal in the
-%	grammar.
-letters_number --> letters(_), number(_).
-
-letters_number(Case,Format) --> letters(Case), number(Format).
-
-%!	letters// is nondet.
-%
-%	One or more upper- or lower- case letters.
-letters(Case) --> [L], {phrase(letter(Case), [L])}.
-letters(Case) --> letter(Case), letters(Case).
-
-%!	letter// is nondet.
-%
-%	Exactly one upper- or lower-case letter.
-letter(mixed) --> letter(lower) | letter(upper).
-letter(lower) --> [a]|[b]|[c]|[d]|[e]|[f]|[g]|[h]|[i]|[j]|[k]|[l]|[m]|[n]|[o]|[p]|[q]|[r]|[s]|[t]|[u]|[v]|[w]|[x]|[y]|[z].
-letter(upper) --> ['A']|['B']|['C']|['D']|['E']|['F']|['G']|['H']|['I']|['J']|['K']|['L']|['M']|['N']|['O']|['P']|['Q']|['R']|['S']|['T']|['U']|['V']|['W']|['X']|['Y']|['Z'].
-
-%!	numbers// is nondet.
-%
-%	One or more single-digit numbers.
-numbers(Format) --> [N], {phrase(number(Format), [N])}.
-numbers(Format) --> number(Format), numbers(Format).
-
-%!	number// is nondet.
-%
-%	Exactly one number. Note this actually gets atomic forms of
-%	numbers to avoid issues with atom-code conversion.
-number(atom) --> ['0']|['1']|['2']|['3']|['4']|['5']|['6']|['7']|['8']|['9'].
-number(number) --> [0]|[1]|[2]|[3]|[4]|[5]|[6]|[7]|[8]|[9].
 
 
 %!	permute(?Xs, ?Ys) is nondet.

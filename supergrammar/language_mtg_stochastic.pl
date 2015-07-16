@@ -1,4 +1,4 @@
-:-module(examples_mtg_stochastic, [example//2]).
+:-module(language_mtg_stochastic, [example//2]).
 
 example(destroy,T), [0.5] --> [destroy], target(T).
 example(exile,T), [0.5] --> [exile], target(T).
