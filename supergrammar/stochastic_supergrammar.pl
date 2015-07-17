@@ -197,8 +197,26 @@ all_tokens(Example, Tokens):-
 grammar(Start,Nonterminals,Terminals,Productions):-
 	once(phrase(configuration:start, [Start]))
 	,findall(N, phrase(configuration:nonterminal, [N]), Nonterminals)
-	,findall(T,phrase(configuration:terminal, [T]), Terminals)
+	% Note the twice-bracketed terminal:
+	,findall(T,phrase(configuration:terminal, [[T]]), Terminals)
 	,findall(P,given_production(_N,P),Productions).
+
+
+%!	grammar_s(Start,Nonterminals,Terminals,Productions) is det.
+%
+%	Ordered-set and difference-list version of grammar/4, where each
+%	of Nonterminals,Terminals and Productions is an ordered set (as
+%	in library(ordsets)) with a Tail-variable appended to its end
+%	with -/2.
+grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
+	once(phrase(configuration:start, [Start]))
+	,findall(N, phrase(configuration:nonterminal, [N]), Ns)
+	,list_to_diff_ordset(Ns, Nonterminals, Ns_t)
+	,findall(T,phrase(configuration:terminal, [[T]]), Ts)
+	,list_to_diff_ordset(Ts, Terminals, Ts_t)
+	,findall(P,given_production(_N,P),Ps)
+	% Yes, productions are also sortable.
+	,list_to_diff_ordset(Ps, Productions, Ps_t).
 
 
 
@@ -206,12 +224,24 @@ grammar(Start,Nonterminals,Terminals,Productions):-
 %
 %	Update the current grammar with a newly learned production.
 %
+updated_grammar((Name --> Tokens), [S,Ns-Ns_t,Ts-Ts_t,Ps], [S,Ns1-Ns_t1,Ts1,Ts_t1,[(Name --> Tokens)|Ps]]):-
+	tree_list(Tokens, Tokens_list)
+	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
+	,diff_list(P_Ns, P_Ns_diff,[])
+	,diff_append(Ns-Ns_t, P_Ns_diff-[], Ns_bag-[])
+	,list_to_diff_ordset(Ns_bag, Ns1, Ns_t1)
+	,[Ts_unbracketed] = [P_Ts]
+	,diff_append(Ts-Ts_t, Ts_unbracketed-[], Ts_bag-[])
+	,list_to_diff_ordset(Ts_bag, Ts1, Ts_t1)
+	.
+
+/*
+
 updated_grammar((Name --> Tokens), [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
 	tree_list(Tokens, Tokens_list)
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
 	,diff_list(Ns, Ns_diff, Ns_tail)
-	,flatten(Ts, Ts_flat)
-	,diff_list(Ts_flat, Ts_diff, Ts_tail)
+	,diff_list(Ts, Ts_diff, Ts_tail)
 	% This is going to be rather more tricky than a single append, diff or not.
 	% We want the _set_ of all terminals and the _set_ of nonterminals. No
 	% duplicates allowed _and_ each terminal in the list must be an atom, not like
@@ -222,9 +252,10 @@ updated_grammar((Name --> Tokens), [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|P
 	% Finally, this is going to run in the main loop of the algorithm, albeit less often
 	% than other stuff. It can't be all appends everywhere, it'll drag everything down.
 	,diff_append(Ns_diff-Ns_tail, P_Ns-[], Ns_-[])
-	,diff_append(Ts_diff-Ts_tail, P_Ts-[], Ts_-[])
+	,[Ts_unbracketed] = [P_Ts]
+	,diff_append(Ts_diff-Ts_tail, Ts_unbracketed-[], Ts_-[])
 	.
-
+*/
 
 
 %!	production_constituents(?Name,?Production,?Score,?Nonterminals,?Terminals) is semidet.

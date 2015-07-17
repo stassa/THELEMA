@@ -1,5 +1,6 @@
 ﻿:-module(utilities, [prolog_dcg/2
 		    ,all_slices_of/2
+		    ,list_to_diff_ordset/3
 		    ,diff_list/3
 		    ,diff_append/3
 		    ,pdcg_parses/3
@@ -329,6 +330,17 @@ slice_of(List, Length, Slice):-
 slice_off(_, Slice, Slice).
 slice_off([L|Ls], Temp, Acc):-
 	slice_off(Ls, [L|Temp], Acc).
+
+
+
+%!	list_to_diff_ordset(+List,-Set,-Tail) is det.
+%
+%	Sort List by the standard order of terms and remove duplicates,
+%	producting Set, a difference-list with Tail at its end.
+%
+list_to_diff_ordset(List, Diff_set, Tail):-
+	sort(List, Set)
+	,diff_list(Set, Diff_set, Tail).
 
 
 
