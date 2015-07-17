@@ -1,11 +1,6 @@
 ﻿:-module(stochastic_supergrammar, [generate_and_test/0
-				  %,empty_production_rule/2
-				  %,next_token/2
 				  ,augmented_production/3
-				  %,clear_temporary_productions/0
 				  ]).
-
-%:-add_import_module(stochastic_supergrammar, supergrammar, start).
 
 :-use_module(utilities).
 :-use_module(configuration).
@@ -30,6 +25,7 @@
 :- dynamic
 	derived_production/3.
 
+
 %!	termporary_production(?Name) is det.
 %
 %	Name of the temporary production term used in
@@ -43,6 +39,9 @@ temporary_production(production_scoring).
 %	A list of all known productions in a grammar of the target
 %	language.
 %
+%	Called by assert_given_productions/0 so asserted here to allow
+%	use as directive.
+%
 given_productions(Ps):-
 	configuration:rule_complexity(C)
 	,configuration:language_module(M)
@@ -53,6 +52,17 @@ given_productions(Ps):-
 		 ,clause(M:T,B)
 		 ,once(prolog_dcg(T:-B, P)))
 	       ,Ps).
+
+
+
+%!	retract_given_productions is det.
+%
+%	Clear all given_production/2 terms from the database.
+%	Declared here to make it available to
+%	assert_given_productions/0.
+retract_given_productions:-
+	retractall(given_production(_,_)).
+
 
 
 %!	assert_given_productions is det.
@@ -67,11 +77,13 @@ given_productions(Ps):-
 %	that language.
 %
 assert_given_productions:-
-	given_productions(Ps)
+	retract_given_productions % cleanup first.
+	,given_productions(Ps)
 	,forall(member((N --> B), Ps),
-		writeln(given_production(N, (N --> B)) ) ).
+		assert(given_production(N, (N --> B)) ) ).
 
 :-assert_given_productions.
+
 
 
 
@@ -221,8 +233,6 @@ a_production(Name,Production,Constituents):-
 a_production(Name,Production,Constituents):-
 	derived_production(Name,Production,Constituents).
 
-
-given_production(_,_,_).
 derived_production(_,_,_).
 
 
