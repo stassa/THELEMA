@@ -1,4 +1,5 @@
 :-module(language_mtg_lexicalized, [language//0
+				   ,start//0
 				   ,terminal//0
 				   ,terminals//0
 				   ,nonterminal//0
@@ -21,6 +22,10 @@
 %	A high-level specification of a language type.
 language --> nonterminal(nn(cardname)), nonterminal(ab(spell_ability)).
 language --> nonterminal(ab(spell_ability)).
+
+
+start --> [ability].
+
 
 /*
 lexical categories:

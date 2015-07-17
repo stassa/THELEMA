@@ -4,12 +4,10 @@
 			  ,terminals//0
 			  ,nonterminal//0
 			  ,nonterminals//0
-			  ,g1//0
-			  ,g2//0
-			  ,g3//0
 			  ]).
 
 :-dynamic nonterminal//0.
+:-dynamic terminal//0.
 
 % Or: production --> ... etc?
 language --> [].

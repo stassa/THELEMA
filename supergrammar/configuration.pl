@@ -74,6 +74,14 @@ the examples module from an xml or other config file.
 
 :- dynamic language_module/1.
 
+/*
+@TODO: Really really need to decide where given_production/2 and
+derived_production/2 are to be asserted: config module? grammar
+induction module? language module? That should also probably declare (or
+call from utilities) assert_given_productions/0.
+
+*/
+
 %!	given_production(?Name,?Production,?Arguments) is  det.
 %
 %	Dynamic term used to keep track of given productions.
@@ -167,6 +175,7 @@ register_examples(Examples_module):-
 %:-register_world(language_mtg
 %:-register_world(language_mtg_hand_simulation
 		,[language//0 as language
+		 ,start//0 as start
 		 ,terminal//0 as terminal
 		 ,terminals//0 as terminals
 		 ,nonterminal//0 as nonterminal
@@ -192,19 +201,18 @@ register_examples(Examples_module):-
 assert_given_productions:-
 	rule_complexity(C)
 	,language_module(M)
+	% Note this will only get terms with arity //0.
 	,forall((phrase(M:nonterminal, [N])
 		 ,functor(T,N,C)
 		,clause(M:T,B)
 		)
-		%,assert(given_production(N,B))
 	       ,(
 		 prolog_dcg(T:-B, P)
 		,writeln(given_production(N,P))
 		  )
 	       ).
 
-
-
+:- assert_given_productions.
 
 
 

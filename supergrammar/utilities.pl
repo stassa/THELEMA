@@ -22,30 +22,51 @@
 prolog_dcg(Head:-true, DCG):-
 	! % Green cut- avoids errors in next clause when the rule has only
 	% terminals on the right hand side.
-	,Head =.. [Name|[Ts|P]]
-	,prolog_dcg(Name, [], Ts, P, DCG).
+	,Head =.. [Name|[Head_args|Rest_of_sentence]]
+	,prolog_dcg(Name, [], Head_args, Rest_of_sentence, DCG).
 
-prolog_dcg(Head:-Body, Prod):-
-	Head =.. [Name|[Head_args|Rest]]
+prolog_dcg(Head:-Body, DCG):-
+	Head =.. [Name|[Head_args|Rest_of_sentence]]
 	,tree_list(Body, Body_args)
-	,prolog_dcg(Name,Body_args, Head_args, Rest, Prod).
-
-prolog_dcg_(Head:-Body, (Name --> Tokens_)):-
-	Head =.. [Name|[Head_args|_]]
-	,tree_list(Body, Body_args)
-	,(   \+ var(Head_args) % First token is a list of terminals
-	 ->  diff_list(Head_args,Head_args_,[])
-	    ,append([Head_args_],Body_args,Args)
-	;    Args = Body_args
-	)
-	,phrase(production_term(Tokens), Args)
-	,list_tree(Tokens, Tokens_).
+	,prolog_dcg(Name, Body_args, Head_args, Rest_of_sentence, DCG).
 
 
-prolog_dcg(Name, Body_args, [], [[]], Name --> Body):-
-	phrase(production_term(Tokens), Body_args)
-	,list_tree(Tokens, Body).
-
+%!	prolog_dcg(+Name,+Body_args,+Head_args,+Pushback,-DCG) is nondet.
+%
+%	Business end of prolog_dcg/2. Clauses handle different
+%	combinations of head and body arguments of the ordinary Prolog
+%	term we are converting to DCG notation, also taking in mind the
+%	possibility of the body containing a pushback list that might
+%	superficially look like a list of terminals.
+%
+%	@NOTES_TO_SELF:
+%
+%	Meh. Never mind, this will not work with rules with arity 1 or
+%	more. Need to rethink.
+%
+%	The Tricky Bit™ is when we have a rule where there is either
+%	only a list of terminals or only a pushback list. In both of
+%	these cases, the ordinary Prolog version of the rule has a list
+%	in its body- so some disambiguation is in order.
+%
+%	To disambiguate we need to look at the last argument of the head
+%	of the Prolog rule, that holds a reference to the rest of the
+%	sentence, after a phrase consumed by the rule. If the solitary
+%	list is a list of terminals, that argument is bound to the tail
+%	of the list, since that is where the rest of the sentence
+%	begins. If the solitary list is a pushback list, that argument
+%	is instead bound to the list itself, since that list is ("pushed
+%	back into") the rest of the sentence.
+%
+%	To handle all this, prolog_dcg/2 splits the Prolog version of
+%	the rule along its head and body arguments to identify the
+%	argument bound to the rest of the sentence, then passes these to
+%	prolog_dcg/4, that matches their different configurations to
+%	disambiguate the pushbacks from the terminals.
+%
+%	@TODO: It's possible all this can be done much more neatly with
+%	a better production_term//1 grammar.
+%
 prolog_dcg(Name, [], Head_args, [[]], Name --> Head_diff):-
 	diff_list(Head_args, Head_diff, []).
 
@@ -53,10 +74,9 @@ prolog_dcg(Name, [], Head_args, [[P|T]], (Name, [P|T] --> Head_diff)):-
 	% []'ing the diff-var in Head_args also []'s it in [P|T] (since they share it)
 	diff_list(Head_args, Head_diff, []).
 
-/*
-You are here and the tests are passing, but it's going to be a mindfuck
-:D
-	*/
+prolog_dcg(Name, Body_args, [], [[]], Name --> Body):-
+	phrase(production_term(Tokens), Body_args)
+	,list_tree(Tokens, Body).
 
 prolog_dcg(Name, Body_args, Head_args, [[]], Name --> Body):-
 	diff_list(Head_args,Head_args_,[])
@@ -133,7 +153,8 @@ test(prolog_dcg_single_nonterminal, []):-
 	,dcg_translate_rule(DCG, Rule)
 	,once(prolog_dcg(Rule,DCG)).
 
-test(prolog_dcg_single_nonterminal_with_pushback, []):-
+test(prolog_dcg_single_nonterminal_with_pushback
+    ,[blocked(need_to_rethink)]):-
 	DCG = (single_nonterminal, [p] --> n)
 	,dcg_translate_rule(DCG, Rule)
 	,once(prolog_dcg(Rule,DCG)).

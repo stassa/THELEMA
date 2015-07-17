@@ -1,4 +1,5 @@
 :-module(language_mtg, [language//0
+		       ,start//0
 		       ,terminal//0
 		       ,terminals//0
 		       ,partial_grammar//0
@@ -19,6 +20,7 @@ language --> nonterminal.
 %language --> nonterminal, terminals.
 %language --> terminals, nonterminal, terminals.
 
+start --> [ability].
 
 %!	terminals// is nondet.
 %
