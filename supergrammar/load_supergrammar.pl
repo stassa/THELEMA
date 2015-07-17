@@ -1,4 +1,7 @@
 
+% Loads configuration predicates into global module user where
+% configuration module can access them.
+:-use_module(load_configuration).
 %:-use_module(supergrammar).
 :-use_module(stochastic_supergrammar).
 :-load_test_files([]).
@@ -9,6 +12,7 @@ edit_source:-
 	,edit('stochastic_supergrammar.pl')
 	%,edit('stochastic_supergrammar.plt')
 	,edit('configuration.pl')
+	,edit('load_configuration.pl')
 	,edit('language_simple.pl')
 	,edit('examples_simple.pl')
 	%,edit('language_mtg.pl')

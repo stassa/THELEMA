@@ -44,7 +44,7 @@ temporary_production(production_scoring).
 %	language.
 %
 given_productions(Ps):-
-	rule_complexity(C)
+	configuration:rule_complexity(C)
 	,configuration:language_module(M)
 	% Note this will only get terms with arity //0.
 	,findall(P
@@ -79,7 +79,7 @@ generate_and_test:-
 	clear_database
 	,assert_unpruned_corpus_length
 	% generate_example
-	,example_string(Example)
+	,configuration:example_string(Example)
 	% empty_production (implicit)
 	% generate_token
 	,all_tokens(Example, [T|Tokens])
@@ -156,7 +156,7 @@ production_name(N):-
 %
 all_tokens(Example, Tokens):-
 	findall(N
-	       ,phrase(language, [N])
+	       ,phrase(configuration:language, [N])
 	       ,Nonterminals)
 	,findall([T] % Add as terminals!
 		,member(T, Example)
@@ -183,9 +183,9 @@ all_tokens(Example, Tokens):-
 %	startup.
 %
 grammar(Start,Nonterminals,Terminals,Productions):-
-	once(phrase(start, [Start]))
-	,findall(N, phrase(nonterminal, [N]), Nonterminals)
-	,findall(T,phrase(terminal, [T]), Terminals)
+	once(phrase(configuration:start, [Start]))
+	,findall(N, phrase(configuration:nonterminal, [N]), Nonterminals)
+	,findall(T,phrase(configuration:terminal, [T]), Terminals)
 	%Empty for now- see todo above.
 	,Productions = [].
 
@@ -259,7 +259,7 @@ empty_production((N, [R] --> [])):-
 %	@TODO: Consider moving to configuration module.
 %
 assert_unpruned_corpus_length:-
-	findall(Example, example_string(Example), Examples)
+	findall(Example, configuration:example_string(Example), Examples)
 	,length(Examples, L)
 	,assert(unpruned_corpus_length(L))
 	%,compile_predicates([unpruned_corpus_length/1])
@@ -277,7 +277,7 @@ production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
 	,dcg_translate_rule((production_scoring(Name) --> Body), R)
 	,asserta(M:R)
 	,findall(Example
-		,(example_string(Example)
+		,(configuration:example_string(Example)
 		 ,phrase(M:production_scoring(Name), Example)
 		)
 		,Parsed)
@@ -297,8 +297,8 @@ production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
 %	single example.
 %
 updated_augmentation_set(Example, Augset):-
-	findall(N, phrase(nonterminal, [N]), Ns)
-	,findall(T,phrase(terminal, [T]), Ts)
+	findall(N, phrase(configuration:nonterminal, [N]), Ns)
+	,findall(T,phrase(configuration:terminal, [T]), Ts)
 	,findall([Token], member(Token, Example),Tokens)
 	,append(Ns, Ts, S1)
 	,append(S1, Tokens, Augset).
