@@ -23,7 +23,7 @@
 %
 %	Dynamic term used to keep track of derived productions.
 :- dynamic
-	derived_production/3.
+	derived_production/2.
 
 
 %!	termporary_production(?Name) is det.
@@ -198,8 +198,7 @@ grammar(Start,Nonterminals,Terminals,Productions):-
 	once(phrase(configuration:start, [Start]))
 	,findall(N, phrase(configuration:nonterminal, [N]), Nonterminals)
 	,findall(T,phrase(configuration:terminal, [T]), Terminals)
-	%Empty for now- see todo above.
-	,Productions = [].
+	,findall(P,given_production(_N,P),Productions).
 
 
 
@@ -207,33 +206,78 @@ grammar(Start,Nonterminals,Terminals,Productions):-
 %
 %	Update the current grammar with a newly learned production.
 %
-updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,Ps_]):-
-	append(Ps, Production, Ps_)
-	,tree_list(Production, Tokens)
-	,once(phrase(symbols(nonterminal, P_Ns), Tokens, P_Ts))
-	,append(Ns, P_Ns, Ns_)
-	,append(Ts, P_Ts, Ts_).
+updated_grammar((Name --> Tokens), [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
+	tree_list(Tokens, Tokens_list)
+	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
+	,diff_list(Ns, Ns_diff, Ns_tail)
+	,flatten(Ts, Ts_flat)
+	,diff_list(Ts_flat, Ts_diff, Ts_tail)
+	% This is going to be rather more tricky than a single append, diff or not.
+	% We want the _set_ of all terminals and the _set_ of nonterminals. No
+	% duplicates allowed _and_ each terminal in the list must be an atom, not like
+	% [[t_1], [t_2], [t_3]] etc.
+	% Also, you can't have this sort of thing: [[t_1], [t_2], [t_3,t_4]]
+	% And that's exactly what you get if you simply take the list of terminals
+	% from a new production.
+	% Finally, this is going to run in the main loop of the algorithm, albeit less often
+	% than other stuff. It can't be all appends everywhere, it'll drag everything down.
+	,diff_append(Ns_diff-Ns_tail, P_Ns-[], Ns_-[])
+	,diff_append(Ts_diff-Ts_tail, P_Ts-[], Ts_-[])
+	.
 
 
 
-%!	a_production(?Name,?Production,?Constituents) is semidet.
+%!	production_constituents(?Name,?Production,?Score,?Nonterminals,?Terminals) is semidet.
 %
 %	True when Name is the name of a production term in DCG form:
 %	  Name, [Score] --> Nonterminals, Terminals.
 %
-%	Production is that DCG term and Constituenst is a list of the
-%	list of Nonterminals and the list of Terminals in its body.
+%	Production is that DCG term and the remaining arguemnts are the
+%	production's Score, the list of Nonterminals and the list of
+%	Terminals in its body.
 %
 %	On successive backtracking, production/3 will enumerate all
 %	productions in the target grammar, both given and derived.
 %
-a_production(Name,Production,Constituents):-
-	given_production(Name,Production,Constituents).
+production_constituents(Name, Production, Score, Nonterminals, Terminals):-
+	production_constituents(given_production, Name, Production, Score, Nonterminals, Terminals).
 
-a_production(Name,Production,Constituents):-
-	derived_production(Name,Production,Constituents).
+production_constituents(Name, Production, Score, Nonterminals, Terminals):-
+	production_constituents(derived_production, Name, Production, Score, Nonterminals, Terminals).
 
-derived_production(_,_,_).
+
+%!	production_constituents(+Type,?Name,?Production,?Score,?Nonterminals,?Terminals) is nondet.
+%
+%	Business end of production_constituents/5; takes care of both
+%	given and derived production.
+%
+%	Type is one of: given_production or derived_production.
+%
+production_constituents(Type,Name,(Name, Score --> Tokens), Score, Nonterminals, Terminals):-
+	Scored_production =.. [Type,Name,(Name, Score --> Tokens)]
+	,Unscored_production =.. [Type,Name,(Name --> Tokens)]
+	,(   Scored_production
+	;   Unscored_production
+	)
+	% Assign default score, if the production is not scored.
+	% Else leave it as it is. OK, that looks weird but we're just testing
+	% that Score is a variable by attempting to bind it to [-1]. The ; true
+	% Just means the goal succeeds if the bind fails, because then we have a
+	% different binding that we should preserve. Weird, but ISO.
+	,(   Score = [-1]
+	 ->  true
+	 ;   true
+	 )
+	,tree_list(Tokens, Tokenlist)
+	,once(phrase(symbols(nonterminal, Ns), Tokenlist, Ts))
+	,(   Ns = []
+	 ->  Nonterminals = []
+	 ;   once(diff_list(Ns, Nonterminals, []))
+	 )
+	,(   Ts = []
+	 ->  Terminals = []
+	;    once(diff_list(Ts, Terminals, []))
+	).
 
 
 %!	empty_production(?Ypsilon) is nondet.
@@ -258,7 +302,8 @@ empty_production((N, [R] --> [])):-
 
 %!	unpruned_corpus_length(?Length) is det.
 %
-%	The starting length of the unpruned corpus.
+%	The starting length of the unpruned corpus. Used to calculate
+%	production scores.
 :- dynamic unpruned_corpus_length/1.
 
 %!	assert_unpruned_corpus_length is det.
