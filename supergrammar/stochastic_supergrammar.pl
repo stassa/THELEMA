@@ -10,8 +10,6 @@
 :-use_module(utilities).
 :-use_module(configuration).
 
-
-
 %!	production_scoring// is det.
 %
 %	Temporary production term asserted to the database to allow
@@ -20,11 +18,60 @@
 	production_scoring/3.
 
 
+%!	given_production(?Name,?Production,?Arguments) is  det.
+%
+%	Dynamic term used to keep track of given productions.
+:- dynamic
+	given_production/2.
+
+%!	derived_production(?Name,?Production,?Arguments) is  det.
+%
+%	Dynamic term used to keep track of derived productions.
+:- dynamic
+	derived_production/3.
+
 %!	termporary_production(?Name) is det.
 %
 %	Name of the temporary production term used in
 %	production_scoring/2.
 temporary_production(production_scoring).
+
+
+
+%!	given_productions(-Productions) is det.
+%
+%	A list of all known productions in a grammar of the target
+%	language.
+%
+given_productions(Ps):-
+	rule_complexity(C)
+	,configuration:language_module(M)
+	% Note this will only get terms with arity //0.
+	,findall(P
+		,(phrase(M:nonterminal, [N])
+		 ,functor(T,N,C)
+		 ,clause(M:T,B)
+		 ,once(prolog_dcg(T:-B, P)))
+	       ,Ps).
+
+
+%!	assert_given_productions is det.
+%
+%	Populate the database with clauses of given_production(N,P)
+%	one for each given production in the currently loaded language
+%	module, where N is the name of the production P.
+%
+%	This predicate is called at startup to initialise the database
+%	with what is essentially background knowledge about the target
+%	langugae, encoded as production rules in a known grammar for
+%	that language.
+%
+assert_given_productions:-
+	given_productions(Ps)
+	,forall(member((N --> B), Ps),
+		writeln(given_production(N, (N --> B)) ) ).
+
+:-assert_given_productions.
 
 
 

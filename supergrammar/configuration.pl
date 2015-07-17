@@ -1,6 +1,5 @@
 :-module(configuration, [rule_complexity/1
 			,initial_score/1
-			,assert_given_productions/0
 			]).
 
 /** <module> Configuration for supergrammar generate-and-test cycles.
@@ -82,17 +81,6 @@ call from utilities) assert_given_productions/0.
 
 */
 
-%!	given_production(?Name,?Production,?Arguments) is  det.
-%
-%	Dynamic term used to keep track of given productions.
-:- dynamic
-	given_production/3.
-
-%!	derived_production(?Name,?Production,?Arguments) is  det.
-%
-%	Dynamic term used to keep track of derived productions.
-:- dynamic
-	derived_production/3.
 
 %!	nonterminal_arity(?Arity) is semidet.
 %
@@ -185,34 +173,6 @@ register_examples(Examples_module):-
 %		,examples_mtg_lexicalized).
 %		,examples_mtg).
 %		,examples_mtg_hand_simulation).
-
-
-%!	assert_given_productions is det.
-%
-%	Populate the database with clauses of given_production(N,P)
-%	one for each given production in the currently loaded language
-%	module, where N is the name of the production P.
-%
-%	This predicate is called at startup to initialise the database
-%	with what is essentially background knowledge about the target
-%	langugae, encoded as production rules in a known grammar for
-%	that language.
-%
-assert_given_productions:-
-	rule_complexity(C)
-	,language_module(M)
-	% Note this will only get terms with arity //0.
-	,forall((phrase(M:nonterminal, [N])
-		 ,functor(T,N,C)
-		,clause(M:T,B)
-		)
-	       ,(
-		 prolog_dcg(T:-B, P)
-		,writeln(given_production(N,P))
-		  )
-	       ).
-
-:- assert_given_productions.
 
 
 
