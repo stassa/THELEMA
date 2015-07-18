@@ -13,7 +13,6 @@
 :-dynamic
 	production_scoring/3.
 
-
 %!	given_production(?Name,?Production,?Arguments) is  det.
 %
 %	Dynamic term used to keep track of given productions.
@@ -26,6 +25,14 @@
 :- dynamic
 	derived_production/2.
 
+%!	example(?String) is nondet.
+%
+%	A tokenized example string in the target language.
+%	Declared dynamic so that we can remove and re-declare examples
+%	as the corpus is pruned.
+%
+%	@TODO: This is a prime candidate to do in a non-dynamical way.
+:-dynamic example/1.
 
 %!	termporary_production(?Name) is det.
 %
@@ -179,6 +186,70 @@ all_tokens(Example, Tokens):-
 	,diff_append(Nonterminals_diff-T1, Terminals_diff-T2, Tokens-[]).
 
 
+%!	examples_corpus(+Examples) is det.
+%
+%	All examples in the examples corpus.
+examples_corpus(Examples):-
+	findall(Example,configuration:example_string(Example),Examples).
+
+
+%!	pruned_examples_corpus(+Corpus,+Production,-Pruned_corpus) is det.
+%
+%	Remove tokens from each example in the Corpus up to the first
+%	token the given Production can't parse and bind the rest to
+%	Pruned_corpus.
+%
+%	Empty examples (ie ones fully parsed) are removed altogether.
+pruned_examples_corpus(Corpus, Production, Pruned):-
+	configuration:language_module(M)
+	,dcg_translate_rule(Production, Rule)
+	,pruned_examples_corpus(Corpus, M, Rule, [], Pruned).
+
+
+%!	pruned_examples_corpus(+Corpus,+Language_module,+Production,+Temp ,-Acc) is det.
+%
+%	Business end of pruned_examples_corpus/3.
+pruned_examples_corpus([], _, _, Denurp, Pruned):-
+	reverse(Denurp, Pruned).
+pruned_examples_corpus([C|Cs], M, R, Temp, Acc):-
+	derivation(R, C, Rest)
+	,(   Rest \= []
+	->  New_temp = [Rest|Temp]
+	;   New_temp = Temp
+	)
+	,pruned_examples_corpus(Cs, M, R, New_temp, Acc).
+pruned_examples_corpus([C|Cs], M, R, Temp, Acc):-
+	pruned_examples_corpus(Cs, M, R, [C|Temp], Acc).
+
+
+
+%!	derivation(+Production,+Derivation,-Rest_of_sentence) is det.
+%
+%	Parse Derivation with Production and bind a reference to the
+%	Rest_of_sentence.
+%
+%	Kind of does what phrase/3 does, but for rules that have not yet
+%	been added to the database.
+%
+%	@TODO: Add lots of tests
+%	@TODO: Make sure scores are handled gracefully (not necessarily
+%	in this predicate- might need to do that before calling it)
+%	@TODO: Use in scoring productions rather than what we do
+%	now. @TODO: Move to utilities, possibly.
+%
+derivation(H:-true, D, Rest):-
+	duplicate_term(H, H_)
+	% Probably breaks with rules arity of more than 1
+	,H_ =.. [_Name|[Tokens|Rest]]
+	,[Tokens|Rest] = D.
+derivation(H:-B, D, Rest):-
+	duplicate_term(H:-B, H_:-B_)
+	,configuration:language_module(M)
+	,M:B_
+	,H_ =.. [_Name|[D,Rest]].
+
+
+
 
 %!	grammar(-Start,-Nonterminals,-Terminals,-Productions) is det.
 %
@@ -196,6 +267,7 @@ grammar(Start,Nonterminals,Terminals,Productions):-
 	% Also, the N^... is needed to avoid backtracking for more- use bagof/3 if
 	% refactoring- not findall/3.
 	,setof(P,N^given_production(N,P),Productions).
+
 
 
 %!	grammar_s(Start,Nonterminals,Terminals,Productions) is det.
@@ -220,6 +292,10 @@ grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
 %
 %	Update the current grammar with a newly learned production.
 %
+updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]).
+updated_grammar((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
+	% New rule for a single nonterminal- discard it.
+	atom(T).
 updated_grammar((Name --> Tokens), [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
 	tree_list(Tokens, Tokens_list)
 	% Note the unbracketing of terminals:
@@ -238,6 +314,9 @@ updated_grammar((Name --> Tokens), [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|P
 %	Ordset and diff-list version of updated_grammar/3, meant to
 %	receive input from grammar_s/4 rather than grammar/4.
 %
+updated_grammar_s((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]).
+updated_grammar_s((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
+	atom(T).
 updated_grammar_s((Name --> Tokens), [S,Ns-Ns_t,Ts-Ts_t,Ps-Ps_t], [S,Ns1-Ns_t1,Ts1-Ts_t1,Ps1-Ps_t1]):-
 	tree_list(Tokens, Tokens_list)
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
@@ -250,22 +329,28 @@ updated_grammar_s((Name --> Tokens), [S,Ns-Ns_t,Ts-Ts_t,Ps-Ps_t], [S,Ns1-Ns_t1,T
 
 
 
-%!	production_constituents(?Name,?Production,?Score,?Nonterminals,?Terminals) is semidet.
+%!	production_constituents(?Name,?Production,?Constituents,+Options) is semidet.
 %
 %	True when Name is the name of a production term in DCG form:
-%	  Name, [Score] --> Nonterminals, Terminals.
+%	==
+%	Name,[Score] --> Nonterminals, Terminals.
+%	==
 %
-%	Production is that DCG term and the remaining arguemnts are the
-%	production's Score, the list of Nonterminals and the list of
-%	Terminals in its body.
+%	and Constituents is a list of its constituents:
+%	==
+%	Constituents = [Score,Nonterminals,Terminals]
+%	==
 %
 %	On successive backtracking, production/3 will enumerate all
 %	productions in the target grammar, both given and derived.
 %
-production_constituents(Name, Production, Score, Nonterminals, Terminals):-
+%	Options:
+%	  type(T), one of: given, derived.
+%
+production_constituents(Name, Production, [Score, Nonterminals, Terminals], [type(given)]):-
 	production_constituents(given_production, Name, Production, Score, Nonterminals, Terminals).
 
-production_constituents(Name, Production, Score, Nonterminals, Terminals):-
+production_constituents(Name, Production, [Score, Nonterminals, Terminals], [type(derived)]):-
 	production_constituents(derived_production, Name, Production, Score, Nonterminals, Terminals).
 
 
@@ -295,15 +380,8 @@ production_constituents(Type,Name,(Name, Score --> Tokens), Score, Nonterminals,
 	 ;   true
 	 )
 	,tree_list(Tokens, Tokenlist)
-	,once(phrase(symbols(nonterminal, Ns), Tokenlist, Ts))
-	,(   Ns = []
-	 ->  Nonterminals = []
-	 ;   once(diff_list(Ns, Nonterminals, []))
-	 )
-	,(   Ts = []
-	 ->  Terminals = []
-	;    once(diff_list(Ts, Terminals, []))
-	).
+	,once(phrase(symbols(nonterminal, Nonterminals), Tokenlist, Terminals)).
+
 
 
 %!	empty_production(?Ypsilon) is nondet.
@@ -376,6 +454,11 @@ production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
 %
 %	Where Ns is nonterminals, Ts nonterminals, Ex the tokens from a
 %	single example.
+%
+%	@NOTE: the "updated" part of the name is a bit misleading: this
+%	really just builds a new augmentation set form scratch. We don't
+%	really have to update it- we build it once, use it up and then
+%	get a new one. Such are the wasteful ways of the time of plenty.
 %
 updated_augmentation_set(Example, Augset):-
 	findall(N, phrase(configuration:nonterminal, [N]), Ns)
