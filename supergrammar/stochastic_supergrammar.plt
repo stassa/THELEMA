@@ -75,16 +75,16 @@ test(augmented_production_verify_augmenting_empty_production_with_a_terminal, []
 	augmented_production(ypsilon, g1, (a0, [-1] --> g1)).
 
 % Tests for verifying augmentation in case: n+ -> n | t.
-test(augmented_production_verify_augmenting_single_nonterminal_with_a_nonterminal, []):-
+test(augmented_production_verify_augmenting_single_nonterminal_with_a_nonterminal, [nondet]):-
 	augmented_production((a0, [-1] --> g1), g2, (a0, [-1] --> g1, g2)).
 
-test(augmented_production_verify_augmenting_single_nonterminal_with_a_terminal,[]):-
+test(augmented_production_verify_augmenting_single_nonterminal_with_a_terminal,[nondet]):-
 	augmented_production((a0, [-1] --> g1), [a], (a0, [-1] --> g1, [a])).
 
-test(augmented_production_verify_augmenting_nonterminals_with_a_nonterminal, []):-
+test(augmented_production_verify_augmenting_nonterminals_with_a_nonterminal, [nondet]):-
 	augmented_production((a0, [-1] --> g1, g2), g3, (a0, [-1] --> g1, g2, g3)).
 
-test(augmented_production_verify_augmenting_nonterminals_with_a_terminal, []):-
+test(augmented_production_verify_augmenting_nonterminals_with_a_terminal, [nondet]):-
 	augmented_production((a0, [-1] --> g1, g2), [a], (a0, [-1] --> g1, g2, [a])).
 
 % Tests for verifying augmentation in case: n* t+ -> n | t

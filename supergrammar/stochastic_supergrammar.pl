@@ -4,6 +4,7 @@
 
 :-use_module(utilities).
 :-use_module(configuration).
+:-use_module(library(ordsets)).
 
 %!	production_scoring// is det.
 %
@@ -182,24 +183,19 @@ all_tokens(Example, Tokens):-
 %!	grammar(-Start,-Nonterminals,-Terminals,-Productions) is det.
 %
 %	A grammar, as a quadruple consisting of a Start symbol, a set of
-%	Nonterminals, a set of Terminals and a set of Productions.
-%
-%	@TODO: need a good way to get productions. I'd like to store
-%	them in a nice production/2 term with a first argument for the
-%	name and a second for the whole production, or even one with
-%	args for nonterminals and terminals (and score) but this risks
-%	clashing with production/2 here and production/3 in supergrammar
-%	module. Also, examples modules will need to declare a clause of
-%	that predicate for each given production, otherwise I'll have to
-%	do something typically complicated to create those clauses at
-%	startup.
+%	Nonterminals, a set of Terminals and a set of Productions. Each
+%	set is ordered according to the standard order of terms and
+%	no duplicates are allowed.
 %
 grammar(Start,Nonterminals,Terminals,Productions):-
 	once(phrase(configuration:start, [Start]))
-	,findall(N, phrase(configuration:nonterminal, [N]), Nonterminals)
+	,setof(N, phrase(configuration:nonterminal, [N]), Nonterminals)
 	% Note the twice-bracketed terminal:
-	,findall(T,phrase(configuration:terminal, [[T]]), Terminals)
-	,findall(P,given_production(_N,P),Productions).
+	,setof(T,phrase(configuration:terminal, [[T]]), Terminals)
+	% Not strictly necessary but, why not? Won't run in critical region, probably.
+	% Also, the N^... is needed to avoid backtracking for more- use bagof/3 if
+	% refactoring- not findall/3.
+	,setof(P,N^given_production(N,P),Productions).
 
 
 %!	grammar_s(Start,Nonterminals,Terminals,Productions) is det.
@@ -215,7 +211,7 @@ grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
 	,findall(T,phrase(configuration:terminal, [[T]]), Ts)
 	,list_to_diff_ordset(Ts, Terminals, Ts_t)
 	,findall(P,given_production(_N,P),Ps)
-	% Yes, productions are also sortable.
+	% Yes, productions (and generally compound terms) are also sortable.
 	,list_to_diff_ordset(Ps, Productions, Ps_t).
 
 
@@ -224,16 +220,33 @@ grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
 %
 %	Update the current grammar with a newly learned production.
 %
-updated_grammar((Name --> Tokens), [S,Ns-Ns_t,Ts-Ts_t,Ps], [S,Ns1-Ns_t1,Ts1,Ts_t1,[(Name --> Tokens)|Ps]]):-
+updated_grammar((Name --> Tokens), [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
+	tree_list(Tokens, Tokens_list)
+	% Note the unbracketing of terminals:
+	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
+	,[P_Ts_unbracketed] = P_Ts % Don't ask.
+	% The Name of the new production is a nonterminal:
+	,list_to_ord_set([Name|P_Ns], Ns_ord)
+	,list_to_ord_set(P_Ts_unbracketed, Ts_ord)
+	,ord_union(Ns_ord, Ns, Ns_)
+	,ord_union(Ts_ord, Ts, Ts_).
+
+
+
+%!	updated_grammar_s(+Production,+Grammar,-Updated_grammar) is det.
+%
+%	Ordset and diff-list version of updated_grammar/3, meant to
+%	receive input from grammar_s/4 rather than grammar/4.
+%
+updated_grammar_s((Name --> Tokens), [S,Ns-Ns_t,Ts-Ts_t,Ps-Ps_t], [S,Ns1-Ns_t1,Ts1-Ts_t1,Ps1-Ps_t1]):-
 	tree_list(Tokens, Tokens_list)
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
-	,diff_list(P_Ns, P_Ns_diff,[])
-	,diff_append(Ns-Ns_t, P_Ns_diff-[], Ns_bag-[])
+	,diff_append(Ns-Ns_t, P_Ns-[], Ns_bag-[])
 	,list_to_diff_ordset(Ns_bag, Ns1, Ns_t1)
-	,[Ts_unbracketed] = [P_Ts]
+	,[Ts_unbracketed] = P_Ts
 	,diff_append(Ts-Ts_t, Ts_unbracketed-[], Ts_bag-[])
 	,list_to_diff_ordset(Ts_bag, Ts1, Ts_t1)
-	.
+	,diff_append(Ps-Ps_t,[(Name --> Tokens)|Ps_t1]-Ps_t1,Ps1-Ps_t1).
 
 
 
@@ -262,6 +275,9 @@ production_constituents(Name, Production, Score, Nonterminals, Terminals):-
 %	given and derived production.
 %
 %	Type is one of: given_production or derived_production.
+%
+%	@TODO: can probably remove the diff_list/3 calls now that I
+%	refactored symbols//2 to get back un-diffed lists for Ns and Ts.
 %
 production_constituents(Type,Name,(Name, Score --> Tokens), Score, Nonterminals, Terminals):-
 	Scored_production =.. [Type,Name,(Name, Score --> Tokens)]
@@ -510,11 +526,10 @@ dcg_arrow(-->) --> [-->].
 %
 %	Symbols can be any number of terminals or nonterminals.
 symbols(nonterminal,[S|Ss]) --> [S], {atom(S)}, symbols(nonterminal,Ss).
-symbols(nonterminal,_) --> [].
+symbols(nonterminal,[]) --> [].
 
 symbols(terminal,[T|Ts]) --> [T], symbols(terminal,Ts).
-%symbols(terminal,[T]) --> [T],{atom(T)}.
-symbols(terminal,_) --> [].
+symbols(terminal,[]) --> [].
 
 
 
