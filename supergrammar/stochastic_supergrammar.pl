@@ -1,4 +1,4 @@
-﻿:-module(stochastic_supergrammar, [generate_and_test/0
+﻿:-module(stochastic_supergrammar, [complete_grammar/0
 				  ,augmented_production/3
 				  ]).
 
@@ -94,96 +94,9 @@ assert_given_productions:-
 
 
 
-
-generate_and_test:-
-	clear_database
-	,assert_unpruned_corpus_length
-	% generate_example
-	,configuration:example_string(Example)
-	% empty_production (implicit)
-	% generate_token
-	,all_tokens(Example, [T|Tokens])
-%	% augment_production
-	,once(augmented_production(ypsilon, T, Production))
-	,generate_and_test(Tokens,Production,Final_production)
-	% score_production
-%	,production_score(Augmented, 0, Example, _Score)
-	% finalize_production
-	,finalize_production(Final_production, New_name)
-	,writeln(finalized:Final_production-as:New_name)
-%	,finalize_production(Augmented)
-	% prune_corpus
-	.
-
-generate_and_test([], Production, Production).
-generate_and_test([Token|Tokens], Production, Acc):-
-	augmented_production(Production, Token, Augmented_production)
-	,production_score(Augmented_production, Scored_production)
-	,best_scored_production(Production, Scored_production, Best_production)
-	,generate_and_test(Tokens, Best_production, Acc).
+complete_grammar.
 
 
-
-%best_scored_production(Production, Augmented, Best_production).
-best_scored_production((N1, [S1] --> B1), (_N2, [S2] --> _B2), (N1, [S1] --> B1)):-
-	S1 > S2
-	,!.
-best_scored_production(_, Augmented_production, Augmented_production).
-
-% Seems to be working OK.
-finalize_production((Name, Score --> Body), (New_name, Score --> Body)):-
-	dcg_translate_rule((Name, Score --> Body), (H:-B))
-	,rename_rule((H:-B), New_name, Renamed_rule)
-	% TESTING: ADD PROPER DERIVATION WHEN TESTED
-	,add_new_production(New_name, Renamed_rule, [])
-%	,writeln(renamed_rule:Name-as:New_name/Renamed_rule)
-	.
-
-rename_rule(_,_,_).
-add_new_production(_,_,_).
-
-
-%!	production_name(+Name) is det.
-%
-%	True when Name is a valid production name, conforming to the
-%	expression:
-%	==
-%	[a-z][a-zA-Z0-9_]*
-%	==
-%
-production_name(N):-
-	must_be(nonvar, N)
-	,atom_chars(N, [A|Atomic])
-	,char_type(A, lower)
-	,forall(member(C, Atomic), (char_type(C, alnum); C = '_')).
-
-
-
-%!	all_tokens(+Example, -Tokens) is det.
-%
-%	Generate all tokens that are either part of Example or a
-%	nonterminal in the grammar of the target language.
-%
-%	TODO: This is kinda wrong. We may have both terminals and
-%	nonterminals as background knowledge encoded in language//0. I
-%	need to find a way to add known terminals to the tokens passed
-%	to the generate-and-test loop.
-%
-%	In general the idea is to be able to make best use of a partial
-%	background grammar- you can't do this without also using
-%	terminals. Although I _do_ want to learn terminals from
-%	examples.
-%
-all_tokens(Example, Tokens):-
-	findall(N
-	       ,phrase(configuration:language, [N])
-	       ,Nonterminals)
-	,findall([T] % Add as terminals!
-		,member(T, Example)
-		,Terminals)
-	,diff_list(Nonterminals, Nonterminals_diff, T1)
-	,diff_list(Terminals, Terminals_diff, T2)
-	,diff_append(Nonterminals_diff-T1, Terminals_diff-T2, Tokens-[]).
 
 
 %!	examples_corpus(+Examples) is det.
@@ -449,6 +362,22 @@ empty_production((N, [R] --> [])):-
 	,initial_score(R).
 
 
+%!	production_name(+Name) is det.
+%
+%	True when Name is a valid production name, conforming to the
+%	expression:
+%	==
+%	[a-z][a-zA-Z0-9_]*
+%	==
+%
+production_name(N):-
+	must_be(nonvar, N)
+	,atom_chars(N, [A|Atomic])
+	,char_type(A, lower)
+	,forall(member(C, Atomic), (char_type(C, alnum); C = '_')).
+
+
+
 %!	unpruned_corpus_length(?Length) is det.
 %
 %	The starting length of the unpruned corpus. Used to calculate
@@ -469,6 +398,36 @@ assert_unpruned_corpus_length:-
 	%,compile_predicates([unpruned_corpus_length/1])
 	.
 
+% TODO: needs to be in configuration module, probably. _Probably_.
+unpruned_corpus_length(3).
+
+
+%!	scored_production(+Corpus,+Production,-Scored_production) is det.
+%
+%	If Production is a scored production, of the form:
+%	==
+%	Name, [Score] --> Body.                      % [1]
+%	==
+%
+%	- this updates the Score to the ratio P:C, where P is the number
+%	of examples in Corpus that Production can parse at least
+%	partially and C the number of examples in the original, unpruned
+%	corpus.
+%
+%	Otherwise, if Production is an unscored production, of the form:
+%	==
+%	Name --> Body.
+%	==
+%
+%	- then scored_production/3 calculates its Score as above and
+%	adds it as a pushback-list, resulting in a term like the scored
+%	production in [1].
+%
+scored_production(Corpus, (Name, _ --> Body), (Name, [Score] --> Body)):-
+	production_score(Corpus, (Name --> Body), Score)
+	,!.
+scored_production(Corpus, (Name --> Body), (Name, [Score] --> Body)):-
+	production_score(Corpus, (Name --> Body), Score).
 
 
 %!	production_score(+Production,-Updated_production) is det.
@@ -476,19 +435,17 @@ assert_unpruned_corpus_length:-
 %	Update the score of the given production to the proportion of
 %	examples it can parse at least partially.
 %
-production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
+production_score(Corpus, (Name --> Body), Score):-
 	configuration:examples_module(M)
-	,dcg_translate_rule((production_scoring(Name) --> Body), R)
-	,asserta(M:R)
+	,dcg_translate_rule(Name --> Body, R)
 	,findall(Example
-		,(configuration:example_string(Example)
-		 ,phrase(M:production_scoring(Name), Example)
+		,(member(Example, Corpus)
+		 ,derivation(M:R, Example, _)
 		)
 		,Parsed)
 	,length(Parsed, Parses)
 	,unpruned_corpus_length(Unpruned_length)
 	,Score is Parses / Unpruned_length.
-
 
 
 
@@ -756,34 +713,4 @@ reload_examples_module:-
 	configuration:examples_module(Module)
 	,consult(Module).
 
-/*
-production_score((Name, _S --> Body), (Name, [Score] --> Body)):-
-	configuration:examples_module(M)
-	,rule_complexity(C)
-	,functor(H, Name, C)
-	, H =.. [Name|[_|[[_]]]]
-	,dcg_translate_rule((Name --> Body), (H:-B))
-	,setof(B
-	       ,M:B
-		,Parses)
-	,length(Parses, Score).
-*/
-
-/*
-finalize_production(Production, Renamed_production):-
-	Production = (_Name, Score --> Body)
-	,Renamed_production = (New_name, Score --> Body)
-	,once(rename_production(Production, Renamed_production))
-	,dcg_translate_rule(Renamed_production, Renamed_rule)
-	% TESTING: ADD PROPER DERIVATION WHEN TESTED
-	,add_new_production(New_name, Renamed_rule, [])
-	.
-
-% Copy-pasta from supergrammar module.
-rename_production((_, Score --> Body), (New_name, Score --> Body)):-
-	rule_name(New_name)
-	,configuration:examples_module(M)
-	,\+ phrase(M:nonterminal, [New_name])
-	.
-*/
 
