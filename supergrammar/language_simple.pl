@@ -18,18 +18,21 @@ start --> [s].
 terminals --> [].
 terminals --> terminal, terminals.
 
-terminal --> [[a]].
-terminal --> [[b]].
-terminal --> [[c]].
+terminal --> [].
+%terminal --> [[a]].
+%terminal --> [[b]].
+%terminal --> [[c]].
 
-nonterminal --> [g1].
-nonterminal --> [g2].
-nonterminal --> [g3].
+nonterminal --> [].
+
+%nonterminal --> [g1].
+%nonterminal --> [g2].
+%nonterminal --> [g3].
 %nonterminal --> [g4].
 
 nonterminals --> [].
 
 % A set of already- known productions that belong to the language.
-g1 --> [a].
-g2 --> g1, [b].
-g3 --> [a,b,c].
+%g1 --> [a].
+%g2 --> g1, [b].
+%g3 --> [a,b,c].

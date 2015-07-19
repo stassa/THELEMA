@@ -17,6 +17,7 @@ edit_source:-
 	,edit('examples_simple.pl')
 	%,edit('language_mtg.pl')
 	%,edit('examples_mtg.pl')
+	%,edit('language_mtg_hand_simulation.pl')
 	%,edit('examples_mtg_hand_simulation.pl')
 	%,edit('language_mtg_lexicalized.pl')
 	%,edit('examples_mtg_lexicalized.pl')
