@@ -193,33 +193,80 @@ examples_corpus(Examples):-
 	findall(Example,configuration:example_string(Example),Examples).
 
 
-%!	pruned_examples_corpus(+Corpus,+Production,-Pruned_corpus) is det.
+%!	pruned_corpus(+Corpus,+Production,-Pruned_corpus) is det.
 %
 %	Remove tokens from each example in the Corpus up to the first
 %	token the given Production can't parse and bind the rest to
 %	Pruned_corpus.
 %
 %	Empty examples (ie ones fully parsed) are removed altogether.
-pruned_examples_corpus(Corpus, Production, Pruned):-
+pruned_corpus(Corpus, [_S,_Ns,_Ts,Ps], Pruned):-
+	pruned_corpus_(Ps,Corpus,Pruned).
+
+
+%!	pruned_corpus_(+Productions,+Corpus,-Pruned_corpus) is det.
+%
+%	Business end of pruned_corpus/3. Prune Corpus using eacy
+%	Production and bind the result to Pruned_corpus.
+%
+pruned_corpus_([],Pruned,Pruned).
+pruned_corpus_([P|Ps],Corpus,Acc):-
+	production_pruned_corpus(Corpus, P, Pruned_corpus)
+	,pruned_corpus_(Ps,Pruned_corpus,Acc).
+
+
+%!	production_pruned_corpus(+Corpus,+Production,-Pruned_corpus) is det.
+%
+%	Prune the Corpus using Production and bind the result to
+%	Pruned_corpus.
+%
+%	@TODO: switch Corpus/Production around to match naming.
+%
+%	About the red cut: the head of the second and third clause of
+%	production_pruned_corpus/5 are identical:
+%         production_pruned_corpus([C|Cs], M, R, Temp, Acc)
+%
+%	Which means there's always a choicepoint created when we enter
+%	the second clause, regardless of whether the call to
+%	derivation/3 in the body of the second clause fails (which is
+%	the intended criterion for trying the third clause or not).
+%
+%	So there's a lot of backtracking over calls to the second
+%	clause. The cut at the end of production_pruned_corpus/3 stops
+%	this, because the backtracking is unproductive (since we want to
+%	try the third clause only if derivation/3 fails).
+%
+%	The cut is red because it's difficult to follow the behaviour,
+%	and also because it's at the end of the only clause of
+%	production_pruned_corpus/3 (rather than /5) not because it
+%	changes the behaviour of the predicate significantly: the
+%	results of backtracking over the third clause are not valid
+%	prunes of the corpus- they are partial prunes that we don't care
+%	about.
+%
+%	It's also worth noting that the cut could be placed right after
+%	the head of production_pruned_corpus/5 with the same results -
+%	but that cuts results we need when calling this predicate from
+%	pruned_corpus/3.
+%
+production_pruned_corpus(Corpus, Production, Pruned_corpus):-
 	configuration:language_module(M)
 	,dcg_translate_rule(Production, Rule)
-	,pruned_examples_corpus(Corpus, M, Rule, [], Pruned).
+	,production_pruned_corpus(Corpus, M, Rule, [], Pruned_corpus)
+	,!. % Red cut- see comments.
 
 
-%!	pruned_examples_corpus(+Corpus,+Language_module,+Production,+Temp ,-Acc) is det.
+%!	production_pruned_corpus(+Corpus,+Language_module,+Production,+Temp ,-Acc) is det.
 %
-%	Business end of pruned_examples_corpus/3.
-pruned_examples_corpus([], _, _, Denurp, Pruned):-
+%	Business end of production_pruned_corpus/3.
+%
+production_pruned_corpus([], _, _, Denurp, Pruned):-
 	reverse(Denurp, Pruned).
-pruned_examples_corpus([C|Cs], M, R, Temp, Acc):-
-	derivation(R, C, Rest)
-	,(   Rest \= []
-	->  New_temp = [Rest|Temp]
-	;   New_temp = Temp
-	)
-	,pruned_examples_corpus(Cs, M, R, New_temp, Acc).
-pruned_examples_corpus([C|Cs], M, R, Temp, Acc):-
-	pruned_examples_corpus(Cs, M, R, [C|Temp], Acc).
+production_pruned_corpus([C|Cs], M, R, Temp, Acc):-
+	derivation(M:R, C, Rest)
+	,production_pruned_corpus(Cs, M, R, [Rest|Temp], Acc).
+production_pruned_corpus([C|Cs], M, R, Temp, Acc):-
+	production_pruned_corpus(Cs, M, R, [C|Temp], Acc).
 
 
 
@@ -237,17 +284,15 @@ pruned_examples_corpus([C|Cs], M, R, Temp, Acc):-
 %	@TODO: Use in scoring productions rather than what we do
 %	now. @TODO: Move to utilities, possibly.
 %
-derivation(H:-true, D, Rest):-
+derivation(_M:(H:-true), D, Rest):-
 	duplicate_term(H, H_)
 	% Probably breaks with rules arity of more than 1
 	,H_ =.. [_Name|[Tokens|Rest]]
 	,[Tokens|Rest] = D.
-derivation(H:-B, D, Rest):-
+derivation(M:(H:-B), D, Rest):-
 	duplicate_term(H:-B, H_:-B_)
-	,configuration:language_module(M)
 	,M:B_
 	,H_ =.. [_Name|[D,Rest]].
-
 
 
 
