@@ -66,7 +66,8 @@ given_productions(Ps):-
 		 ,clause(M:T,B)
 		 ,once(prolog_dcg(T:-B, P)))
 	       ,Ps).
-
+% Dangerous, rather.
+given_productions([]).
 
 
 %!	retract_given_productions is det.
@@ -301,13 +302,48 @@ derivation(M:(H:-B), D, Rest):-
 %
 grammar(Start,Nonterminals,Terminals,Productions):-
 	once(phrase(configuration:start, [Start]))
-	,setof(N, phrase(configuration:nonterminal, [N]), Nonterminals)
-	% Note the twice-bracketed terminal:
-	,setof(T,phrase(configuration:terminal, [[T]]), Terminals)
+	,grammar_nonterminals(Nonterminals)
+	,grammar_terminals(Terminals)
 	% Not strictly necessary but, why not? Won't run in critical region, probably.
 	% Also, the N^... is needed to avoid backtracking for more- use bagof/3 if
 	% refactoring- not findall/3.
-	,setof(P,N^given_production(N,P),Productions).
+	,grammar_productions(Productions).
+
+
+%!	grammar_nonterminals(-Nonterminals) is det.
+%
+%	The set of all Nonterminals known to the given grammar.
+%	Nonterminals can be [] if no Nonterminals are known.
+%
+%	@TODO: the way this is defined it will succeed also when the
+%	nonterminals in the given grammar are somehow declared in a way
+%	that makes the call to nonterminal//0 fail, for instance if some
+%	nonterminals have double brackets by mistake etc. Might wanna
+%	re-think. Same goes for grammar_terminals/1 and
+%	grammar_productions/0.
+%
+grammar_nonterminals(Nonterminals):-
+	  setof(N, phrase(configuration:nonterminal, [N]), Nonterminals)
+	; Nonterminals = [].
+
+
+%!	grammar_terminals(-Terminals) is det.
+%
+%	The ste of all Terminals known to the given grammar. Can be [].
+%
+grammar_terminals(Terminals):-
+	% Note the twice-bracketed terminal:
+	  setof(T,phrase(configuration:terminal, [[T]]), Terminals)
+	; Terminals = [].
+
+
+%!	grammar_productions(-Productions) is det.
+%
+%	The set of all Production known to the given grammar. Can be [].
+%
+grammar_productions(Productions):-
+	  setof(P,N^given_production(N,P),Productions)
+	; Productions = [].
 
 
 
@@ -338,9 +374,8 @@ updated_grammar((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	% New rule for a single nonterminal- discard it.
 	atom(T).
 updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
-	production_structure(Production,Name,_Score,Tokens)
+	once(production_structure(Production,Name,_Score,Tokens))
 	,tree_list(Tokens, Tokens_list)
-	% Note the unbracketing of terminals:
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
 	,[P_Ts_unbracketed] = P_Ts % Don't ask.
 	% The Name of the new production is a nonterminal:
@@ -385,6 +420,7 @@ updated_grammar_s((Name --> Tokens), [S,Ns-Ns_t,Ts-Ts_t,Ps-Ps_t], [S,Ns1-Ns_t1,T
 %
 production_structure((Name, Score --> Body), Name,Score,Body).
 production_structure((Name --> Body), Name,[],Body).
+
 
 
 %!	production_constituents(?Name,?Production,?Constituents,+Options) is semidet.
@@ -513,6 +549,7 @@ best_scored_production(ypsilon, P, P).
 best_scored_production((N, [S] --> B), (N, [0] --> _B), (N, [S] --> B)).
 best_scored_production((N, [S] --> B), (N, [S_] --> _), (N, [S] --> B)):-
 	S > S_.
+best_scored_production(Production, _Augmented, Production).
 
 
 %!	scored_production(+Corpus,+Production,-Scored_production) is det.
@@ -580,9 +617,9 @@ production_score(Corpus, (Name --> Body), Score):-
 %	single example.
 %
 augmentation_set(Example, Augset):-
-	findall(N, phrase(configuration:nonterminal, [N]), Ns)
-	,findall(T,phrase(configuration:terminal, [T]), Ts)
-	,findall([Token], member(Token, Example),Tokens)
+	grammar_nonterminals(Ns)
+	,grammar_terminals(Ts)
+	,setof([Token], member(Token, Example),Tokens)
 	,append(Ns, Ts, S1)
 	,append(S1, Tokens, Augset).
 
