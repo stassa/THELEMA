@@ -1,4 +1,4 @@
-﻿:-module(stochastic_supergrammar, [complete_grammar/0
+﻿:-module(stochastic_supergrammar, [complete_grammar/1
 				  ,augmented_production/3
 				  ]).
 
@@ -24,6 +24,12 @@
 %	Dynamic term used to keep track of derived productions.
 :- dynamic
 	derived_production/2.
+
+%!	unpruned_corpus_length(?Length) is det.
+%
+%	The starting length of the unpruned corpus. Used to calculate
+%	production scores.
+:- dynamic unpruned_corpus_length/1.
 
 %!	example(?String) is nondet.
 %
@@ -94,9 +100,86 @@ assert_given_productions:-
 
 
 
-complete_grammar.
+%!	retract_unpruned_corpus_length is det.
+%
+%	Clear all unpruned_corpus_length/1 clauses from the database.
+%
+retract_unpruned_corpus_length:-
+	retractall(unpruned_corpus_length(_)).
 
 
+
+%!	assert_unpruned_corpus_length is det.
+%
+%	Set the length of the unpruned corpus according to the examples
+%	in the examples module.
+%
+assert_unpruned_corpus_length:-
+	retract_unpruned_corpus_length
+	,findall(Example, configuration:example_string(Example), Examples)
+	,length(Examples, L)
+	,assert(unpruned_corpus_length(L))
+	%,compile_predicates([unpruned_corpus_length/1])
+	.
+
+:- assert_unpruned_corpus_length.
+
+
+
+complete_grammar(Complete_grammar):-
+	initialisation(G,Cs)
+	,complete_grammar(G, Cs, Cs, Complete_grammar).
+
+
+%Exit with a new grammar
+complete_grammar(G, [], _, G).
+	%  For each example in the examples corpus
+complete_grammar(G, [C|Xs], Cs, Acc):-
+	%  Create a new, originally empty production
+%	empty_production(Ypsilon) % could skip with: Ypsilon = ypsilon
+	%  [Update] Build the set of augmentation terms
+	augmentation_set(C, As)
+	%  For each term in the set of augmentation terms
+	% [Build up a new production]
+	,derived_production(As, Cs, ypsilon, P)
+	%  Add the new production to the grammar
+	,updated_grammar(P,G,G_)
+	%Prune the corpus
+	,pruned_corpus(Cs,G_,Cs_)
+	%Repeat while there are more examples [in the _un_ pruned corpus]
+	,complete_grammar(G_,Xs,Cs_,Acc).
+
+
+derived_production([], _Cs, P, P).
+	%    Take a new term from the set of augmentation terms
+derived_production([A|As], Cs, P, Acc):-
+	%    Augment the current production using the new term
+	augmented_production(P,A,P_)
+	%    Score the production
+	%    If the score is 0, discard this version of the production
+	%    Otherwise, keep the newest, best scored version of the production
+	,best_scored_production(Cs, P, P_, P_best)
+	%  Repeat while there are more terms [in the augset]
+	,derived_production(As,Cs,P_best,Acc).
+
+
+%!	initialisation(Grammar,Corpus) is det.
+%
+%	Initialise the Grammar and examples Corpus.
+%
+%	Grammar is a list:
+%       [S, N, T, P] where:
+%	  S, the start symbol of Grammar
+%         N, the set of nonterminal symbols in Grammar
+%         T, the set of terminals in Grammar
+%         P, the set of productions in Grammar
+%
+%	Corpus is the set of example strings in the target language,
+%	collected from the currently configured examples_language.
+%
+initialisation([S,Ns,Ts,Ps],Cs):-
+	grammar(S,Ns,Ts,Ps)
+	,examples_corpus(Cs).
 
 
 %!	examples_corpus(+Examples) is det.
@@ -254,8 +337,9 @@ updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]).
 updated_grammar((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	% New rule for a single nonterminal- discard it.
 	atom(T).
-updated_grammar((Name --> Tokens), [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
-	tree_list(Tokens, Tokens_list)
+updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
+	production_structure(Production,Name,_Score,Tokens)
+	,tree_list(Tokens, Tokens_list)
 	% Note the unbracketing of terminals:
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
 	,[P_Ts_unbracketed] = P_Ts % Don't ask.
@@ -285,6 +369,22 @@ updated_grammar_s((Name --> Tokens), [S,Ns-Ns_t,Ts-Ts_t,Ps-Ps_t], [S,Ns1-Ns_t1,T
 	,list_to_diff_ordset(Ts_bag, Ts1, Ts_t1)
 	,diff_append(Ps-Ps_t,[(Name --> Tokens)|Ps_t1]-Ps_t1,Ps1-Ps_t1).
 
+
+
+%!	production_structure(+Production,-Name,-Score,-Body) is semidet.
+%
+%	True when Production is a term of the form:
+%	  Name, Score --> Body.
+%
+%	Or of the form:
+%	  Name --> Body.
+%
+%	Used to extract the components of a production from a variable
+%	bound to the whole production when there's no need for the
+%	costlier extraction of constituents.
+%
+production_structure((Name, Score --> Body), Name,Score,Body).
+production_structure((Name --> Body), Name,[],Body).
 
 
 %!	production_constituents(?Name,?Production,?Constituents,+Options) is semidet.
@@ -378,28 +478,41 @@ production_name(N):-
 
 
 
-%!	unpruned_corpus_length(?Length) is det.
+%!	best_scored_production(+Corpus,+Production,+Augmented_production,-Best) is det.
 %
-%	The starting length of the unpruned corpus. Used to calculate
-%	production scores.
-:- dynamic unpruned_corpus_length/1.
+%	Choose the Best between Production and Augmented_production.
+%
+%	"Best" is the production with the highest generalisation score
+%	ie the one that best genealises over examples of Corpus.
+%
+best_scored_production(Cs, P, P_, P_best):-
+	scored_production(Cs, P_, P_scored)
+	,best_scored_production(P, P_scored, P_best).
 
-%!	assert_unpruned_corpus_length is det.
-%
-%	Set the length of the unpruned corpus according to the examples
-%	in the examples module.
-%
-%	@TODO: Consider moving to configuration module.
-%
-assert_unpruned_corpus_length:-
-	findall(Example, configuration:example_string(Example), Examples)
-	,length(Examples, L)
-	,assert(unpruned_corpus_length(L))
-	%,compile_predicates([unpruned_corpus_length/1])
-	.
 
-% TODO: needs to be in configuration module, probably. _Probably_.
-unpruned_corpus_length(3).
+%!	best_scored_production(+Production,+Augmented_production,-Best) is det.
+%
+%	Business end of best_scored_production/4. Selects the Best
+%	scored of Production and Augmented_production.
+%
+%	Augmented_production is a built-up, newly scored version of
+%	Production.
+%
+%	If Production is the empty production and the score of
+%	Augmented_production is not 0, Best is bound to
+%	Augmented_production.
+%
+%	Otherwise, if the score of Augmented_production is better than
+%	that of Production, then Best is bound to Augmented_production.
+%
+%	In all other cases Augmented_production is "discarded" and Best
+%	is bound to Production.
+%
+best_scored_production(ypsilon, (_, [0] --> _), ypsilon).
+best_scored_production(ypsilon, P, P).
+best_scored_production((N, [S] --> B), (N, [0] --> _B), (N, [S] --> B)).
+best_scored_production((N, [S] --> B), (N, [S_] --> _), (N, [S] --> B)):-
+	S > S_.
 
 
 %!	scored_production(+Corpus,+Production,-Scored_production) is det.
@@ -423,6 +536,15 @@ unpruned_corpus_length(3).
 %	adds it as a pushback-list, resulting in a term like the scored
 %	production in [1].
 %
+%	Score evaluates the generalisation power of Production over the
+%	given Corpus. It's a Real number from 0 to 1 where a higher
+%	value indicates a more general rule.
+%
+%	A Score of 0 means the rule cannot explain any of the examples
+%	in the Corpus and should be discarded, whereas a score of 1
+%	means the rule can at least partially explain each example in
+%	the Corpus.
+%
 scored_production(Corpus, (Name, _ --> Body), (Name, [Score] --> Body)):-
 	production_score(Corpus, (Name --> Body), Score)
 	,!.
@@ -436,7 +558,7 @@ scored_production(Corpus, (Name --> Body), (Name, [Score] --> Body)):-
 %	examples it can parse at least partially.
 %
 production_score(Corpus, (Name --> Body), Score):-
-	configuration:examples_module(M)
+	configuration:language_module(M)
 	,dcg_translate_rule(Name --> Body, R)
 	,findall(Example
 		,(member(Example, Corpus)
@@ -449,7 +571,7 @@ production_score(Corpus, (Name --> Body), Score):-
 
 
 
-%!	updated_augmentation_set(+Example,-Augset) is det.
+%!	augmentation_set(+Example,-Augset) is det.
 %
 %	Build up the set of augmentation terms, as a list of:
 %	[Ns,Ts,Ex]
@@ -457,12 +579,7 @@ production_score(Corpus, (Name --> Body), Score):-
 %	Where Ns is nonterminals, Ts nonterminals, Ex the tokens from a
 %	single example.
 %
-%	@NOTE: the "updated" part of the name is a bit misleading: this
-%	really just builds a new augmentation set form scratch. We don't
-%	really have to update it- we build it once, use it up and then
-%	get a new one. Such are the wasteful ways of the time of plenty.
-%
-updated_augmentation_set(Example, Augset):-
+augmentation_set(Example, Augset):-
 	findall(N, phrase(configuration:nonterminal, [N]), Ns)
 	,findall(T,phrase(configuration:terminal, [T]), Ts)
 	,findall([Token], member(Token, Example),Tokens)
