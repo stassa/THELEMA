@@ -135,7 +135,9 @@ complete_grammar(Complete_grammar):-
 %Exit with a new grammar
 complete_grammar(G, [], _, G).
 	%  For each example in the examples corpus
-complete_grammar(G, [C|Xs], Cs, Acc):-
+complete_grammar(G, [[]|Xs], Cs, Acc):-
+	complete_grammar(G, Xs, Cs, Acc).
+complete_grammar(G, [C|_Xs], Cs, Acc):-
 	%  Create a new, originally empty production
 %	empty_production(Ypsilon) % could skip with: Ypsilon = ypsilon
 	%  [Update] Build the set of augmentation terms
@@ -148,7 +150,7 @@ complete_grammar(G, [C|Xs], Cs, Acc):-
 	%Prune the corpus
 	,pruned_corpus(Cs,G_,Cs_)
 	%Repeat while there are more examples [in the _un_ pruned corpus]
-	,complete_grammar(G_,Xs,Cs_,Acc).
+	,complete_grammar(G_,Cs_,Cs_,Acc).
 
 
 derived_production([], _Cs, P, P).
@@ -248,7 +250,10 @@ pruned_corpus_([P|Ps],Corpus,Acc):-
 %
 production_pruned_corpus(Corpus, Production, Pruned_corpus):-
 	configuration:language_module(M)
-	,dcg_translate_rule(Production, Rule)
+	% Hacky - too hard to mix in Score with derivation/3
+	% We don't need it beyond this point anyway so ditch.
+	,production_structure(Production,Name,_Score,Body)
+	,dcg_translate_rule(Name --> Body, Rule)
 	,production_pruned_corpus(Corpus, M, Rule, [], Pruned_corpus)
 	,!. % Red cut- see comments.
 
@@ -373,8 +378,8 @@ updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]).
 updated_grammar((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	% New rule for a single nonterminal- discard it.
 	atom(T).
-updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
-	once(production_structure(Production,Name,_Score,Tokens))
+updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name, Score --> Tokens)|Ps]]):-
+	once(production_structure(Production,Name,Score,Tokens))
 	,tree_list(Tokens, Tokens_list)
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
 	,[P_Ts_unbracketed] = P_Ts % Don't ask.
@@ -617,7 +622,7 @@ production_score(Corpus, (Name --> Body), Score):-
 %	single example.
 %
 augmentation_set(Example, Augset):-
-	grammar_nonterminals(Ns)
+	 grammar_nonterminals(Ns)
 	,grammar_terminals(Ts)
 	,setof([Token], member(Token, Example),Tokens)
 	,append(Ns, Ts, S1)
