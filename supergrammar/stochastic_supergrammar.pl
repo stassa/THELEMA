@@ -209,7 +209,7 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 	%  Create a new, originally empty production
 %	empty_production(Ypsilon) % could skip with: Ypsilon = ypsilon
 	%  [Update] Build the set of augmentation terms
-	augmentation_set(C, As)
+	augmentation_set(C, G, As)
 	%  For each term in the set of augmentation terms
 	% [Build up a new production]
 	,derived_production(As, Cs, ypsilon, P)
@@ -398,13 +398,9 @@ grammar(Start,Nonterminals,Terminals,Productions):-
 %	grammar_productions/0.
 %
 grammar_nonterminals(Nonterminals):-
-	(    setof(N, phrase(configuration:nonterminal, [N]), Ns)
-	;    Ns = []
-	)
-	,(   setof(N, P^derived_production(N,P), Ps_names)
-	 ;   Ps_names = []
-	 )
-	,ord_union(Ns, Ps_names, Nonterminals).
+	(    setof(N, phrase(configuration:nonterminal, [N]), Nonterminals)
+	;    Nonterminals = []
+	).
 
 
 %!	grammar_terminals(-Terminals) is det.
@@ -425,13 +421,9 @@ grammar_terminals(Terminals):-
 %	The set of all Production known to the given grammar. Can be [].
 %
 grammar_productions(Productions):-
-	(     setof(P,N^given_production(N,P),G_Ps)
-	; G_Ps = []
-	)
-	,(   setof(P, N^derived_production(N,P), D_Ps)
-	 ;   D_Ps = []
-	 )
-	,ord_union(G_Ps, D_Ps, Productions).
+	(     setof(P,N^given_production(N,P),Productions)
+	; Productions = []
+	).
 
 
 
@@ -691,7 +683,7 @@ best_scored_production(ypsilon, P, P).
 best_scored_production((N, [S] --> B), (N, [0] --> _B), (N, [S] --> B)).
 best_scored_production((N, [S] --> B), (N, [S_] --> _), (N, [S] --> B)):-
 	S > S_.
-best_scored_production(Production, _Augmented, Production).
+best_scored_production(_Production, Augmented, Augmented).
 
 
 %!	scored_production(+Corpus,+Production,-Scored_production) is det.
@@ -750,20 +742,21 @@ production_score(Corpus, (Name --> Body), Score):-
 
 
 
-%!	augmentation_set(+Example,-Augset) is det.
+%!	augmentation_set(+Example,-Grammar,-Augset) is det.
 %
 %	Build up the set of augmentation terms, as a list of:
 %	[Ns,Ts,Ex]
 %
-%	Where Ns is nonterminals, Ts nonterminals, Ex the tokens from a
-%	single example.
+%	Where Ns is nonterminals, Ts nonterminals, from the given
+%	grammar and Ex the tokens from a single example.
 %
-augmentation_set(Example, Augset):-
-	 grammar_nonterminals(Ns)
-	,grammar_terminals(Ts)
-	,setof([Token], member(Token, Example),Tokens)
-	,append(Ns, Ts, S1)
-	,append(S1, Tokens, Augset).
+augmentation_set(Example, [_S,Ns,Ts,_Ps], Augset):-
+	setof([Token], member(Token, Example),Tokens)
+	,(   setof([T], member(T, Ts), Ts_)
+	 ;   Ts_ = []
+	 )
+	,ord_union(Ts_, Tokens, Terminals)
+	,append(Ns, Terminals, Augset).
 
 
 
