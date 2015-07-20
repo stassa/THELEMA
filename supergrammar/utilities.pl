@@ -1,4 +1,5 @@
 ﻿:-module(utilities, [prolog_dcg/2
+		    ,ord_add_elements/3
 		    ,all_slices_of/2
 		    ,list_to_diff_ordset/3
 		    ,diff_list/3
@@ -252,6 +253,18 @@ test(prolog_dcg_mixed_8, []):-
 	,once(prolog_dcg(Rule,DCG)).
 
 :-end_tests(prolog_dcg).
+
+
+
+%!	ord_add_elements(+Set,+Bag,?Union) is nondet.
+%
+%	Add all elements from Bag to Set, preserving the standard order
+%	of terms. Same as ord_add_element/3, but for a list of terms
+%	rather than a single element.
+ord_add_elements(S, [], S).
+ord_add_elements(Ss, [L|Ls], Acc):-
+	ord_add_element(Ss, L, Ss_U_L)
+	,ord_add_elements(Ss_U_L, Ls, Acc).
 
 
 
