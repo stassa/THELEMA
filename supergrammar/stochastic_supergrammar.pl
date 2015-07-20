@@ -340,13 +340,21 @@ grammar(Start,Nonterminals,Terminals,Productions):-
 %	grammar_productions/0.
 %
 grammar_nonterminals(Nonterminals):-
-	  setof(N, phrase(configuration:nonterminal, [N]), Nonterminals)
-	; Nonterminals = [].
+	(    setof(N, phrase(configuration:nonterminal, [N]), Ns)
+	;    Ns = []
+	)
+	,(   setof(N, P^derived_production(N,P), Ps_names)
+	 ;   Ps_names = []
+	 )
+	,ord_union(Ns, Ps_names, Nonterminals).
 
 
 %!	grammar_terminals(-Terminals) is det.
 %
-%	The ste of all Terminals known to the given grammar. Can be [].
+%	The set of all Terminals known to the given grammar. Can be [].
+%
+%	@TODO: think wether this needs to get terminals from
+%	derived_production/2 clauses also.
 %
 grammar_terminals(Terminals):-
 	% Note the twice-bracketed terminal:
@@ -354,13 +362,18 @@ grammar_terminals(Terminals):-
 	; Terminals = [].
 
 
-%!	grammar_productions(-Productions) is det.
+%!	grammar_productions(-Productions) is nondet.
 %
 %	The set of all Production known to the given grammar. Can be [].
 %
 grammar_productions(Productions):-
-	  setof(P,N^given_production(N,P),Productions)
-	; Productions = [].
+	(     setof(P,N^given_production(N,P),G_Ps)
+	; G_Ps = []
+	)
+	,(   setof(P, N^derived_production(N,P), D_Ps)
+	 ;   D_Ps = []
+	 )
+	,ord_union(G_Ps, D_Ps, Productions).
 
 
 

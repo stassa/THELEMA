@@ -5,12 +5,14 @@
 % ========  Legal augmentations  ========
 
 % Tests for case: [] -> n | t (empty production augmented by any token)
-test(augmented_production_augment_empty_production_with_a_nonterminal, []):-
-	augmented_production(ypsilon, g1, (a0, [-1] --> g1)).
+test(augmented_production_augment_empty_production_with_a_nonterminal, [nondet]):-
+	augmented_production(ypsilon, g1, (Name, [-1] --> g1))
+	,stochastic_supergrammar:production_name(Name).
 
 test(augmented_production_augment_empty_production_with_a_terminal, [nondet]):-
 	augmented_production(ypsilon, [a], Production)
-	,Production = (a0, [-1] --> [a]).
+	,Production = (Name, [-1] --> [a])
+	,stochastic_supergrammar:production_name(Name).
 
 % Tests for case: n+ -> n | t.
 test(augmented_production_augment_single_nonterminal_with_a_nonterminal,[nondet]):-
