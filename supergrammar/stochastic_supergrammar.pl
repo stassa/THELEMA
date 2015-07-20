@@ -103,12 +103,70 @@ assert_given_productions:-
 
 %!	retract_derived_productions is det.
 %
-%	Clear all clauses of derived_production/2 from the database.
+%	Clear the database of derived production information. This
+%	consists of:
+%
+%	a) All clauses of derived_production/2 asserted into this
+%	   module.
+%	b) All clauses of nonterminal//0 referencing the Name of a
+%	  derived production (the first argument of a
+%	  derived_production/2 clause).
+%	c) All Prolog rules created for such productions and asserted
+%	   into the language module.
+%
+%	The above needs to happen in the reverse order than listed
+%	above: to get the names of Prolog rules and nonterminals
+%	asserted into the language module, we need the corresponding
+%	derived_production/2 terms; so these go last. nonterminal//0
+%	clauses and clauses of newly asserted rules can go in any order
+%	before that.
 %
 retract_derived_productions:-
+	retract_derived_productions(rules)
+	,retract_derived_productions(references)
+	,retract_derived_productions(clauses).
+
+
+%!	retract_derived_productions(+Type) is nondet.
+%
+%	Business end of retract_derived_productions/0. Each clause takes
+%	care of a different set of clauses to remove, according to the
+%	order documented in the PLDoc comments for the parent predicate.
+%
+%	Type is one of:
+%	* rules, remove clauses of new nonterminals asserted in the
+%	language module
+%	* references, remove clauses of nonterminal//0
+%       * clauses, remove clauses of derived_production/2
+%
+retract_derived_productions(rules):-
+	configuration:language_module(M)
+	,forall(derived_production(N, (N, _S --> Ts)),
+		(   dcg_translate_rule((N --> Ts), H:-B)
+		   ,(   clause(M:H, B, Ref)
+		   ->	erase(Ref)%writeln(M:H:-B/Ref)
+		    ;	true
+		    )
+		)
+	       ).
+
+retract_derived_productions(references):-
+	%derived_grammar(G); G = nonterminal. Would be nice to have!
+	configuration:language_module(M)
+	,forall(derived_production(N, _P),
+		(   dcg_translate_rule(nonterminal --> [N], H:-B)
+		   ,(   clause(M:H, B, Ref)
+		   ->	erase(Ref)
+		    ;	true
+		    )
+		)
+	       ).
+
+retract_derived_productions(clauses):-
 	retractall(derived_production(_,_)).
 
 :- retract_derived_productions.
+
 
 
 %!	retract_unpruned_corpus_length is det.
@@ -383,6 +441,11 @@ grammar_productions(Productions):-
 %	of Nonterminals,Terminals and Productions is an ordered set (as
 %	in library(ordsets)) with a Tail-variable appended to its end
 %	with -/2.
+%
+%	@TODO: this is not up-to-date with changes to grammar/4,
+%	particularly the way we get all terminals, nonterminals and
+%	productions using grammar_* predicates.
+%
 grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
 	once(phrase(configuration:start, [Start]))
 	,findall(N, phrase(configuration:nonterminal, [N]), Ns)
@@ -413,7 +476,55 @@ updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name, Score --> Tokens)|P
 	,list_to_ord_set(P_Ts_unbracketed, Ts_ord)
 	,ord_union(Ns_ord, Ns, Ns_)
 	,ord_union(Ts_ord, Ts, Ts_)
-	,assert(derived_production(Name, Production)).
+	,update_grammar(Name, Score --> Tokens).
+
+
+
+update_grammar(Name, Score --> Tokens):-
+	configuration:language_module(M)
+	% Remember this derived production until next run
+	,asserta(derived_production(Name, (Name, Score --> Tokens)))
+	% Add to the set of known nonterminals for this run
+	,dcg_translate_rule(nonterminal --> [Name], Nonterminal)
+	% But why asserta? See below.
+	,asserta(M:Nonterminal)
+	% Add to rules for this run
+	% Er. Shouldn't I be adding the score also?
+	,dcg_translate_rule(Name --> Tokens, Rule)
+	,asserta(M:Rule).
+
+/*
+Why asserta? Remember that tale with the boy who wondered what his
+bellybutton was for? He unscrewed and nothing happened, then he stood up
+and his bottom fell off.
+
+This is one of those things.
+
+But if you must know, there seems to be some bug in Swi, around clause/3
+and cyclic arguments of clauses passed to it (clause/3). So, when
+cleaning up, if you have a clause of nonterminal//0 for a nonterminal
+called a0 and that's asserted as the first clause of nonterminal//0
+after the default-ish empty-nonterminal//0 clause, you get this sort of
+thing:
+
+Call: (11) dcg_translate_rule((nonterminal-->[a0]), (_G5355:-_G5356)) ? skip
+Exit: (11) dcg_translate_rule((nonterminal-->[a0]), (nonterminal([a0|_G5392], _G5392):-true)) ? creep
+^  Call: (11) clause(language_simple:nonterminal([a0|_G5392], _G5392), true, _G5366) ? skip
+^  Exit: (11) clause(nonterminal([a0, a0, a0, a0, a0, a0, a0|...], [a0, a0, a0, a0, a0, a0, a0|...]), true, <clause>(000000000528DC60)) ? creep
+
+Whereas if new nonterminal//0 clauses are asserted on top of the empty
+clause, you get this:
+
+Call: (11) dcg_translate_rule((nonterminal-->[a0]), (_G5355:-_G5356)) ? skip
+Exit: (11) dcg_translate_rule((nonterminal-->[a0]), (nonterminal([a0|_G5392], _G5392):-true)) ? creep
+^  Call: (11) clause(language_simple:nonterminal([a0|_G5392], _G5392), _G5365, _G5366) ? skip
+^  Exit: (11) clause(nonterminal([a0|_G5392], _G5392), true, <clause>(0000000005214E30)) ? abort
+
+Of course the problem is not what it looks like- the reference you get
+in the first case doesn't refer to a predicate that actually exists
+anywhere. Or in any case, the nonterminal --> [a0] clause is not
+actually erased. I need to report this as a bug, yes.
+*/
 
 
 
