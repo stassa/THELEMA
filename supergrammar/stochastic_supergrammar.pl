@@ -101,6 +101,16 @@ assert_given_productions:-
 
 
 
+%!	retract_derived_productions is det.
+%
+%	Clear all clauses of derived_production/2 from the database.
+%
+retract_derived_productions:-
+	retractall(derived_production(_,_)).
+
+:- retract_derived_productions.
+
+
 %!	retract_unpruned_corpus_length is det.
 %
 %	Clear all unpruned_corpus_length/1 clauses from the database.
@@ -181,7 +191,9 @@ derived_production([A|As], Cs, P, Acc):-
 %	collected from the currently configured examples_language.
 %
 initialisation([S,Ns,Ts,Ps],Cs):-
-	grammar(S,Ns,Ts,Ps)
+	% Cleanup first.
+	retract_derived_productions
+	,grammar(S,Ns,Ts,Ps)
 	,examples_corpus(Cs).
 
 
@@ -387,7 +399,8 @@ updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name, Score --> Tokens)|P
 	,list_to_ord_set([Name|P_Ns], Ns_ord)
 	,list_to_ord_set(P_Ts_unbracketed, Ts_ord)
 	,ord_union(Ns_ord, Ns, Ns_)
-	,ord_union(Ts_ord, Ts, Ts_).
+	,ord_union(Ts_ord, Ts, Ts_)
+	,assert(derived_production(Name, Production)).
 
 
 
@@ -493,13 +506,13 @@ production_constituents(Type,Name,(Name, Score --> Tokens), Score, Nonterminals,
 %	initial_score/1.
 empty_production((N, [R] --> [])):-
 	var(N)
-	,once(rule_name(N))
-	% Need to check that rule name is unique.
+	,rule_name(N)
+	,\+ derived_production(N, _)
 	,initial_score(R).
 
 empty_production((N, [R] --> [])):-
 	nonvar(N)
-	,production_name(N)
+	,once(production_name(N))
 	,initial_score(R).
 
 
