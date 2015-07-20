@@ -1,4 +1,12 @@
 
+:-nodebug(update_augmentation_set).
+:-debug(new_production).
+:-nodebug(update_grammar).
+:-nodebug(prune_corpus).
+:-nodebug(augment_production).
+:-nodebug(score_production).
+
+
 % Loads configuration predicates into global module user where
 % configuration module can access them.
 :-use_module(load_configuration).

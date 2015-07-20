@@ -1,4 +1,5 @@
-﻿:-module(stochastic_supergrammar, [complete_grammar/1
+﻿:-module(stochastic_supergrammar, [complete_grammar/0
+				  ,complete_grammar/1
 				  ,augmented_production/3
 				  ]).
 
@@ -194,10 +195,46 @@ assert_unpruned_corpus_length:-
 :- assert_unpruned_corpus_length.
 
 
+%!	complete_grammar is det.
+%
+%	Run that_algorithm and print the results to the configured
+%	output stream.
+%
+complete_grammar:-
+	make
+	,complete_grammar(G)
+	,configuration:output_stream(O)
+	,open(O,write,S,[])
+	,print_grammar(S, G)
+	,close(S).
 
+
+
+%!	print_grammar(+Stream,+Grammar) is det.
+%
+%	Write the elements of Grammar to Stream, each on a different
+%	line: the Start symbol, list of Nonterminals, list of Terminals
+%	and each Production.
+%
+print_grammar(Stream,[S,Ns,Ts,Ps]):-
+	writeln(Stream, S)
+	,writeln(Stream, Ns)
+	,writeln(Stream, Ts)
+	,forall(member(P,Ps),writeln(Stream,P)).
+
+
+
+%!	complete_grammar(-Grammar) is det.
+%
+%	Run an iteration of that_algorithm and report the completed
+%	grammar.
+%
 complete_grammar(Complete_grammar):-
 	initialisation(G,Cs)
-	,complete_grammar(G, Cs, Cs, Complete_grammar).
+	,complete_grammar(G, Cs, Cs, Complete_grammar)
+	,! % Red- need to understand where choicepoints are created
+	   % and which ones can be nipped in the bud.
+	.
 
 
 %Exit with a new grammar
@@ -210,13 +247,17 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 %	empty_production(Ypsilon) % could skip with: Ypsilon = ypsilon
 	%  [Update] Build the set of augmentation terms
 	augmentation_set(C, G, As)
+	,debug(update_augmentation_set,'~w ~w', ['augset',As])
 	%  For each term in the set of augmentation terms
 	% [Build up a new production]
 	,derived_production(As, Cs, ypsilon, P)
+	,debug(new_production,'~w ~w',[derived,P])
 	%  Add the new production to the grammar
 	,updated_grammar(P,G,G_)
+	,debug(update_grammar,'~w ~w', ['updated grammar:',G_])
 	%Prune the corpus
 	,pruned_corpus(Cs,G_,Cs_)
+	,debug(prune_corpus,'~w ~w',['pruned corpus:',Cs_])
 	%Repeat while there are more examples [in the _un_ pruned corpus]
 	,complete_grammar(G_,Cs_,Cs_,Acc).
 
@@ -226,10 +267,12 @@ derived_production([], _Cs, P, P).
 derived_production([A|As], Cs, P, Acc):-
 	%    Augment the current production using the new term
 	augmented_production(P,A,P_)
+	,debug(augment_production,'~w ~w ~w ~w',[augmented,P,to,P_])
 	%    Score the production
 	%    If the score is 0, discard this version of the production
 	%    Otherwise, keep the newest, best scored version of the production
 	,best_scored_production(Cs, P, P_, P_best)
+	,debug(score_production,'~w ~w ~w ~w ~w~w ~w',[best,scored,P_best,'Between:',P,',',P_])
 	%  Repeat while there are more terms [in the augset]
 	,derived_production(As,Cs,P_best,Acc).
 
@@ -738,7 +781,8 @@ production_score(Corpus, (Name --> Body), Score):-
 		,Parsed)
 	,length(Parsed, Parses)
 	,unpruned_corpus_length(Unpruned_length)
-	,Score is Parses / Unpruned_length.
+	,Score is Parses / Unpruned_length
+	,debug(score_production, '~w ~w ~w ~w', [scored,(Name --> Body),with,Score]).
 
 
 
