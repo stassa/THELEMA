@@ -742,6 +742,7 @@ best_scored_production(Cs, P, P_, P_best):-
 	,best_scored_production(P, P_scored, P_best).
 
 
+
 %!	best_scored_production(+Production,+Augmented_production,-Best) is det.
 %
 %	Business end of best_scored_production/4. Selects the Best
@@ -760,12 +761,17 @@ best_scored_production(Cs, P, P_, P_best):-
 %	In all other cases Augmented_production is "discarded" and Best
 %	is bound to Production.
 %
-best_scored_production(ypsilon, (_, [0] --> _), ypsilon).
-best_scored_production(ypsilon, P, P).
-best_scored_production((N, [S] --> B), (N, [0] --> _B), (N, [S] --> B)).
+best_scored_production(ypsilon, ypsilon, ypsilon).
+best_scored_production(Production, (_N, [0] --> _B), Production).
+best_scored_production((_N, [0] --> _B), Augmented, Augmented). % For clarity (same as last clause)
 best_scored_production((N, [S] --> B), (N, [S_] --> _), (N, [S] --> B)):-
-	S > S_.
-best_scored_production(_Production, Augmented, Augmented).
+	S > S_
+	,S \= 0
+	,!. % Cut to avoid binding again to wrong result in next clause.
+best_scored_production(_Production, (N, [S] --> B), (N, [S] --> B)):-
+	S \= 0.
+
+
 
 
 %!	scored_production(+Corpus,+Production,-Scored_production) is det.
@@ -798,11 +804,9 @@ best_scored_production(_Production, Augmented, Augmented).
 %	means the rule can at least partially explain each example in
 %	the Corpus.
 %
-scored_production(Corpus, (Name, _ --> Body), (Name, [Score] --> Body)):-
-	production_score(Corpus, (Name --> Body), Score)
-	,!.
-scored_production(Corpus, (Name --> Body), (Name, [Score] --> Body)):-
-	production_score(Corpus, (Name --> Body), Score).
+scored_production(Corpus, Production, (Name, [Score] --> Body)):-
+	production_structure(Production, Name, _Score, Body)
+	,production_score(Corpus, (Name --> Body), Score).
 
 
 %!	production_score(+Production,-Updated_production) is det.

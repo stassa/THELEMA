@@ -33,6 +33,84 @@ test(production_structure_out_in_name_score_body, []):-
 :-end_tests(production_structure).
 
 
+:-begin_tests(best_scored_production).
+
+% Zero scores and ypsilon.
+
+% Only semidet really.
+test(best_scored_production_ypsilon_ypsilon, [nondet]):-
+	stochastic_supergrammar:best_scored_production(ypsilon, ypsilon, ypsilon).
+
+% Semidet.
+test(best_scored_production_ypsilon_zero_scored, [nondet]):-
+	stochastic_supergrammar:best_scored_production(ypsilon, (p, [0] --> n,[t]), ypsilon).
+
+% Semidet.
+test(best_scored_production_other_zero_scored, [nondet]):-
+	Production = (p, [-1] --> n,[t_1])
+	,stochastic_supergrammar:best_scored_production(Production, (p, [0] --> n,[t]), Best)
+	,Best = Production.
+
+% Actually nondeterministic but both results are same.
+test(best_scored_production_zero_scored_first_arg, [nondet]):-
+	Production = (p, [-1] --> n,[t_1])
+	,stochastic_supergrammar:best_scored_production((p, [0] --> n,[t]), Production, Best)
+	,Best = Production.
+
+
+% Straight up comparisons
+
+test(best_scored_production_augmented_best, [nondet]):-
+	Production = (p, [-1] --> n,[t])
+	,Augmented = (p, [0.1] --> n,[t_1])
+	,stochastic_supergrammar:best_scored_production(Production, Augmented, Best)
+	,Best = Augmented.
+
+test(best_scored_production_pre_augmented_best, [nondet]):-
+	Production = (p, [0.1] --> n,[t])
+	,Augmented = (p, [-1] --> n,[t_1])
+	,stochastic_supergrammar:best_scored_production(Production, Augmented, Best)
+	,Best = Production.
+
+test(best_scored_production_equal_chose_augmented, [nondet]):-
+	Production = (p, [0.1] --> n,[t])
+	,Augmented = (p, [0.1] --> n,[t_1])
+	,stochastic_supergrammar:best_scored_production(Production, Augmented, Best)
+	,Best = Augmented.
+
+
+% Fail tests.
+
+test(best_scored_production_best_first_arg, [fail]):-
+	Production = (p, [-1] --> n,[t])
+	,Augmented = (p, [0.1] --> n,[t_1])
+	,stochastic_supergrammar:best_scored_production(Production, Augmented, Best)
+	,Best = Production.
+
+test(best_scored_production_equal_chose_production, [fail]):-
+	Production = (p, [0.1] --> n,[t])
+	,Augmented = (p, [0.1] --> n,[t_1])
+	,stochastic_supergrammar:best_scored_production(Production, Augmented, Best)
+	,Best = Production.
+
+test(best_scored_production_zero_scored_as_best, [fail]):-
+	Production = (p, [-1] --> n,[t_1])
+	,Zero_scored = (p, [0] --> n,[t])
+	,stochastic_supergrammar:best_scored_production(Production, Zero_scored, Zero_scored).
+
+test(best_scored_production_zero_scored_first_arg_as_best, [fail]):-
+	Production = (p, [-1] --> n,[t_1])
+	,Zero_scored = (p, [0] --> n,[t])
+	,stochastic_supergrammar:best_scored_production(Zero_scored, Production, Zero_scored).
+
+% This should not happen, but just in case.
+test(best_scored_production_other_zero_scored, [fail]):-
+	Zero_scored = ([0] --> n,[t])
+	,stochastic_supergrammar:best_scored_production(Zero_scored, Zero_scored, Zero_scored).
+
+:-end_tests(best_scored_production).
+
+
 :-begin_tests(augmented_production).
 
 % ========  Legal augmentations  ========
