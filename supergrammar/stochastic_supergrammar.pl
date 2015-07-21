@@ -220,7 +220,7 @@ complete_grammar:-
 	make
 	,complete_grammar(G)
 	,configuration:output_stream(O)
-	,expand_file_search_path(output(O), P)
+	,expand_file_search_path(O, P)
 	,open(P,write,S,[])
 	,print_grammar(S, G)
 	,close(S).
