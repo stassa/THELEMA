@@ -55,12 +55,6 @@
 %	@TODO: This is a prime candidate to do in a non-dynamical way.
 :-dynamic example/1.
 
-%!	termporary_production(?Name) is det.
-%
-%	Name of the temporary production term used in
-%	production_scoring/2.
-temporary_production(production_scoring).
-
 
 
 %!	given_productions(-Productions) is det.
@@ -222,22 +216,46 @@ complete_grammar:-
 	,configuration:output_stream(O)
 	,expand_file_search_path(O, P)
 	,open(P,write,S,[])
-	,print_grammar(S, G)
+	,configuration:output_type(T)
+	,once(print_grammar(S, G, T))
 	,close(S).
 
 
 
-%!	print_grammar(+Stream,+Grammar) is det.
+%!	print_grammar(+Stream,+Grammar) is semidet.
 %
 %	Write the elements of Grammar to Stream, each on a different
 %	line: the Start symbol, list of Nonterminals, list of Terminals
 %	and each Production.
 %
-print_grammar(Stream,[S,Ns,Ts,Ps]):-
+print_grammar(Stream,[S,Ns,Ts,Ps], loose):-
 	writeln(Stream, S)
 	,writeln(Stream, Ns)
 	,writeln(Stream, Ts)
 	,forall(member(P,Ps),writeln(Stream,P)).
+
+print_grammar(Stream,[S,Ns,Ts,Ps], terms):-
+	% Write the start symbol
+	print_term(Stream,s,S)
+	% Write the list of nonterminals
+	,print_term(Stream, n, Ns)
+	% Write the list of terminals
+        ,print_term(Stream,t,Ts)
+%	,write(Stream,'\n')
+	% Write each production on a separate line
+	,forall(member(P,Ps),(print_term(Stream,p,P))).
+
+
+%!	print_term(+Stream,+Term_type,+Term) is det.
+%
+%	Write Term to Stream. Convenience predicate to reduce
+%	boilerplate in print_grammar/3.
+print_term(S, p, T):-
+	write_term(S, T,[fullstop(true),nl(true),spacing(next_argument),quoted(true)]).
+print_term(S, Gt, Ls):-
+	configuration:grammar_term(Gt, Grammar_term)
+	,Term =.. [Grammar_term,Ls]
+	,write_term(S, Term,[fullstop(true),nl(true),spacing(next_argument),quoted(true)]).
 
 
 
