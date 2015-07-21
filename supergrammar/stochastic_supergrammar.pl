@@ -170,7 +170,9 @@ retract_derived_productions(references):-
 	configuration:language_module(M)
 	,forall(derived_production(N, _P),
 		(   dcg_translate_rule(nonterminal --> [N], H:-B)
-		   ,(   clause(M:H, B, Ref)
+		    ,copy_term(H:-B, H_:-B_)
+		   ,(   clause(M:H_, B_, Ref)
+		       ,(H:-B) =@= (H_:-B_) % Avoid confusion with cyclic terms.
 		   ->	erase(Ref)
 		    ;	true
 		    )
