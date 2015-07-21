@@ -1,10 +1,11 @@
 :-prolog_load_context(directory, Dir)
-  ,writeln(dir:Dir)
   ,asserta(user:file_search_path(supergrammar, Dir)).
 
-user:file_search_path(examples, supergrammar(examples)).
+% Corpus files.
+user:file_search_path(corpus, supergrammar(corpus)).
 % Directory for examples and language modules
 user:file_search_path(language, supergrammar(languages)).
+user:file_search_path(output, supergrammar(output)).
 
 :-nodebug(update_augmentation_set).
 :-debug(new_production).
@@ -30,7 +31,7 @@ edit_source:-
 	edit(supergrammar(load_supergrammar))
 	,edit(supergrammar(utilities))
 	,edit(supergrammar(stochastic_supergrammar))
-	,edit(supergrammar('stochastic_supergrammar.plt'))
+	%,edit(supergrammar('stochastic_supergrammar.plt'))
 	,edit(supergrammar(configuration))
 	,edit(supergrammar(load_configuration))
 	% Load configured language and examples files :D
