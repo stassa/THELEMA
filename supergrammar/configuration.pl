@@ -24,6 +24,7 @@ initial_score(-1).
 %
 output_stream('grammar.log').
 
+
 %:-register_world(language_simple
 %:-register_world(language_mtg_lexicalized
 %:-register_world(language_mtg

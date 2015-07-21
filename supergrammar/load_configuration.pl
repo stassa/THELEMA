@@ -117,7 +117,7 @@ register_world(Language_module, Renamed_predicates, Examples_module):-
 %	@SEE register_world.
 %
 register_language(Language_module, Renamed_predicates):-
-	reexport(Language_module, except(Renamed_predicates))
+	reexport(language(Language_module), except(Renamed_predicates))
 	,(  language_module(_)
 	->  retract(language_module(_))
 	;   true
@@ -134,7 +134,7 @@ register_language(Language_module, Renamed_predicates):-
 %	example_string/1. Same hack as for register_language/2.
 %
 register_examples(Examples_module):-
-	reexport(Examples_module, except([example_string/1 as example_string]))
+	reexport(language(Examples_module), except([example_string/1 as example_string]))
 	,(  examples_module(_)
 	->  retract(examples_module(_))
 	;   true
