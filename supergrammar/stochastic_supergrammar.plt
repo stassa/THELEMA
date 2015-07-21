@@ -1,5 +1,38 @@
 :-use_module(stochastic_supergrammar).
 
+:-begin_tests(production_structure).
+
+/*
+% Tests are explicitly deterministic, to point out that you can't end up
+% in this sort of situation on backtracking:
+?- production_structure((n,[0.1]-->[t_1]),N,S,Ts), production_structure(P,N,[],Ts).
+N = n, S = [0.1], Ts = [t_1], P = (n-->[t_1]) ;
+N = n, S = [0.1], Ts = [t_1], P = (n, []-->[t_1]). % specifically this!
+*/
+
+test(production_structure_in_out_no_score, []):-
+	production_structure((nm --> n, [t_1]), N, S, B)
+	,N = nm
+	,S = []
+	,B = (n, [t_1]).
+
+test(production_structure_in_out_name_score_body, []):-
+	production_structure((nm, [0.5] --> n, [t_1]), N, S, B)
+	,N = nm
+	,S = [0.5]
+	,B = (n, [t_1]).
+
+test(production_structure_out_in_no_score, []):-
+	production_structure(P, nm, [], (n,[t_1]))
+	,P = (nm --> n, [t_1]).
+
+test(production_structure_out_in_name_score_body, []):-
+	production_structure(P, nm, [0.6], (n,[t_1]))
+	,P = (nm, [0.6] --> n, [t_1]).
+
+:-end_tests(production_structure).
+
+
 :-begin_tests(augmented_production).
 
 % ========  Legal augmentations  ========

@@ -401,9 +401,7 @@ production_pruned_corpus(Corpus, Production, Pruned_corpus):-
 	configuration:language_module(M)
 	% Hacky - too hard to mix in Score with derivation/3
 	% We don't need it beyond this point anyway so ditch.
-%	,production_rule(Production, Rule)
-	,production_structure(Production,Name,_Score,Body)
-	,dcg_translate_rule(Name --> Body, Rule)
+	,production_rule(Production, Rule)
 	,production_pruned_corpus(Corpus, M, Rule, [], Pruned_corpus)
 	,!. % Red cut- see comments.
 
@@ -532,6 +530,10 @@ grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
 %
 %	Update the current grammar with a newly learned production.
 %
+%       @TODO: It would	be very esy here to connect terminals to the
+%	terminal//0 term - and in fact do the same for nonterminals. I
+%	could even try to lexicalize either.
+%
 updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]).
 updated_grammar((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	% New rule for a single nonterminal- discard it.
@@ -549,9 +551,17 @@ updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
 	,update_grammar(Name --> Tokens).
 
 
-
+%!	update_grammar(+Production) is det.
+%
+%	Add a new production to the database.
+%
+%	@TODO: Add more context to this PLdoc.
+%	@TODO: is it necessary to add a nonterminal//0 to the language
+%	module? We're adding it to the output file anyway...?
+%
 update_grammar(Name --> Tokens):-
-	configuration:language_module(M)
+	debug(write_to_database,'~w ~w', ['adding term:',Name --> Tokens])
+	,configuration:language_module(M)
 	% Remember this derived production until next run
 	,asserta(derived_production(Name, (Name --> Tokens)))
 	% Add to the set of known nonterminals for this run
@@ -562,39 +572,6 @@ update_grammar(Name --> Tokens):-
 	% Er. Shouldn't I be adding the score also?
 	,dcg_translate_rule(Name --> Tokens, Rule)
 	,asserta(M:Rule).
-
-/*
-Why asserta? Remember that tale with the boy who wondered what his
-bellybutton was for? He unscrewed and nothing happened, then he stood up
-and his bottom fell off.
-
-This is one of those things.
-
-But if you must know, there seems to be some bug in Swi, around clause/3
-and cyclic arguments of clauses passed to it (clause/3). So, when
-cleaning up, if you have a clause of nonterminal//0 for a nonterminal
-called a0 and that's asserted as the first clause of nonterminal//0
-after the default-ish empty-nonterminal//0 clause, you get this sort of
-thing:
-
-Call: (11) dcg_translate_rule((nonterminal-->[a0]), (_G5355:-_G5356)) ? skip
-Exit: (11) dcg_translate_rule((nonterminal-->[a0]), (nonterminal([a0|_G5392], _G5392):-true)) ? creep
-^  Call: (11) clause(language_simple:nonterminal([a0|_G5392], _G5392), true, _G5366) ? skip
-^  Exit: (11) clause(nonterminal([a0, a0, a0, a0, a0, a0, a0|...], [a0, a0, a0, a0, a0, a0, a0|...]), true, <clause>(000000000528DC60)) ? creep
-
-Whereas if new nonterminal//0 clauses are asserted on top of the empty
-clause, you get this:
-
-Call: (11) dcg_translate_rule((nonterminal-->[a0]), (_G5355:-_G5356)) ? skip
-Exit: (11) dcg_translate_rule((nonterminal-->[a0]), (nonterminal([a0|_G5392], _G5392):-true)) ? creep
-^  Call: (11) clause(language_simple:nonterminal([a0|_G5392], _G5392), _G5365, _G5366) ? skip
-^  Exit: (11) clause(nonterminal([a0|_G5392], _G5392), true, <clause>(0000000005214E30)) ? abort
-
-Of course the problem is not what it looks like- the reference you get
-in the first case doesn't refer to a predicate that actually exists
-anywhere. Or in any case, the nonterminal --> [a0] clause is not
-actually erased. I need to report this as a bug, yes.
-*/
 
 
 
@@ -654,8 +631,11 @@ production_rule(Production, Rule):-
 %	bound to the whole production when there's no need for the
 %	costlier extraction of constituents.
 %
-production_structure((Name, Score --> Body), Name,Score,Body).
-production_structure((Name --> Body), Name,[],Body).
+production_structure((Name --> Body),Name,[],Body):-
+	atom(Name)
+	,!. % Reddish cut- if Name is an atom and Score is [] we should stop here
+	   % else we end up with A term (Name, [] --> Body) on backtracking
+production_structure((Name, Score --> Body),Name,Score,Body).
 
 
 
@@ -725,7 +705,7 @@ production_constituents(Type,Name,(Name, Score --> Tokens), Score, Nonterminals,
 empty_production((N, [R] --> [])):-
 	var(N)
 	,rule_name(N)
-	,\+ derived_production(N, _)
+	,once(\+ derived_production(N, _))
 	,initial_score(R).
 
 empty_production((N, [R] --> [])):-

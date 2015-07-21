@@ -10,6 +10,7 @@ user:file_search_path(output, supergrammar(output)).
 :-nodebug(update_augmentation_set).
 :-debug(new_production).
 :-nodebug(update_grammar).
+:-nodebug(write_to_database).
 :-nodebug(prune_corpus).
 :-nodebug(augment_production).
 :-nodebug(score_production).
