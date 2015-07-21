@@ -1,6 +1,20 @@
-﻿:-module(stochastic_supergrammar, [complete_grammar/0
+﻿:-module(stochastic_supergrammar, [given_productions/1
+				  ,retract_given_productions/0
+				  ,retract_derived_productions/0
+				  ,complete_grammar/0
 				  ,complete_grammar/1
+				  ,examples_corpus/1
+				  ,pruned_corpus/3
+				  ,derivation/3
+				  ,grammar/4
+				  ,updated_grammar/3
+				  ,production_structure/4
+				  ,production_constituents/4
+				  ,best_scored_production/4
+				  ,production_score/3
+				  ,augmentation_set/3
 				  ,augmented_production/3
+				  ,production//1
 				  ]).
 
 :-use_module(utilities).
@@ -948,102 +962,3 @@ symbols(nonterminal,[]) --> [].
 
 symbols(terminal,[T|Ts]) --> [T], symbols(terminal,Ts).
 symbols(terminal,[]) --> [].
-
-
-
-%!	terms_functors(+Terms,?Tail,-Functors) is semidet.
-%
-%	Convert between a list of compound Terms and a tree of their
-%	Functors. Tail is the tail of the tree and can be instantiated
-%	to a variable to produce a cyclic term.
-%
-%	Used to extract the names of terminals from a rule body.
-%
-%	Example usages:
-%
-%	==
-%	?- Ts = (a(A,B),b(C,D)), terms_functors(Ts,c,TFs).
-%	TFs = (a, b, c).
-%
-%	?- Ts = (a(A,B),b(C,D)), terms_functors(Ts,V,TFs).
-%	TFs = (a, b, V).
-%
-%	?- Ts = (a(A,B),b(C,D)), terms_functors(Ts,[],TFs).
-%	TFs = (a, b, []).
-%
-%	?- Ts = a(A,B), terms_functors(Ts,b,TFs).
-%	TFs = (a, b) ;
-%	false.
-%	==
-%
-terms_functors(Terms, Tail, Functors):-
-	Terms =.. [','|Ts]
-	,terms_functors_(Ts, Tail, Functors)
-	,!.
-terms_functors(Terms, Tail, Functors):-
-	Terms =.. [F|_]
-	,terms_functors_([F], Tail, Functors).
-
-
-%!	terms_functors_(+Terms,?Tail,-Functors) is nondet.
-%
-%	Business end of terms_functors/3.
-%
-%	Example usages:
-%
-%	==
-%	?- (a(A,B), b(C,D)) =.. [','|Ts], terms_functors(Ts,c,TFs)
-%	Ts = [a(A, B), b(C, D)],
-%	TFs = (a, b, c)
-%	false.
-%
-%	?- (a(A,B), b(C,D)) =.. [','|Ts], terms_functors(Ts,Tail,TFs).
-%	Ts = [a(A, B), b(C, D)],
-%	TFs = (a, b, Tail) ;
-%	false.
-%
-%	?- (a(A,B), b(C,D)) =.. [','|Ts], terms_functors(Ts,[],TFs).
-%	Ts = [a(A, B), b(C, D)],
-%	TFs = (a, b, []) ;
-%	false.
-%	==
-%
-terms_functors_([Term], Temp, (Functor,Temp)):-
-	Term =.. [Functor|_Args].
-terms_functors_([Term|Fs], Temp, Acc):-
-	terms_functors_(Fs, Temp, Acc1)
-	,terms_functors_([Term], Acc1, Acc).
-
-
-
-%!	clear_database is det.
-%
-%	Clear the database from dynamic terms asserted during a previous
-%	run.
-%
-clear_database:-
-	clear_temporary_productions.
-
-
-%!	clear_temporary_productions is det.
-%
-%	Remove temporary productions used for scoring from the database.
-clear_temporary_productions:-
-	configuration:examples_module(M)
-	,rule_complexity(C)
-	,A is C + 1
-	,temporary_production(N)
-	,functor(T, N, A)
-	,retractall(M:T).
-
-
-unload_examples_module:-
-	configuration:examples_module(Module)
-	,forall(current_predicate(Module:P/A)
-	       ,abolish(Module:P/A)).
-
-reload_examples_module:-
-	configuration:examples_module(Module)
-	,consult(Module).
-
-

@@ -6,6 +6,8 @@
 		    ,diff_append/3
 		    ,pdcg_parses/3
 		    ,pdcg_parse/2
+		    ,terms_functors/3
+		    ,multiplication/3
 		    ,max_key/2
 		    ,list_tree/2
 		    ,tree_list/2
@@ -558,6 +560,105 @@ aggregated_keys([K-V|KVPs], Temp, Acc):-
 	,aggregated_keys(KVPs, [P-V|Temp], Acc).
 
 
+
+%!	terms_functors(+Terms,?Tail,-Functors) is semidet.
+%
+%	Convert between a list of compound Terms and a tree of their
+%	Functors. Tail is the tail of the tree and can be instantiated
+%	to a variable to produce a cyclic term.
+%
+%	Used to extract the names of terminals from a rule body.
+%
+%	Example usages:
+%
+%	==
+%	?- Ts = (a(A,B),b(C,D)), terms_functors(Ts,c,TFs).
+%	TFs = (a, b, c).
+%
+%	?- Ts = (a(A,B),b(C,D)), terms_functors(Ts,V,TFs).
+%	TFs = (a, b, V).
+%
+%	?- Ts = (a(A,B),b(C,D)), terms_functors(Ts,[],TFs).
+%	TFs = (a, b, []).
+%
+%	?- Ts = a(A,B), terms_functors(Ts,b,TFs).
+%	TFs = (a, b) ;
+%	false.
+%	==
+%
+terms_functors(Terms, Tail, Functors):-
+	Terms =.. [','|Ts]
+	,terms_functors_(Ts, Tail, Functors)
+	,!.
+terms_functors(Terms, Tail, Functors):-
+	Terms =.. [F|_]
+	,terms_functors_([F], Tail, Functors).
+
+
+%!	terms_functors_(+Terms,?Tail,-Functors) is nondet.
+%
+%	Business end of terms_functors/3.
+%
+%	Example usages:
+%
+%	==
+%	?- (a(A,B), b(C,D)) =.. [','|Ts], terms_functors(Ts,c,TFs)
+%	Ts = [a(A, B), b(C, D)],
+%	TFs = (a, b, c)
+%	false.
+%
+%	?- (a(A,B), b(C,D)) =.. [','|Ts], terms_functors(Ts,Tail,TFs).
+%	Ts = [a(A, B), b(C, D)],
+%	TFs = (a, b, Tail) ;
+%	false.
+%
+%	?- (a(A,B), b(C,D)) =.. [','|Ts], terms_functors(Ts,[],TFs).
+%	Ts = [a(A, B), b(C, D)],
+%	TFs = (a, b, []) ;
+%	false.
+%	==
+%
+terms_functors_([Term], Temp, (Functor,Temp)):-
+	Term =.. [Functor|_Args].
+terms_functors_([Term|Fs], Temp, Acc):-
+	terms_functors_(Fs, Temp, Acc1)
+	,terms_functors_([Term], Acc1, Acc).
+
+
+
+%!	multiplication(+A,+B,-C) is det.
+%
+%	True when C is A * B, given that both A and B are numbers.
+%
+%	If either A or B is not a number C is bound to the one that is a
+%	number.
+%
+%	If both A and B are not numbers, C is bound to 1.
+%
+multiplication(A, B, C):-
+	must_be(nonvar, A)
+	,must_be(nonvar,B)
+	,must_be(var, C)
+	,fail.
+multiplication(A, B, B):-
+	\+ number(A)
+	,number(B)
+	,!.
+multiplication(A, B, A):-
+	\+ number(B)
+	,number(A)
+	,!.
+multiplication(A, B, 1):-
+	 \+ number(A)
+	,\+ number(B)
+	,!.
+multiplication(A, B, C):-
+	number(A)
+	,number(B)
+	,C is A * B.
+
+
+
 :-begin_tests(multiplication).
 
 test(multiplication_mode_var_var_ground_1
@@ -591,36 +692,6 @@ test(multiplication_two_alphas, []):-
 
 :-end_tests(multiplication).
 
-%!	multiplication(+A,+B,-C) is det.
-%
-%	True when C is A * B, given that both A and B are numbers.
-%
-%	If either A or B is not a number C is bound to the one that is a
-%	number.
-%
-%	If both A and B are not numbers, C is bound to 1.
-%
-multiplication(A, B, C):-
-	must_be(nonvar, A)
-	,must_be(nonvar,B)
-	,must_be(var, C)
-	,fail.
-multiplication(A, B, B):-
-	\+ number(A)
-	,number(B)
-	,!.
-multiplication(A, B, A):-
-	\+ number(B)
-	,number(A)
-	,!.
-multiplication(A, B, 1):-
-	 \+ number(A)
-	,\+ number(B)
-	,!.
-multiplication(A, B, C):-
-	number(A)
-	,number(B)
-	,C is A * B.
 
 
 
@@ -703,6 +774,7 @@ rule_name(F):-
 	var(F)
 	,phrase(letters_number, H)
 	,atomic_list_concat(H,F).
+
 
 
 %!	generate_alphanumeric(-New,+Options) is nondet.
