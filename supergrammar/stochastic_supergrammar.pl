@@ -79,6 +79,7 @@ given_productions(Ps):-
 given_productions([]).
 
 
+
 %!	retract_given_productions is det.
 %
 %	Clear all given_production/2 terms from the database.
@@ -242,6 +243,7 @@ print_grammar(Stream,[S,Ns,Ts,Ps], terms):-
 	,print_term(Stream, n, Ns)
 	% Write the list of terminals
         ,print_term(Stream,t,Ts)
+	,forall(member(N, Ns), print_term(Stream, p, nonterminal --> [N]))
 	% Write each production on a separate line
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
@@ -399,6 +401,7 @@ production_pruned_corpus(Corpus, Production, Pruned_corpus):-
 	configuration:language_module(M)
 	% Hacky - too hard to mix in Score with derivation/3
 	% We don't need it beyond this point anyway so ditch.
+%	,production_rule(Production, Rule)
 	,production_structure(Production,Name,_Score,Body)
 	,dcg_translate_rule(Name --> Body, Rule)
 	,production_pruned_corpus(Corpus, M, Rule, [], Pruned_corpus)
@@ -475,9 +478,8 @@ grammar(Start,Nonterminals,Terminals,Productions):-
 %	grammar_productions/0.
 %
 grammar_nonterminals(Nonterminals):-
-	(    setof(N, phrase(configuration:nonterminal, [N]), Nonterminals)
-	;    Nonterminals = []
-	).
+	  setof(N, phrase(configuration:nonterminal, [N]), Nonterminals)
+	; Nonterminals = [].
 
 
 %!	grammar_terminals(-Terminals) is det.
@@ -498,9 +500,8 @@ grammar_terminals(Terminals):-
 %	The set of all Production known to the given grammar. Can be [].
 %
 grammar_productions(Productions):-
-	(     setof(P,N^given_production(N,P),Productions)
-	; Productions = []
-	).
+	  setof(P,N^given_production(N,P),Productions)
+	; Productions = [].
 
 
 
@@ -535,8 +536,8 @@ updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]).
 updated_grammar((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	% New rule for a single nonterminal- discard it.
 	atom(T).
-updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name, Score --> Tokens)|Ps]]):-
-	once(production_structure(Production,Name,Score,Tokens))
+updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
+	once(production_structure(Production,Name,_Score,Tokens))
 	,tree_list(Tokens, Tokens_list)
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
 	,[P_Ts_unbracketed] = P_Ts % Don't ask.
@@ -545,14 +546,14 @@ updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name, Score --> Tokens)|P
 	,list_to_ord_set(P_Ts_unbracketed, Ts_ord)
 	,ord_union(Ns_ord, Ns, Ns_)
 	,ord_union(Ts_ord, Ts, Ts_)
-	,update_grammar(Name, Score --> Tokens).
+	,update_grammar(Name --> Tokens).
 
 
 
-update_grammar(Name, Score --> Tokens):-
+update_grammar(Name --> Tokens):-
 	configuration:language_module(M)
 	% Remember this derived production until next run
-	,asserta(derived_production(Name, (Name, Score --> Tokens)))
+	,asserta(derived_production(Name, (Name --> Tokens)))
 	% Add to the set of known nonterminals for this run
 	,dcg_translate_rule(nonterminal --> [Name], Nonterminal)
 	% But why asserta? See below.
@@ -614,6 +615,30 @@ updated_grammar_s((Name --> Tokens), [S,Ns-Ns_t,Ts-Ts_t,Ps-Ps_t], [S,Ns1-Ns_t1,T
 	,diff_append(Ts-Ts_t, Ts_unbracketed-[], Ts_bag-[])
 	,list_to_diff_ordset(Ts_bag, Ts1, Ts_t1)
 	,diff_append(Ps-Ps_t,[(Name --> Tokens)|Ps_t1]-Ps_t1,Ps1-Ps_t1).
+
+
+
+%!	production_rule(+Production, -Rule) is det.
+%
+%	Convert between a Production in DCG notation to a Prolog rule.
+%
+%	If Production is of the form:
+%	==
+%	Name, Score --> Body
+%	==
+%
+%	Then Score is dropped and the resulting Rule is equivalent to
+%	the output of:
+%	==
+%	dcg_translate_rule(Name --> Body, Rule).
+%	==
+%
+%	Use to avoid having to explicitly unify production terms with
+%	dcg parts.
+%
+production_rule(Production, Rule):-
+	production_structure(Production,Name,_,Body)
+	,dcg_translate_rule(Name --> Body, Rule).
 
 
 
