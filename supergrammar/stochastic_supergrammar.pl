@@ -21,12 +21,6 @@
 :-use_module(configuration).
 :-use_module(library(ordsets)).
 
-%!	production_scoring// is det.
-%
-%	Temporary production term asserted to the database to allow
-%	scoring of productions.
-:-dynamic
-	production_scoring/3.
 
 %!	given_production(?Name,?Production,?Arguments) is  det.
 %
@@ -45,15 +39,6 @@
 %	The starting length of the unpruned corpus. Used to calculate
 %	production scores.
 :- dynamic unpruned_corpus_length/1.
-
-%!	example(?String) is nondet.
-%
-%	A tokenized example string in the target language.
-%	Declared dynamic so that we can remove and re-declare examples
-%	as the corpus is pruned.
-%
-%	@TODO: This is a prime candidate to do in a non-dynamical way.
-:-dynamic example/1.
 
 
 
@@ -770,7 +755,6 @@ best_scored_production((N, [S] --> B), (N, [S_] --> _), (N, [S] --> B)):-
 	,!. % Cut to avoid binding again to wrong result in next clause.
 best_scored_production(_Production, (N, [S] --> B), (N, [S] --> B)):-
 	S \= 0.
-
 
 
 
