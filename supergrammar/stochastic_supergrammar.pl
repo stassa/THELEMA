@@ -271,9 +271,12 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 	,debug(update_augmentation_set,'~w ~w', ['augset',As])
 	%  For each term in the set of augmentation terms
 	% [Build up a new production]
-	,derived_production(As, Cs, ypsilon, P)
+	,once(derived_production(As, Cs, ypsilon, P))
 	,debug(new_production,'~w ~w',[derived,P])
 	%  Add the new production to the grammar
+%	,\+ derived_production(_, P)
+%	,\+ given_production(_, P)
+%	,!
 	,updated_grammar(P,G,G_)
 	,debug(update_grammar,'~w ~w', ['updated grammar:',G_])
 	%Prune the corpus
@@ -281,13 +284,14 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 	,debug(prune_corpus,'~w ~w',['pruned corpus:',Cs_])
 	%Repeat while there are more examples [in the _un_ pruned corpus]
 	,complete_grammar(G_,Cs_,Cs_,Acc).
-
+complete_grammar(G, [_C|Cs_], Cs, Acc):-
+	complete_grammar(G,Cs_,Cs,Acc).
 
 derived_production([], _Cs, P, P).
 	%    Take a new term from the set of augmentation terms
 derived_production([A|As], Cs, P, Acc):-
 	%    Augment the current production using the new term
-	augmented_production(P,A,P_)
+	once(augmented_production(P,A,P_))
 	,debug(augment_production,'~w ~w ~w ~w',[augmented,P,to,P_])
 	%    Score the production
 	%    If the score is 0, discard this version of the production
