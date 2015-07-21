@@ -153,7 +153,7 @@ retract_derived_productions(rules):-
 	,forall(derived_production(N, (N, _S --> Ts)),
 		(   dcg_translate_rule((N --> Ts), H:-B)
 		   ,(   clause(M:H, B, Ref)
-		   ->	erase(Ref)%writeln(M:H:-B/Ref)
+		   ->	erase(Ref)
 		    ;	true
 		    )
 		)
@@ -194,13 +194,14 @@ retract_unpruned_corpus_length:-
 %	Set the length of the unpruned corpus according to the examples
 %	in the examples module.
 %
+%	@TODO: think whether can be compiled into a static term for
+%	optimisation.
+%
 assert_unpruned_corpus_length:-
 	retract_unpruned_corpus_length
 	,findall(Example, configuration:example_string(Example), Examples)
 	,length(Examples, L)
-	,assert(unpruned_corpus_length(L))
-	%,compile_predicates([unpruned_corpus_length/1])
-	.
+	,assert(unpruned_corpus_length(L)).
 
 :- assert_unpruned_corpus_length.
 
@@ -241,7 +242,6 @@ print_grammar(Stream,[S,Ns,Ts,Ps], terms):-
 	,print_term(Stream, n, Ns)
 	% Write the list of terminals
         ,print_term(Stream,t,Ts)
-%	,write(Stream,'\n')
 	% Write each production on a separate line
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
@@ -279,7 +279,6 @@ complete_grammar(G, [[]|Xs], Cs, Acc):-
 	complete_grammar(G, Xs, Cs, Acc).
 complete_grammar(G, [C|_Xs], Cs, Acc):-
 	%  Create a new, originally empty production
-%	empty_production(Ypsilon) % could skip with: Ypsilon = ypsilon
 	%  [Update] Build the set of augmentation terms
 	augmentation_set(C, G, As)
 	,debug(update_augmentation_set,'~w ~w', ['augset',As])
