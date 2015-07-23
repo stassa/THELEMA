@@ -7,13 +7,13 @@ user:file_search_path(corpus, supergrammar(corpus)).
 user:file_search_path(language, supergrammar(languages)).
 user:file_search_path(output, supergrammar(output)).
 
-:-nodebug(update_augmentation_set).
-:-debug(new_production).
-:-nodebug(update_grammar).
-:-nodebug(write_to_database).
-:-nodebug(prune_corpus).
-:-nodebug(augment_production).
-:-nodebug(score_production).
+:-debug(update_augmentation_set > 'debug.log').
+:-debug(new_production > 'debug.log').
+:-debug(update_grammar > 'debug.log').
+:-debug(write_to_database > 'debug.log').
+:-debug(prune_corpus > 'debug.log').
+:-debug(augment_production > 'debug.log').
+:-debug(score_production > 'debug.log').
 
 
 % Loads configuration predicates into global module user where

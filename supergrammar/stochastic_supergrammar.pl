@@ -825,13 +825,25 @@ production_score(Corpus, (Name --> Body), Score):-
 %	Where Ns is nonterminals, Ts nonterminals, from the given
 %	grammar and Ex the tokens from a single example.
 %
+%	@TODO: it's costly having to rebracket terminals in the list of
+%	terminals in Grammar; consider leaving them bracketed in the
+%	first place, then flattening the list at the end of a run. If
+%	that's possible.
+%
+augmentation_set(Example, [_S,Ns,[],_Ps], Augset):-
+	findall([Ex],member(Ex, Example),Bracketed_example)
+	,append(Ns, Bracketed_example, Augset).
+
 augmentation_set(Example, [_S,Ns,Ts,_Ps], Augset):-
-	setof([Token], member(Token, Example),Tokens)
-	,(   setof([T], member(T, Ts), Ts_)
-	 ;   Ts_ = []
+	setof([Token], member(Token, Example),Example_tokens)
+	% Rebracket terminals:
+	,(   setof([T], member(T, Ts), Bracketed_Terminals)
+	 ;   Bracketed_Terminals = []
 	 )
-	,ord_union(Ts_, Tokens, Terminals)
-	,append(Ns, Terminals, Augset).
+	,ord_subtract(Bracketed_Terminals, Example_tokens, Terminals_minus_Example)
+	,findall([Token],member(Token, Example),Bracketed_unordered_example)
+	,append(Bracketed_unordered_example, Terminals_minus_Example, Example_and_Terminals)
+	,append(Ns, Example_and_Terminals, Augset).
 
 
 
