@@ -2,7 +2,9 @@
 			,initial_score/1
 			,output_stream/1
 			,output_type/1
-			,grammar_term/2]).
+			,grammar_term/2
+			,internal_production_name/1
+			]).
 
 %:-register_world(language_simple
 %:-register_world(language_mtg_lexicalized
@@ -88,3 +90,10 @@ grammar_term(t, terminals).
 grammar_term(n, nonterminals).
 grammar_term(p, productions).
 
+
+%!	internal_production_name(?E) is nondet.
+%
+%	A dumny production name to give productions we are in the
+%	process of deriving.
+%
+internal_production_name(ypsilon).

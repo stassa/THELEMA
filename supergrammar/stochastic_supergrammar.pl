@@ -289,7 +289,9 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 %	score it against the Corpus and bind the result to the
 %	Accumulator.
 %
-derived_production([], _Cs, P, P).
+derived_production([], _Cs, P, P_):-
+	named_production(P, P_)
+	,!.
 	%    Take a new term from the set of augmentation terms
 derived_production([A|As], Cs, P, Acc):-
 	%    Augment the current production using the new term
@@ -302,6 +304,58 @@ derived_production([A|As], Cs, P, Acc):-
 	,debug(score_production,'~w ~w ~w ~w ~w~w ~w',[best,scored,P_best,'Between:',P,',',P_])
 	%  Repeat while there are more terms [in the augset]
 	,derived_production(As,Cs,P_best,Acc).
+
+
+
+%!	named_production(+Production,-Renamed) is det.
+%
+%	Assign a meaningful name to a newly derived production that is a
+%	concatenation of the atomic forms of the production's right-hand
+%	side elements.
+%
+named_production(_ --> [Body], New_name --> [Body]):-
+	atomic_concat(t_, Body, New_name)
+	,!.
+% Not sure if this is possible anymore.
+named_production(_ --> Body, New_name --> Body):-
+	atomic(Body)
+	,atomic_concat(n_, Body, New_name)
+	,!.
+named_production(_ --> Body, New_name --> Body):-
+	tree_list(Body, Tokens_list)
+	,tokens_atomic(Tokens_list, [], Atomic_tokens)
+	,reverse(Atomic_tokens, [H|Right_way_through])
+	,(   number(H)
+	->   atomic_list_concat([num,H|Right_way_through], '_', New_name)
+	 ;   atomic_list_concat([H|Right_way_through], '_', New_name)
+	).
+
+
+%!	tokens_atomic(+Tokens,+Temp,-Acc) is det.
+%
+%	Atomises a list of tokens that may contain compounds, including
+%	nested lists and numbers (numbers can't be the first character
+%	of a predicate functor).
+%
+%	Clarifying, the output is a list of atomic tokens, not an atom.
+%	The list is passed to named_production/2 that does the atomic
+%	concatentation.
+%
+%	@TODO: if the first element of the output list is a number we
+%	can deal with it in named_production/2 without having to check
+%	every character here.
+%
+tokens_atomic([], [[]|Ls], Ls):- !.
+tokens_atomic([], Ls, Ls):- !.
+tokens_atomic([N|Ns], Temp, Acc):-
+	compound(N)
+	,compound_name_arguments(N, _, Compound_args)
+	,tokens_atomic(Compound_args, [], List_atoms)
+	,append(List_atoms, Temp, New_temp)
+	,tokens_atomic(Ns, New_temp, Acc).
+tokens_atomic([N|Ns], Temp, Acc):-
+	tokens_atomic(Ns, [N|Temp],Acc).
+
 
 
 %!	initialisation(Grammar,Corpus) is det.
@@ -703,14 +757,13 @@ production_constituents(Type,Name,(Name, Score --> Tokens), Score, Nonterminals,
 %	initial_score/1.
 empty_production((N, [R] --> [])):-
 	var(N)
-	,rule_name(N)
-	,once(\+ derived_production(N, _))
-	,initial_score(R).
+	,configuration:internal_production_name(N)
+	,configuration:initial_score(R).
 
 empty_production((N, [R] --> [])):-
 	nonvar(N)
-	,once(production_name(N))
-	,initial_score(R).
+	,atomic(N)
+	,configuration:initial_score(R).
 
 
 %!	production_name(+Name) is det.
