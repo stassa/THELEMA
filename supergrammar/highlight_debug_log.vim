@@ -6,4 +6,3 @@ Highlight 9 % derived.*
 Highlight 17 % adding term.*
 Highlight 14 % updated grammar.*
 Highlight 11 % pruned corpus.*
-Hsample

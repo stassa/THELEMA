@@ -92,8 +92,6 @@ assert_given_productions:-
 	,forall(member((N --> B), Ps),
 		assert(given_production(N, (N --> B)) ) ).
 
-:-assert_given_productions.
-
 
 
 %!	retract_derived_productions is det.
@@ -162,8 +160,6 @@ retract_derived_productions(references):-
 retract_derived_productions(clauses):-
 	retractall(derived_production(_,_)).
 
-:- retract_derived_productions.
-
 
 
 %!	retract_unpruned_corpus_length is det.
@@ -189,7 +185,11 @@ assert_unpruned_corpus_length:-
 	,length(Examples, L)
 	,assert(unpruned_corpus_length(L)).
 
-:- assert_unpruned_corpus_length.
+
+% Cleanaup and then prime database
+:-retract_derived_productions.
+:-assert_given_productions.
+:-assert_unpruned_corpus_length.
 
 
 %!	complete_grammar is det.
@@ -262,21 +262,21 @@ complete_grammar(Complete_grammar):-
 %Exit with a new grammar
 complete_grammar(G, [], _, G).
 	%  For each example in the examples corpus
-complete_grammar(G, [[]|Xs], Cs, Acc):-
-	complete_grammar(G, Xs, Cs, Acc).
+% Not in design:
+%complete_grammar(G, [[]|Xs], Cs, Acc):-
+%	!,
+%	complete_grammar(G, Xs, Cs, Acc).
 complete_grammar(G, [C|_Xs], Cs, Acc):-
 	%  Create a new, originally empty production
 	%  [Update] Build the set of augmentation terms
 	augmentation_set(C, G, As)
+	,! % Red hot cut- document.
 	,debug(update_augmentation_set,'~w ~w', ['augset',As])
 	%  For each term in the set of augmentation terms
 	% [Build up a new production]
-	,once(derived_production(As, Cs, ypsilon, P))
+	,derived_production(As, Cs, ypsilon, P)
 	,debug(new_production,'~w ~w',[derived,P])
 	%  Add the new production to the grammar
-%	,\+ derived_production(_, P)
-%	,\+ given_production(_, P)
-%	,!
 	,updated_grammar(P,G,G_)
 	,debug(update_grammar,'~w ~w', ['updated grammar:',G_])
 	%Prune the corpus
@@ -287,6 +287,7 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 complete_grammar(G, [_C|Cs_], Cs, Acc):-
 	complete_grammar(G,Cs_,Cs,Acc).
 
+
 derived_production([], _Cs, P, P).
 	%    Take a new term from the set of augmentation terms
 derived_production([A|As], Cs, P, Acc):-
@@ -296,7 +297,7 @@ derived_production([A|As], Cs, P, Acc):-
 	%    Score the production
 	%    If the score is 0, discard this version of the production
 	%    Otherwise, keep the newest, best scored version of the production
-	,best_scored_production(Cs, P, P_, P_best)
+	,once(best_scored_production(Cs, P, P_, P_best))
 	,debug(score_production,'~w ~w ~w ~w ~w~w ~w',[best,scored,P_best,'Between:',P,',',P_])
 	%  Repeat while there are more terms [in the augset]
 	,derived_production(As,Cs,P_best,Acc).
