@@ -7,6 +7,8 @@ user:file_search_path(corpus, supergrammar(corpus)).
 user:file_search_path(language, supergrammar(languages)).
 user:file_search_path(output, supergrammar(output)).
 
+%:-debug_message_context(+time).
+
 % Double-debug statements make sure we also get output to the listener.
 % Though it makes it harder to see what's being debugged...
 :-debug(next_example > 'debug.log').

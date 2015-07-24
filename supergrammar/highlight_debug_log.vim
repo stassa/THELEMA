@@ -1,5 +1,5 @@
 Highlight 29 % selected new example.*
-Highlight 23 % skipped \(fully consumed\)* example.*
+Highlight 23 % skipped example.*
 Highlight 6 % augset.*
 Highlight 8 % augmented.*
 Highlight 13 % scored.*

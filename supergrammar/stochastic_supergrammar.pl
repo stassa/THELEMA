@@ -261,10 +261,6 @@ complete_grammar(Complete_grammar):-
 
 %Exit with a new grammar
 complete_grammar(G, [], _, G).
-complete_grammar(G, [[]|Xs], Cs, Acc):-
-        % Optimisation- avoid needless processing of empty examples.
-	debug(next_example, '~w ~w ~w ~w', [skipped,fully,consumed,example]),
-	complete_grammar(G, Xs, Cs, Acc).
 	%  For each example in the examples corpus
 complete_grammar(G, [C|_Xs], Cs, Acc):-
 	debug(next_example, '~w ~w ~w~w ~w', [selected,new,example,:,C]),
@@ -285,11 +281,14 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 	,debug(prune_corpus,'~w ~w',['pruned corpus:',Cs_])
 	%Repeat while there are more examples [in the _un_ pruned corpus]
 	,complete_grammar(G_,Cs_,Cs_,Acc).
-complete_grammar(G, [C|Cs_], Cs, Acc):-
-	debug(next_example, '~w ~w~w ~w', [skipped,example,:,C]),
-	complete_grammar(G,Cs_,Cs,Acc).
 
 
+%!	derived_production(+Augmentation_set,+Corpus,+Temp,-Acc) is nondet.
+%
+%	Create a new production from the terms in the Augmentation_set,
+%	score it against the Corpus and bind the result to the
+%	Accumulator.
+%
 derived_production([], _Cs, P, P).
 	%    Take a new term from the set of augmentation terms
 derived_production([A|As], Cs, P, Acc):-
@@ -406,7 +405,8 @@ production_pruned_corpus([], _, _, Denurp, Pruned):-
 	reverse(Denurp, Pruned).
 production_pruned_corpus([C|Cs], M, R, Temp, Acc):-
 	derivation(M:R, C, Rest)
-	,production_pruned_corpus(Cs, M, R, [Rest|Temp], Acc).
+	,optimisation(fully_consumed_example, [Rest, Temp], Updated)
+	,production_pruned_corpus(Cs, M, R, Updated, Acc).
 production_pruned_corpus([C|Cs], M, R, Temp, Acc):-
 	production_pruned_corpus(Cs, M, R, [C|Temp], Acc).
 
@@ -1001,3 +1001,17 @@ symbols(nonterminal,[]) --> [].
 
 symbols(terminal,[T|Ts]) --> [T], symbols(terminal,Ts).
 symbols(terminal,[]) --> [].
+
+
+
+%!	optimisation(Name, Input, Output) is nondet.
+%
+%	Interface predicate for implementing various optimisations, in
+%	other words steps that are not in the algorithm's design but can
+%	make things go much faster.
+%
+%	Obviously, some such things won't be implementable as
+%	optimisation/3 clauses. Too bad.
+%
+optimisation(fully_consumed_example, [[], Temp], Temp).
+optimisation(fully_consumed_example, [Example, Temp], [Example|Temp]).
