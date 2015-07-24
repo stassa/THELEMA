@@ -9,6 +9,8 @@ user:file_search_path(output, supergrammar(output)).
 
 % Double-debug statements make sure we also get output to the listener.
 % Though it makes it harder to see what's being debugged...
+:-debug(next_example > 'debug.log').
+:-debug(next_example).
 %:-nodebug(update_augmentation_set).
 :-debug(update_augmentation_set > 'debug.log').
 :-debug(new_production).

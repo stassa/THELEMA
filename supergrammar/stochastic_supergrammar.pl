@@ -261,12 +261,14 @@ complete_grammar(Complete_grammar):-
 
 %Exit with a new grammar
 complete_grammar(G, [], _, G).
-	%  For each example in the examples corpus
 % Not in design:
+% Actually, useful as optimisation- keep but document.
 %complete_grammar(G, [[]|Xs], Cs, Acc):-
 %	!,
 %	complete_grammar(G, Xs, Cs, Acc).
+	%  For each example in the examples corpus
 complete_grammar(G, [C|_Xs], Cs, Acc):-
+	debug(next_example, '~w ~w ~w~w ~w', [selected,new,example,:,C]),
 	%  Create a new, originally empty production
 	%  [Update] Build the set of augmentation terms
 	augmentation_set(C, G, As)
@@ -284,7 +286,8 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 	,debug(prune_corpus,'~w ~w',['pruned corpus:',Cs_])
 	%Repeat while there are more examples [in the _un_ pruned corpus]
 	,complete_grammar(G_,Cs_,Cs_,Acc).
-complete_grammar(G, [_C|Cs_], Cs, Acc):-
+complete_grammar(G, [C|Cs_], Cs, Acc):-
+	debug(next_example, '~w ~w~w ~w', [dropped,example,:,C]),
 	complete_grammar(G,Cs_,Cs,Acc).
 
 
@@ -524,15 +527,22 @@ grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
 %	terminal//0 term - and in fact do the same for nonterminals. I
 %	could even try to lexicalize either.
 %
-updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]).
+updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
+	debug(update_grammar,'~w', ['discarded empty production']).
 updated_grammar((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	% New rule for a single nonterminal- discard it.
-	atom(T).
+	atom(T)
+	,debug(update_grammar,'~w ~w', ['discarded single nonterminal:',T]).
 updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
-	once(production_structure(Production,Name,_Score,Tokens))
+	debug(update_grammar,'~w ~w', ['adding to grammar:',Production])
+	,once(production_structure(Production,Name,_Score,Tokens))
 	,tree_list(Tokens, Tokens_list)
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
-	,[P_Ts_unbracketed] = P_Ts % Don't ask.
+	% Unbracketing terminals. Don't ask.
+	,(   P_Ts \= []
+	 ->  [P_Ts_unbracketed] = P_Ts
+	 ;   P_Ts_unbracketed = []
+	 )
 	% The Name of the new production is a nonterminal:
 	,list_to_ord_set([Name|P_Ns], Ns_ord)
 	,list_to_ord_set(P_Ts_unbracketed, Ts_ord)
@@ -550,7 +560,7 @@ updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
 %	module? We're adding it to the output file anyway...?
 %
 update_grammar(Name --> Tokens):-
-	debug(write_to_database,'~w ~w', ['adding term:',Name --> Tokens])
+	debug(write_to_database,'~w ~w', ['asserted to db:',Name --> Tokens])
 	,configuration:language_module(M)
 	% Remember this derived production until next run
 	,asserta(derived_production(Name, (Name --> Tokens)))
