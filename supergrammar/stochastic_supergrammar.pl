@@ -261,11 +261,10 @@ complete_grammar(Complete_grammar):-
 
 %Exit with a new grammar
 complete_grammar(G, [], _, G).
-% Not in design:
-% Actually, useful as optimisation- keep but document.
-%complete_grammar(G, [[]|Xs], Cs, Acc):-
-%	!,
-%	complete_grammar(G, Xs, Cs, Acc).
+complete_grammar(G, [[]|Xs], Cs, Acc):-
+        % Optimisation- avoid needless processing of empty examples.
+	debug(next_example, '~w ~w ~w ~w', [skipped,fully,consumed,example]),
+	complete_grammar(G, Xs, Cs, Acc).
 	%  For each example in the examples corpus
 complete_grammar(G, [C|_Xs], Cs, Acc):-
 	debug(next_example, '~w ~w ~w~w ~w', [selected,new,example,:,C]),
@@ -287,7 +286,7 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 	%Repeat while there are more examples [in the _un_ pruned corpus]
 	,complete_grammar(G_,Cs_,Cs_,Acc).
 complete_grammar(G, [C|Cs_], Cs, Acc):-
-	debug(next_example, '~w ~w~w ~w', [dropped,example,:,C]),
+	debug(next_example, '~w ~w~w ~w', [skipped,example,:,C]),
 	complete_grammar(G,Cs_,Cs,Acc).
 
 
@@ -529,10 +528,10 @@ grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
 %
 updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	debug(update_grammar,'~w', ['discarded empty production']).
-updated_grammar((_ --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
+updated_grammar((N --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	% New rule for a single nonterminal- discard it.
 	atom(T)
-	,debug(update_grammar,'~w ~w', ['discarded single nonterminal:',T]).
+	,debug(update_grammar,'~w ~w', ['discarded single nonterminal:',N --> T]).
 updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
 	debug(update_grammar,'~w ~w', ['adding to grammar:',Production])
 	,once(production_structure(Production,Name,_Score,Tokens))
