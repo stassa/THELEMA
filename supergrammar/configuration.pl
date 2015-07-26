@@ -10,6 +10,7 @@
 %:-register_world(language_mtg_lexicalized
 %:-register_world(language_mtg
 :-register_world(language_mtg_hand_simulation
+%:-register_world(language_mtg_hand_simulation_lexicalised
 		,[language//0 as language
 		 ,start//0 as start
 		 ,terminal//0 as terminal
@@ -20,8 +21,8 @@
 %		,examples_simple).
 %		,examples_mtg_lexicalized).
 %		,examples_mtg).
-%		,examples_mtg_hand_simulation).
-		,examples_mtg_destroy).
+		,examples_mtg_hand_simulation).
+%		,examples_mtg_destroy).
 
 
 %!	nonterminal_arity(?Arity) is semidet.
