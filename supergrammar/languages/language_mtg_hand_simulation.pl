@@ -1,11 +1,22 @@
-:-module(language_mtg_hand_simulation, [language//0
-		       ,start//0
+%:-module(language_mtg_hand_simulation, [ ]).
+:-module(language_mtg_hand_simulation, [%language//0
+		       start//0
 		       ,terminal//0
 		       ,terminals//0
 		       ,nonterminal//0
 		       ,nonterminals//0
 		       ]).
+:-add_import_module(language_mtg_hand_simulation, language, start).
+:-use_module(supergrammar(language)).
 
+/*:-import_module(language_mtg_hand_simulation, Import)
+,writeln(Import).
+
+:-phrase(start, P)
+ ,writeln(P).
+*/
+
+/*
 :-dynamic nonterminal//0.
 
 %!	language// is nondet.
@@ -48,4 +59,4 @@ terminal --> [].
 %	rule by bounded_derivation/4.
 %
 nonterminal --> [].
-
+*/

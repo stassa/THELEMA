@@ -204,10 +204,11 @@ complete_grammar:-
 	,expand_file_search_path(O, P)
 	,open(P,write,S,[])
 	,configuration:output_type(T)
-	,once(print_grammar_module(S, G, T))
+	,once(print_grammar(S, G, T))
 	,close(S).
 
-print_grammar_module(Stream, Grammar, Type).
+%print_grammar_module(Stream, Grammar, Type).
+print_language_module(_, _, _).
 
 
 %!	print_grammar(+Stream,+Grammar) is semidet.
@@ -614,18 +615,21 @@ updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
 %	module? We're adding it to the output file anyway...?
 %
 update_grammar(Name --> Tokens):-
-	debug(write_to_database,'~w ~w', ['asserted to db:',Name --> Tokens])
+	debug(write_to_database,'~w ~w ~w', ['adding:',Name --> Tokens,'to database.'])
 	,configuration:language_module(M)
 	% Remember this derived production until next run
 	,asserta(derived_production(Name, (Name --> Tokens)))
+	,debug(write_to_database,'~w ~w ~w', [asserted,derived_production(Name, (Name --> Tokens)),term])
 	% Add to the set of known nonterminals for this run
 	,dcg_translate_rule(nonterminal --> [Name], Nonterminal)
 	% But why asserta? See below.
 	,asserta(M:Nonterminal)
+	,debug(write_to_database,'~w ~w ~w ~w', [asserted,Nonterminal,'into language module',M])
 	% Add to rules for this run
 	% Er. Shouldn't I be adding the score also?
 	,dcg_translate_rule(Name --> Tokens, Rule)
-	,asserta(M:Rule).
+	,asserta(M:Rule)
+	,debug(write_to_database,'~w ~w ~w ~w', [asserted,Rule,'into language module.',M]).
 
 
 

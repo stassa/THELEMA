@@ -11,16 +11,16 @@ user:file_search_path(output, supergrammar(output)).
 
 % Double-debug statements make sure we also get output to the listener.
 % Though it makes it harder to see what's being debugged...
-:-debug(next_example > 'debug.log').
-:-debug(next_example).
+:-nodebug(next_example > 'debug.log').
+:-nodebug(next_example).
 %:-nodebug(update_augmentation_set).
 :-debug(update_augmentation_set > 'debug.log').
-:-debug(new_production).
+:-nodebug(new_production).
 :-debug(new_production > 'debug.log').
 %:-nodebug(update_grammar).
 :-debug(update_grammar > 'debug.log').
-%:-nodebug(write_to_database).
-:-debug(write_to_database > 'debug.log').
+:-debug(write_to_database).
+%:-debug(write_to_database > 'debug.log').
 %:-nodebug(prune_corpus).
 :-debug(prune_corpus > 'debug.log').
 %:-nodebug(augment_production).
@@ -31,6 +31,7 @@ user:file_search_path(output, supergrammar(output)).
 
 % Loads configuration predicates into global module user where
 % configuration module can access them.
+:-use_module(language).
 :-use_module(load_configuration).
 %:-use_module(supergrammar).
 :-use_module(stochastic_supergrammar).
