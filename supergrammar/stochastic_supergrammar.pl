@@ -205,9 +205,8 @@ complete_grammar:-
 	,open(P,write,S,[])
 	,configuration:output_type(T)
 	,once(print_grammar(S, G, T))
-	,close(S).
-
-%print_grammar_module(Stream, Grammar, Type).
+	,close(S)
+	,edit(P).
 
 
 %!	print_grammar(+Stream,+Grammar) is semidet.
@@ -233,6 +232,37 @@ print_grammar(Stream,[S,Ns,Ts,Ps], terms):-
 	% Write each production on a separate line
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
+print_grammar(Stream, [S,Ns,Ts,Ps], dogfooding):-
+	configuration:language_module(M)
+	,stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(New_module_name, _Extension, Filename)
+	,language_module_exports(M,Es)
+	,format(Stream, '~w~w~w~w~w~n~n', [':-module(',New_module_name,',',[S//0|Es],').'])
+	/*
+	,format(Stream, '~w~w~w~w~n', [':-add_import_module(',
+				       New_module_name,
+				       ','
+				      ,'language,start).'])
+	,write(Stream, ':-use_module(supergrammar(language)).\n\n')
+	*/
+	,print_term(Stream, p, (start --> [S]))
+	,write(Stream, '\n')
+%	,print_term(Stream, p, S --> terminals)
+	,print_term(Stream, p, S --> nonterminals)
+	,write(Stream, '\n')
+	,print_term(Stream, p, terminals --> [])
+	,print_term(Stream, p, (terminals --> terminal, terminals))
+	,write(Stream, '\n')
+	,print_term(Stream, p, nonterminals --> [])
+	,print_term(Stream, p, (nonterminals --> nonterminal, nonterminals))
+	,write(Stream, '\n')
+	,forall(member(T, Ts), print_term(Stream, p, terminal --> [T]))
+	,write(Stream, '\n')
+	,forall(member(N, Ns), print_term(Stream, p, nonterminal --> N))
+	,write(Stream, '\n')
+	,forall(member(P,Ps),(print_term(Stream,p,P))).
+
 
 %!	print_term(+Stream,+Term_type,+Term) is det.
 %
@@ -245,6 +275,44 @@ print_term(S, Gt, Ls):-
 	,Term =.. [Grammar_term,Ls]
 	,write_term(S, Term,[fullstop(true),nl(true),spacing(next_argument),quoted(true)]).
 
+
+%!	language_module_exports(-Exports) is det.
+%
+%	Get the list of predicates exported by the currently configured
+%	language module.
+%
+%	Exports is a list of predicate indicators _in DCG form_. The
+%	names of those predicates are taken from currently configured
+%	langauge module using module_property/2.
+%
+%	Because that predicate binds a list of predicate indicators as
+%	N/A terms _only_ and we want to list exports as N//A it's not er
+%	particularly convenient to separate DCGs from non-DCGs in the
+%	language module.
+%
+%	Instead _every_ exported N/A predicate indicator is converted to
+%	a predicate indicator N//A' where A' is equal to A - 2.
+%
+%	This means that if there are any non-DCG terms in the configured
+%	langauge module, they will be added to the new module in DCG
+%	form and if your program does not anticipate this, there will be
+%	Ogres.
+%
+%	You won't be anticipating it though because this is called by
+%	print_grammar/3 (the dogfooding clause) and that expects to be
+%	printing out a list of DCGs exported by the current output
+%	module.
+%
+%	So yeah. If theres' non-DCGs in that module? Ooh boy.
+%	Serious ogres. Keep in mind.
+%
+language_module_exports(Module, Exports):-
+	module_property(Module, exports(Es))
+	,findall(P//A_DCG
+		,(member(P/A, Es)
+		 ,A_DCG is A - 2
+		 )
+		,Exports).
 
 
 %!	complete_grammar(-Grammar) is det.

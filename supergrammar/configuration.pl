@@ -83,7 +83,7 @@ output_stream(output(Output_file_name)):-
 %	used to parse a phrase in the target language, starting from
 %	start//0.
 %
-output_type(terms).
+output_type(dogfooding).
 
 %!	output_format(?Type,?Extension) is nondet.
 %
@@ -92,6 +92,7 @@ output_type(terms).
 %
 output_format(loose, '.log').
 output_format(terms, '.pl').
+output_format(dogfooding, '.pl').
 
 
 %!	grammar_term(?Member,?Name) is nondet.

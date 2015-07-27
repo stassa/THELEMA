@@ -15,11 +15,11 @@ user:file_search_path(output, supergrammar(output)).
 :-nodebug(next_example).
 %:-nodebug(update_augmentation_set).
 :-debug(update_augmentation_set > 'debug.log').
-:-nodebug(new_production).
+:-debug(new_production).
 :-debug(new_production > 'debug.log').
 %:-nodebug(update_grammar).
 :-debug(update_grammar > 'debug.log').
-:-debug(write_to_database).
+:-nodebug(write_to_database).
 %:-debug(write_to_database > 'debug.log').
 %:-nodebug(prune_corpus).
 :-debug(prune_corpus > 'debug.log').

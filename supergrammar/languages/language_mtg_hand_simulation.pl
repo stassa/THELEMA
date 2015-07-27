@@ -1,13 +1,11 @@
-%:-module(language_mtg_hand_simulation, [ ]).
-:-module(language_mtg_hand_simulation, [%language//0
-		       start//0
-		       ,terminal//0
-		       ,terminals//0
-		       ,nonterminal//0
-		       ,nonterminals//0
-		       ]).
+:-module(language_mtg_hand_simulation, [start//0
+				       ,terminal//0
+				       ,terminals//0
+				       ,nonterminal//0
+				       ,nonterminals//0
+				       ]).
 :-add_import_module(language_mtg_hand_simulation, language, start).
-:-use_module(supergrammar(language)).
+%:-use_module(supergrammar(language)).
 
 /*:-import_module(language_mtg_hand_simulation, Import)
 ,writeln(Import).
@@ -23,9 +21,9 @@
 %
 %	A high-level specification of a language type.
 language --> nonterminal.
-
+*/
 start --> [ability].
-
+/*
 %!	terminals// is nondet.
 %
 %	Zero or more terminals; part of background knowledge of the
