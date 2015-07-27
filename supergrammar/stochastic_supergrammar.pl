@@ -204,9 +204,10 @@ complete_grammar:-
 	,expand_file_search_path(O, P)
 	,open(P,write,S,[])
 	,configuration:output_type(T)
-	,once(print_grammar(S, G, T))
+	,once(print_grammar_module(S, G, T))
 	,close(S).
 
+print_grammar_module(Stream, Grammar, Type).
 
 
 %!	print_grammar(+Stream,+Grammar) is semidet.

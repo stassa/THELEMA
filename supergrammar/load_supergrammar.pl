@@ -48,6 +48,7 @@ edit_source:-
 	%,edit(supergrammar('stochastic_supergrammar.plt'))
 	,edit(supergrammar(configuration))
 	,edit(supergrammar(load_configuration))
+	,edit(supergrammar(language))
 	% Load configured language and examples files :D
 	,configuration:language_module(Language)
 	,configuration:examples_module(Examples)

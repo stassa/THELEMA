@@ -57,7 +57,7 @@ output_stream(output(Output_file_name)):-
 %	The type of file to write as output of the main loop
 %	(complete_grammar/0 at this time).
 %
-%	Type is one of:
+%	Type is one of:%
 %	* loose. Write grammar elements in a loose format, with the
 %	Start symbol, lists of Terminals and Nonterminals and each
 %	production on a separate line.
@@ -65,6 +65,23 @@ output_stream(output(Output_file_name)):-
 %	grammar that is wrapped in an appropriate term where necessary:
 %	start_symbol(S), terminals_set(Ts) and nonterminals_set(Ns).
 %	Productions are written	as DCG rules, as derived.
+%	* dogfooding. As terms but will write out a language module file
+%	conforming to the specification in register_world/2 (in other
+%	words, the module should export the predicates in the reexport
+%	list of register_world/2).
+%
+%	The dogfooding option connects each terminal in the output
+%	grammar to an appropriate DCG rule.
+%
+%	The grammar's start symbol is connected to start//0, each
+%	terminal is connected to terminal//0 and each nonterminal to
+%	nonterminal//0. Finally, terminals//0 and nonterminals//0 are
+%	connected to a rule mapping it to the terminals and nonterminals
+%	in the grammar.
+%
+%	The end results is (should be) a complete grammar that can be
+%	used to parse a phrase in the target language, starting from
+%	start//0.
 %
 output_type(terms).
 
