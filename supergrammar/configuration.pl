@@ -13,12 +13,9 @@
 %:-register_world(examples_mtg_hand_simulation_language_mtg_hand_simulation
 :-register_world(language_mtg_hand_simulation
 %:-register_world(language_mtg_hand_simulation_lexicalised
-		,[%language//0 as language
-		  start//0 as start
+		,[start//0 as start
 		 ,terminal//0 as terminal
-%		 ,terminals//0 as terminals
 		 ,nonterminal//0 as nonterminal
-%		 ,nonterminals//0 as nonterminals
 		 ]
 %		,examples_simple).
 %		,examples_mtg_lexicalized).
