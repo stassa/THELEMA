@@ -31,10 +31,12 @@ user:file_search_path(output, supergrammar(output)).
 
 % Loads configuration predicates into global module user where
 % configuration module can access them.
-:-use_module(language).
 :-use_module(load_configuration).
-%:-use_module(supergrammar).
+% Loads language predicates into global module user where inheriting
+% language modules can access them (using add_import_module/3).
+:-use_module(language).
 :-use_module(stochastic_supergrammar).
+%:-use_module(supergrammar).
 
 :-load_test_files([]).
 
