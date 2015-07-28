@@ -232,34 +232,27 @@ print_grammar(Stream,[S,Ns,Ts,Ps], terms):-
 	% Write each production on a separate line
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
-print_grammar(Stream, [S,Ns,Ts,Ps], dogfooding):-
+print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
 	configuration:language_module(M)
 	,stream_property(Stream, file_name(Path))
 	,file_base_name(Path, Filename)
 	,file_name_extension(New_module_name, _Extension, Filename)
 	,language_module_exports(M,Es)
-	,format(Stream, '~w~w~w~w~w~n~n', [':-module(',New_module_name,',',[S//0|Es],').'])
-	/*
-	,format(Stream, '~w~w~w~w~n', [':-add_import_module(',
-				       New_module_name,
-				       ','
-				      ,'language,start).'])
-	,write(Stream, ':-use_module(supergrammar(language)).\n\n')
-	*/
+	% Print module name, exports list and use_module statements.
+	,format(Stream, '~w~w~w~w~w~n', [':-module(',New_module_name,',',[S//0|Es],').'])
+	% Print the start symbol rule
+	,write(Stream, '\n')
 	,print_term(Stream, p, (start --> [S]))
+	% Print each terminal rule
 	,write(Stream, '\n')
-%	,print_term(Stream, p, S --> terminals)
-	,print_term(Stream, p, S --> nonterminals)
+	,forall(member(T, Ts), print_term(Stream, p, terminal --> [[T]]))
+	% Print each nonterminal rule
 	,write(Stream, '\n')
-	,print_term(Stream, p, terminals --> [])
-	,print_term(Stream, p, (terminals --> terminal, terminals))
+	,forall(member(N, Ns), print_term(Stream, p, nonterminal --> [N]))
+	% Connect each production to the start symbol
 	,write(Stream, '\n')
-	,print_term(Stream, p, nonterminals --> [])
-	,print_term(Stream, p, (nonterminals --> nonterminal, nonterminals))
-	,write(Stream, '\n')
-	,forall(member(T, Ts), print_term(Stream, p, terminal --> [T]))
-	,write(Stream, '\n')
-	,forall(member(N, Ns), print_term(Stream, p, nonterminal --> N))
+	,forall(member(Name-->_Body, Ps),(print_term(Stream,p,S --> Name)))
+	% Print each production
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 

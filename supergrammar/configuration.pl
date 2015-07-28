@@ -9,14 +9,16 @@
 %:-register_world(language_simple
 %:-register_world(language_mtg_lexicalized
 %:-register_world(language_mtg
+%:-register_world(examples_mtg_destroy_language_mtg_hand_simulation
+%:-register_world(examples_mtg_hand_simulation_language_mtg_hand_simulation
 :-register_world(language_mtg_hand_simulation
 %:-register_world(language_mtg_hand_simulation_lexicalised
 		,[%language//0 as language
 		  start//0 as start
 		 ,terminal//0 as terminal
-		 ,terminals//0 as terminals
+%		 ,terminals//0 as terminals
 		 ,nonterminal//0 as nonterminal
-		 ,nonterminals//0 as nonterminals
+%		 ,nonterminals//0 as nonterminals
 		 ]
 %		,examples_simple).
 %		,examples_mtg_lexicalized).
@@ -65,25 +67,36 @@ output_stream(output(Output_file_name)):-
 %	grammar that is wrapped in an appropriate term where necessary:
 %	start_symbol(S), terminals_set(Ts) and nonterminals_set(Ns).
 %	Productions are written	as DCG rules, as derived.
-%	* dogfooding. As terms but will write out a language module file
+%	* grammar. As terms but will write out a language module file
 %	conforming to the specification in register_world/2 (in other
 %	words, the module should export the predicates in the reexport
 %	list of register_world/2).
 %
-%	The dogfooding option connects each terminal in the output
+%	The 'grammar' option connects each terminal in the output
 %	grammar to an appropriate DCG rule.
 %
 %	The grammar's start symbol is connected to start//0, each
 %	terminal is connected to terminal//0 and each nonterminal to
-%	nonterminal//0. Finally, terminals//0 and nonterminals//0 are
-%	connected to a rule mapping it to the terminals and nonterminals
-%	in the grammar.
+%	nonterminal//0. Finally, each derived production is connected to
+%	the start symbol.
 %
-%	The end results is (should be) a complete grammar that can be
+%	Terminals are wrapped in double-brackets and nonterminals are
+%	wrapped in single brakcets to indicate that terminal//0 and
+%	nonterminal//0 are not meant to derive or generate sentences in
+%	the langauge and instead act as references to the respective
+%	categories of tokens in the grammar.
+%
+%	The end result is (should be) a complete grammar that can be
 %	used to parse a phrase in the target language, starting from
-%	start//0.
+%	start//0, as follows:
+%	==
+%	?- phrase(start, [S]), phrase(S, D).
+%	==
 %
-output_type(dogfooding).
+%	Where on successive backtracking each derivation of the grammar
+%	will be bound to D.
+%
+output_type(grammar).
 
 %!	output_format(?Type,?Extension) is nondet.
 %
@@ -92,7 +105,7 @@ output_type(dogfooding).
 %
 output_format(loose, '.log').
 output_format(terms, '.pl').
-output_format(dogfooding, '.pl').
+output_format(grammar, '.pl').
 
 
 %!	grammar_term(?Member,?Name) is nondet.

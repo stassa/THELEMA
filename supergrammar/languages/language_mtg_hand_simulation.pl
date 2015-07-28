@@ -1,8 +1,8 @@
 :-module(language_mtg_hand_simulation, [start//0
 				       ,terminal//0
-				       ,terminals//0
+%				       ,terminals//0
 				       ,nonterminal//0
-				       ,nonterminals//0
+%				       ,nonterminals//0
 				       ]).
 :-add_import_module(language_mtg_hand_simulation, language, start).
 %:-use_module(supergrammar(language)).

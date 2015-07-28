@@ -1,6 +1,6 @@
 :-module(language, [start//0
-		   ,terminals//0
-		   ,nonterminals//0
+%		   ,terminals//0
+%		   ,nonterminals//0
 		   ,terminal//0
 		   ,nonterminal//0
 		   ,e//0]).
