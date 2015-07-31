@@ -71,7 +71,8 @@ given_productions([]).
 %	Declared here to make it available to
 %	assert_given_productions/0.
 retract_given_productions:-
-	retractall(given_production(_,_)).
+	retractall(given_production(_,_))
+	,debug(clear_database, '~w', ['Retracted all clauses of given_production/2']).
 
 
 
@@ -90,7 +91,10 @@ assert_given_productions:-
 	retract_given_productions % cleanup first.
 	,given_productions(Ps)
 	,forall(member((N --> B), Ps),
-		assert(given_production(N, (N --> B)) ) ).
+		(   assert(given_production(N, (N --> B)) )
+		   ,debug(write_to_database, '~w ~w', ['Asserted',given_production(N, (N --> B))])
+		)
+	       ).
 
 
 
@@ -117,7 +121,8 @@ assert_given_productions:-
 retract_derived_productions:-
 	retract_derived_productions(rules)
 	,retract_derived_productions(references)
-	,retract_derived_productions(clauses).
+	,retract_derived_productions(clauses)
+	.
 
 
 %!	retract_derived_productions(+Type) is nondet.
@@ -138,6 +143,7 @@ retract_derived_productions(rules):-
 		(   dcg_translate_rule((N --> Ts), H:-B)
 		   ,(   clause(M:H, B, Ref)
 		   ->	erase(Ref)
+		       ,debug(clear_database, '~w ~w', ['Retracted rule',(H:-B)])
 		    ;	true
 		    )
 		)
@@ -152,13 +158,15 @@ retract_derived_productions(references):-
 		   ,(   clause(M:H_, B_, Ref)
 		       ,(H:-B) =@= (H_:-B_) % Avoid confusion with cyclic terms.
 		   ->	erase(Ref)
+		       ,debug(clear_database, '~w ~w', ['Retracted nonterminal',nonterminal --> [N]])
 		    ;	true
 		    )
 		)
 	       ).
 
 retract_derived_productions(clauses):-
-	retractall(derived_production(_,_)).
+	retractall(derived_production(_,_))
+	,debug(clear_database, '~w', ['Retracted all clauses of derived_production/2']).
 
 
 
@@ -167,7 +175,8 @@ retract_derived_productions(clauses):-
 %	Clear all unpruned_corpus_length/1 clauses from the database.
 %
 retract_unpruned_corpus_length:-
-	retractall(unpruned_corpus_length(_)).
+	retractall(unpruned_corpus_length(_))
+	,debug(clear_database, '~w', ['Retracted all clauses of unpruned_corpus_length/1']).
 
 
 
@@ -183,7 +192,8 @@ assert_unpruned_corpus_length:-
 	retract_unpruned_corpus_length
 	,findall(Example, configuration:example_string(Example), Examples)
 	,length(Examples, L)
-	,assert(unpruned_corpus_length(L)).
+	,assert(unpruned_corpus_length(L))
+	,debug(write_to_database, '~w ~w', ['Asserted',unpruned_corpus_length(L)]).
 
 
 % Cleanaup and then prime database
@@ -314,8 +324,12 @@ language_module_exports(Module, Exports):-
 %	grammar.
 %
 complete_grammar(Complete_grammar):-
-	initialisation(G,Cs)
+	timestamp(Start_time)
+	,debug(main_loop, '~w ~w', ['Starting new run on',Start_time])
+	,initialisation(G,Cs)
 	,complete_grammar(G, Cs, Cs, Complete_grammar)
+	,timestamp(End_time)
+	,debug(main_loop, '~w ~w', ['Ended run on',End_time])
 	,! % Red- need to understand where choicepoints are created
 	   % and which ones can be nipped in the bud.
 	.
@@ -325,22 +339,22 @@ complete_grammar(Complete_grammar):-
 complete_grammar(G, [], _, G).
 	%  For each example in the examples corpus
 complete_grammar(G, [C|_Xs], Cs, Acc):-
-	debug(next_example, '~w ~w ~w~w ~w', [selected,new,example,:,C]),
+	debug(next_example, '~w ~w ~w~w ~w', ['Selected',new,example,:,C]),
 	%  Create a new, originally empty production
 	%  [Update] Build the set of augmentation terms
 	augmentation_set(C, G, As)
 	,! % Red hot cut- document.
-	,debug(update_augmentation_set,'~w ~w', ['augset',As])
+	,debug(update_augmentation_set,'~w ~w', ['Built new augmentation set',As])
 	%  For each term in the set of augmentation terms
 	% [Build up a new production]
 	,derived_production(As, Cs, ypsilon, P)
-	,debug(new_production,'~w ~w',[derived,P])
+	,debug(new_production,'~w ~w',['Derived',P])
 	%  Add the new production to the grammar
 	,updated_grammar(P,G,G_)
-	,debug(update_grammar,'~w ~w', ['updated grammar:',G_])
+	,debug(update_grammar,'~w ~w', ['Updated grammar:',G_])
 	%Prune the corpus
 	,pruned_corpus(Cs,G_,Cs_)
-	,debug(prune_corpus,'~w ~w',['pruned corpus:',Cs_])
+	,debug(prune_corpus,'~w ~w',['Pruned corpus:',Cs_])
 	%Repeat while there are more examples [in the _un_ pruned corpus]
 	,complete_grammar(G_,Cs_,Cs_,Acc).
 
@@ -358,12 +372,12 @@ derived_production([], _Cs, P, P_):-
 derived_production([A|As], Cs, P, Acc):-
 	%    Augment the current production using the new term
 	once(augmented_production(P,A,P_))
-	,debug(augment_production,'~w ~w ~w ~w',[augmented,P,to,P_])
+	,debug(augment_production,'~w ~w ~w ~w',['Augmented',P,to,P_])
 	%    Score the production
 	%    If the score is 0, discard this version of the production
 	%    Otherwise, keep the newest, best scored version of the production
 	,once(best_scored_production(Cs, P, P_, P_best))
-	,debug(score_production,'~w ~w ~w ~w ~w~w ~w',[best,scored,P_best,'Between:',P,',',P_])
+	,debug(score_production,'~w ~w ~w ~w~w ~w ~w',['Best scored',P_best,'(between:',P,',',P_,')'])
 	%  Repeat while there are more terms [in the augset]
 	,derived_production(As,Cs,P_best,Acc).
 
@@ -436,8 +450,14 @@ tokens_atomic([N|Ns], Temp, Acc):-
 %
 initialisation([S,Ns,Ts,Ps],Cs):-
 	% Cleanup first.
-	retract_derived_productions
+	debug(init,'~w',['Retracting derived productions.'])
+	,retract_derived_productions
+	% This should _probably_ be happening.
+%	,debug(init,'~w',['Asserting derived productions.'])
+%	,assert_given_productions
+	,debug(init,'~w',['Compiling known grammar.'])
 	,grammar(S,Ns,Ts,Ps)
+	,debug(init,'~w',['Assembling examples corpus.'])
 	,examples_corpus(Cs).
 
 
@@ -643,13 +663,13 @@ grammar_s(Start,Nonterminals-Ns_t,Terminals-Ts_t,Productions-Ps_t):-
 %	could even try to lexicalize either.
 %
 updated_grammar((_ --> []), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
-	debug(update_grammar,'~w', ['discarded empty production']).
+	debug(update_grammar,'~w', ['Discarded empty production']).
 updated_grammar((N --> T), [S,Ns,Ts,Ps], [S,Ns,Ts,Ps]):-
 	% New rule for a single nonterminal- discard it.
 	atom(T)
-	,debug(update_grammar,'~w ~w', ['discarded single nonterminal:',N --> T]).
+	,debug(update_grammar,'~w ~w', ['Discarded single nonterminal:',N --> T]).
 updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
-	debug(update_grammar,'~w ~w', ['adding to grammar:',Production])
+	debug(update_grammar,'~w ~w', ['Updating grammar with:',Production])
 	,once(production_structure(Production,Name,_Score,Tokens))
 	,tree_list(Tokens, Tokens_list)
 	,once(phrase(symbols(nonterminal, P_Ns), Tokens_list, P_Ts))
@@ -675,21 +695,20 @@ updated_grammar(Production, [S,Ns,Ts,Ps], [S,Ns_,Ts_,[(Name --> Tokens)|Ps]]):-
 %	module? We're adding it to the output file anyway...?
 %
 update_grammar(Name --> Tokens):-
-	debug(write_to_database,'~w ~w ~w', ['adding:',Name --> Tokens,'to database.'])
+	debug(write_to_database,'~w ~w ~w', ['Adding:',Name --> Tokens,'to database.'])
 	,configuration:language_module(M)
 	% Remember this derived production until next run
 	,asserta(derived_production(Name, (Name --> Tokens)))
-	,debug(write_to_database,'~w ~w ~w', [asserted,derived_production(Name, (Name --> Tokens)),term])
+	,debug(write_to_database,'~w ~w ~w', ['Asserted',derived_production(Name, (Name --> Tokens)),term])
 	% Add to the set of known nonterminals for this run
 	,dcg_translate_rule(nonterminal --> [Name], Nonterminal)
-	% But why asserta? See below.
 	,asserta(M:Nonterminal)
-	,debug(write_to_database,'~w ~w ~w ~w', [asserted,Nonterminal,'into language module',M])
+	,debug(write_to_database,'~w ~w ~w ~w', ['Asserted',Nonterminal,'into language module',M])
 	% Add to rules for this run
 	% Er. Shouldn't I be adding the score also?
 	,dcg_translate_rule(Name --> Tokens, Rule)
 	,asserta(M:Rule)
-	,debug(write_to_database,'~w ~w ~w ~w', [asserted,Rule,'into language module.',M]).
+	,debug(write_to_database,'~w ~w ~w ~w', ['Asserted rule',Rule,'into language module.',M]).
 
 
 
@@ -941,7 +960,7 @@ production_score(Corpus, (Name --> Body), Score):-
 	,length(Parsed, Parses)
 	,unpruned_corpus_length(Unpruned_length)
 	,Score is Parses / Unpruned_length
-	,debug(score_production, '~w ~w ~w ~w', [scored,(Name --> Body),with,Score]).
+	,debug(score_production, '~w ~w ~w ~w', ['Scored',(Name --> Body),with,Score]).
 
 
 
@@ -1131,5 +1150,6 @@ symbols(terminal,[]) --> [].
 %	Obviously, some such things won't be implementable as
 %	optimisation/3 clauses. Too bad.
 %
-optimisation(fully_consumed_example, [[], Temp], Temp).
+optimisation(fully_consumed_example, [[], Temp], Temp):-
+	debug(next_example, '~w', ['Skipped one fully consumed example']).
 optimisation(fully_consumed_example, [Example, Temp], [Example|Temp]).

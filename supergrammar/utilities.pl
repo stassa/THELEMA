@@ -1,4 +1,5 @@
-﻿:-module(utilities, [prolog_dcg/2
+﻿:-module(utilities, [timestamp/1
+		    ,prolog_dcg/2
 		    ,ord_add_elements/3
 		    ,all_slices_of/2
 		    ,list_to_diff_ordset/3
@@ -17,6 +18,22 @@
 /** <module> Utility predicates used in supergrammar module.
 */
 
+%!	timestamp(-Timestamp) is det.
+%
+%	Get a representation of the current system time as an atomic
+%	string of underscored values, as follows:
+%
+%	==
+%	Year_Month_Day_Hour_Minute_Second
+%	==
+%
+timestamp(Timestamp):-
+	get_time(T)
+	,stamp_date_time(T
+		       %,date(2015, 7, 31, 14, 9, 2.17378306388855, -3600, 'GMT Daylight Time', true)
+			,date(Y, M, D, H, Mn, S, _Off, _TZ, _DST)
+			,local)
+	,atomic_list_concat([Y, M, D, H, Mn, S], '_', Timestamp).
 
 %	prolog_dcg(+Prolog,-DCG) is det.
 %

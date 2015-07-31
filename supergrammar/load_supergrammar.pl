@@ -11,21 +11,37 @@ user:file_search_path(output, supergrammar(output)).
 
 % Double-debug statements make sure we also get output to the listener.
 % Though it makes it harder to see what's being debugged...
-:-nodebug(next_example > 'debug.log').
+:-nodebug(init).
+:-debug(init > 'debug.log').
+
+:-nodebug(clear_database).
+:-debug(clear_database > 'debug.log').
+
+:-nodebug(main_loop).
+:-debug(main_loop > 'debug.log').
+
 :-nodebug(next_example).
-%:-nodebug(update_augmentation_set).
+:-debug(next_example > 'debug.log').
+
+:-nodebug(update_augmentation_set).
 :-debug(update_augmentation_set > 'debug.log').
+
 :-debug(new_production).
 :-debug(new_production > 'debug.log').
-%:-nodebug(update_grammar).
+
+:-nodebug(update_grammar).
 :-debug(update_grammar > 'debug.log').
+
 :-nodebug(write_to_database).
-%:-debug(write_to_database > 'debug.log').
-%:-nodebug(prune_corpus).
+:-debug(write_to_database > 'debug.log').
+
+:-nodebug(prune_corpus).
 :-debug(prune_corpus > 'debug.log').
-%:-nodebug(augment_production).
+
+:-nodebug(augment_production).
 :-debug(augment_production > 'debug.log').
-%:-nodebug(score_production).
+
+:-nodebug(score_production).
 :-debug(score_production > 'debug.log').
 
 
