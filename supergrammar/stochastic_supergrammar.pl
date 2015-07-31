@@ -1,6 +1,7 @@
 ﻿:-module(stochastic_supergrammar, [given_productions/1
 				  ,retract_given_productions/0
 				  ,retract_derived_productions/0
+				  ,listing_grammar_knowledge/0
 				  ,complete_grammar/0
 				  ,complete_grammar/1
 				  ,examples_corpus/1
@@ -119,9 +120,9 @@ assert_given_productions:-
 %	before that.
 %
 retract_derived_productions:-
-	retract_derived_productions(rules)
-	,retract_derived_productions(references)
-	,retract_derived_productions(clauses)
+%	retract_derived_productions(rules)
+%	,retract_derived_productions(references)
+	retract_derived_productions(clauses)
 	.
 
 
@@ -196,10 +197,26 @@ assert_unpruned_corpus_length:-
 	,debug(write_to_database, '~w ~w', ['Asserted',unpruned_corpus_length(L)]).
 
 
+
+%!	listing_background_knowledge is det.
+%
+%	Print information about the given and derived grammar:
+%	* Clauses of nonterminal//0 and terminal//0
+%	* The corresponding Prolog rules.
+%	* Clauses of given_production/2.
+%
+listing_grammar_knowledge:-
+	listing(given_production)
+	,configuration:language_module(M)
+	,listing(M:nonterminal//0)
+	,forall(phrase(nonterminal, [N]),listing(M:N))
+	,listing(M:terminal//0)
+	,forall(phrase(terminal, [N]),listing(M:N)).
+
 % Cleanaup and then prime database
-:-retract_derived_productions.
-:-assert_given_productions.
-:-assert_unpruned_corpus_length.
+%:-retract_derived_productions.
+%:-assert_given_productions.
+%:-assert_unpruned_corpus_length.
 
 
 
@@ -222,8 +239,10 @@ initialisation([S,Ns,Ts,Ps],Cs):-
 	debug(init,'~w',['Retracting derived productions.'])
 	,retract_derived_productions
 	% This should _probably_ be happening.
-%	,debug(init,'~w',['Asserting derived productions.'])
-%	,assert_given_productions
+	,debug(init,'~w',['Asserting given productions.'])
+	,assert_given_productions
+	,debug(init,'~w',['Asserting unpruned corpus length.'])
+	,assert_unpruned_corpus_length
 	,debug(init,'~w',['Compiling known grammar.'])
 	,grammar(S,Ns,Ts,Ps)
 	,debug(init,'~w',['Assembling examples corpus.'])
@@ -368,10 +387,13 @@ complete_grammar(Complete_grammar):-
 complete_grammar(G, [], _, G).
 	%  For each example in the examples corpus
 complete_grammar(G, [C|_Xs], Cs, Acc):-
-	debug(next_example, '~w ~w ~w~w ~w', ['Selected',new,example,:,C]),
+	debug(next_example, '~w ~w ~w~w ~w', ['Selected',new,example,:,C])
+	% Add the example's tokens to the set of terminals
+	,new_terminals(C)
+	,debug(update_grammar,'~w', ['Added example tokens to the set of Terminals'])
 	%  Create a new, originally empty production
 	%  [Update] Build the set of augmentation terms
-	augmentation_set(C, G, As)
+	,augmentation_set(C, G, As)
 	,! % Red hot cut- document.
 	,debug(update_augmentation_set,'~w ~w', ['Built new augmentation set',As])
 	%  For each term in the set of augmentation terms
@@ -386,6 +408,28 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 	,debug(prune_corpus,'~w ~w',['Pruned corpus:',Cs_])
 	%Repeat while there are more examples [in the _un_ pruned corpus]
 	,complete_grammar(G_,Cs_,Cs_,Acc).
+
+
+%!	new_terminals(+Example) is det.
+%
+%	Add each terminal
+%
+%	TODO: the bit where we assert a new production to the language
+%	module is done so often that it bears making into a utility
+%	predicate. Make it so.
+%
+new_terminals(Example):-
+	configuration:language_module(M)
+	,forall(member(Token, Example),
+		(   dcg_translate_rule(terminal --> [[Token]], H:-B)
+		    ,copy_term(H:-B, H_:-B_) % Prooobably not needed - should remove for speed.
+		   ,(   \+ clause(M:H_, B_) ,(H:-B) =@= (H_:-B_) % Avoid confusion with cyclic terms.
+		   ->	asserta( M:H:-B )
+		       ,debug(write_to_database,'~w ~w ~w ~w', ['Asserted',terminal --> [[Token]],'into language module',M])
+		    ;	true
+		    )
+		)
+	       ).
 
 
 %!	derived_production(+Augmentation_set,+Corpus,+Temp,-Acc) is nondet.
