@@ -202,6 +202,35 @@ assert_unpruned_corpus_length:-
 :-assert_unpruned_corpus_length.
 
 
+
+%!	initialisation(Grammar,Corpus) is det.
+%
+%	Initialise the Grammar and examples Corpus.
+%
+%	Grammar is a list:
+%       [S, N, T, P] where:
+%	  S, the start symbol of Grammar
+%         N, the set of nonterminal symbols in Grammar
+%         T, the set of terminals in Grammar
+%         P, the set of productions in Grammar
+%
+%	Corpus is the set of example strings in the target language,
+%	collected from the currently configured examples_language.
+%
+initialisation([S,Ns,Ts,Ps],Cs):-
+	% Cleanup first.
+	debug(init,'~w',['Retracting derived productions.'])
+	,retract_derived_productions
+	% This should _probably_ be happening.
+%	,debug(init,'~w',['Asserting derived productions.'])
+%	,assert_given_productions
+	,debug(init,'~w',['Compiling known grammar.'])
+	,grammar(S,Ns,Ts,Ps)
+	,debug(init,'~w',['Assembling examples corpus.'])
+	,examples_corpus(Cs).
+
+
+
 %!	complete_grammar is det.
 %
 %	Run that_algorithm and print the results to the configured
@@ -432,33 +461,6 @@ tokens_atomic([N|Ns], Temp, Acc):-
 tokens_atomic([N|Ns], Temp, Acc):-
 	tokens_atomic(Ns, [N|Temp],Acc).
 
-
-
-%!	initialisation(Grammar,Corpus) is det.
-%
-%	Initialise the Grammar and examples Corpus.
-%
-%	Grammar is a list:
-%       [S, N, T, P] where:
-%	  S, the start symbol of Grammar
-%         N, the set of nonterminal symbols in Grammar
-%         T, the set of terminals in Grammar
-%         P, the set of productions in Grammar
-%
-%	Corpus is the set of example strings in the target language,
-%	collected from the currently configured examples_language.
-%
-initialisation([S,Ns,Ts,Ps],Cs):-
-	% Cleanup first.
-	debug(init,'~w',['Retracting derived productions.'])
-	,retract_derived_productions
-	% This should _probably_ be happening.
-%	,debug(init,'~w',['Asserting derived productions.'])
-%	,assert_given_productions
-	,debug(init,'~w',['Compiling known grammar.'])
-	,grammar(S,Ns,Ts,Ps)
-	,debug(init,'~w',['Assembling examples corpus.'])
-	,examples_corpus(Cs).
 
 
 %!	examples_corpus(+Examples) is det.
