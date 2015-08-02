@@ -13,7 +13,7 @@ Highlight 54 % Discarded empty production.*
 Highlight 12 % Discarded single nonterminal.*
 Highlight 17 % Updating grammar with.*
 Highlight 5 % Adding: .* to database.*
-Highlight 14 % Updated grammar.*
+Highlight 14 % \(Updated\|Found\) grammar.*
 Highlight 7 % Discarded single nonterminal.*
 Highlight 15 % Pruned corpus.*
 Highlight 8 % Added example tokens to the set of Terminals

@@ -1,4 +1,5 @@
-﻿:-module(utilities, [timestamp/1
+﻿:-module(utilities, [sum_of/3
+		    ,timestamp/1
 		    ,prolog_dcg/2
 		    ,ord_add_elements/3
 		    ,all_slices_of/2
@@ -17,6 +18,17 @@
 		    ,permute/2]).
 /** <module> Utility predicates used in supergrammar module.
 */
+
+
+%!	sum_of(+A,+B,-Sum) is det.
+%
+%	Convenience predicate to allow calling of library(apply)
+%	predicates (and similar) with non-integer arguments (plus/3
+%	only accepts integers).
+%
+sum_of(A, B, Sum):-
+	Sum is A + B.
+
 
 %!	timestamp(-Timestamp) is det.
 %

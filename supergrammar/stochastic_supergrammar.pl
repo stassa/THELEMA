@@ -634,7 +634,11 @@ grammar(Start,Nonterminals,Terminals,Productions):-
 	% Not strictly necessary but, why not? Won't run in critical region, probably.
 	% Also, the N^... is needed to avoid backtracking for more- use bagof/3 if
 	% refactoring- not findall/3.
-	,grammar_productions(Productions).
+	,grammar_productions(Productions)
+	,debug(init,'~w ~w ~w ~w ~w ~w ~w ~w',['Found grammar with star tsymbol:',[Start]
+			 ,'nonterminals:',Nonterminals
+			 ,'terminals:',Terminals
+			 ,'productions:',Productions]).
 
 
 %!	grammar_nonterminals(-Nonterminals) is det.
@@ -996,6 +1000,19 @@ scored_production(Corpus, Production, (Name, [Score] --> Body)):-
 %	examples it can parse at least partially.
 %
 production_score(Corpus, (Name --> Body), Score):-
+	configuration:production_scoring_strategy(S)
+	,production_score(S, Corpus, (Name --> Body), Score).
+
+
+%!	production_score(+Strategy,+Corpus,+Production,-Score) is nondet.
+%
+%	Business end of production_score/3. Handles the differente
+%	production scoring strategies.
+%
+%	Strategy is the atomic name of the scoring strategy configured
+%	in configuration:production_scoring_strategy/1.
+%
+production_score(parsed, Corpus, (Name --> Body), Score):-
 	configuration:language_module(M)
 	,dcg_translate_rule(Name --> Body, R)
 	,findall(Example
@@ -1006,6 +1023,44 @@ production_score(Corpus, (Name --> Body), Score):-
 	,length(Parsed, Parses)
 	,unpruned_corpus_length(Unpruned_length)
 	,Score is Parses / Unpruned_length
+	,debug(score_production, '~w ~w ~w ~w', ['Scored',(Name --> Body),with,Score]).
+
+production_score(tokens, Corpus, (Name --> Body), Score):-
+	configuration:language_module(M)
+	,dcg_translate_rule(Name --> Body, R)
+	,findall(Parsed_proportion
+		,(member(Example, Corpus)
+		 ,(   derivation(M:R, Example, Unparsed_tokens)
+		  ->  length(Example, Example_length)
+		     ,length(Unparsed_tokens, Unparsed_length)
+		     ,Parsed_length is Example_length - Unparsed_length
+		     ,Parsed_proportion is Parsed_length / Example_length
+		  ;  Parsed_proportion = 0 % Example failed to parse.
+		  )
+		)
+		,Proportions)
+	,sort(Proportions, Sorted)
+	,reverse(Sorted, [Score|_])
+	,debug(score_production, '~w ~w ~w ~w', ['Scored',(Name --> Body),with,Score]).
+
+production_score(tokens_over_parsed, Corpus, (Name --> Body), Score):-
+	configuration:language_module(M)
+	,dcg_translate_rule(Name --> Body, R)
+	,findall(Parsed_proportion
+		,(member(Example, Corpus)
+		 ,(   derivation(M:R, Example, Unparsed_tokens)
+		  ->  length(Example, Example_length)
+		     ,length(Unparsed_tokens, Unparsed_length)
+		     ,Parsed_length is Example_length - Unparsed_length
+		     ,Parsed_proportion is Parsed_length / Example_length
+		  ;  Parsed_proportion = 0 % Example failed to parse.
+		  )
+		)
+		,Parsed_proportions)
+	,foldl(sum_of, Parsed_proportions, 0, Sum_of_proportions)
+	,unpruned_corpus_length(Unpruned_length)
+	,Score is Sum_of_proportions / Unpruned_length
+	,true
 	,debug(score_production, '~w ~w ~w ~w', ['Scored',(Name --> Body),with,Score]).
 
 
