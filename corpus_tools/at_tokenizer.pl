@@ -19,7 +19,8 @@ Token_lists),member(Token,Token_list),\+memberchk(Token, SkipList)
 
 */
 
-readln_stop_chars --> [``].
+readln_stop_chars --> [_].  % Leave as default.
+readln_word_chars --> [`'{}/1234567890'`].
 
 %!	write_tokenized(+Stream_in,+Stream_out,+Options) is det.
 %
@@ -59,6 +60,37 @@ write_tokenized(Stream_in, Stream_out, [delimiter(Delimiter),mode(lines)]):-
 	,close(Stream).
 
 
+% write_term(S, T,[fullstop(true),nl(true),spacing(next_argument),quoted(true)]).
+write_tokenized(Stream_in, Stream_out, [delimiter(Delimiter),mode(prolog)]):-
+	stream_tokenizer(Stream_in, Token_lists)
+	,open(Stream_out,write,Stream,[encoding(utf8)])
+	,forall(member([H|Token_list], Token_lists)
+	       ,(write_prolog(Stream, H) % Write the first token
+		,forall(member(Token, Token_list)
+			% Write the remaining tokens preceded by Delimiter
+		       ,(write(Stream,Delimiter), write_prolog(Stream, Token))
+		 )
+		% Each token list goes in a new line
+		,write(Stream,"\n")
+		)
+	       )
+	,close(Stream).
+
+
+%!	write_prolog(+Stream,+Token) is det.
+%
+%	Convenience predicate to print Token to Stream in a
+%	Prolog-readable manner. Well that's the intention anyway.
+%
+write_prolog(Stream, Token):-
+	write_term(Stream, Token,[fullstop(false)
+				 ,nl(false)
+				 ,spacing(next_argument)
+				 ,quoted(true)
+				 ,character_escapes(true)
+				 ]).
+
+
 %!	stream_tokenizer(+Stream,-Tokens) is det.
 %
 %	Read from the given Stream and bind to a list of tokens.
@@ -76,8 +108,9 @@ stream_tokenizer(Stream, Tokens):-
 %
 %	Use to test stream_tokenizer at the listener.
 user_tokenizer(Tokens):-
-	phrase(readln_stop_chars, [Stop_chars])	,
-	readln(user_input, Tokens, [10], _, Stop_chars, uppercase).
+	 phrase(readln_stop_chars, [Stop_chars])
+	,phrase(readln_word_chars, [Word_chars])
+	,readln(user_input, Tokens, [10], Stop_chars, Word_chars, uppercase).
 
 
 %!	read_lines_from_stream(+Stream,-EOF,+Temp,-Acc) is det.
@@ -95,6 +128,13 @@ read_lines_from_stream(Stream, _, Temp, Acc):-
 	phrase(readln_stop_chars, [Stop_chars])
 	,readln(Stream, Line, EOF, _, Stop_chars, uppercase)
 	,read_lines_from_stream(Stream, EOF, [Line|Temp], Acc).
+
+
+
+
+
+
+
 
 
 
