@@ -5,6 +5,7 @@
 			,grammar_term/2
 			,internal_production_name/1
 			,production_scoring_strategy/1
+			,dogfooding/1
 			]).
 
 %:-register_world(language_simple
@@ -166,3 +167,10 @@ internal_production_name(ypsilon).
 %	production.
 %
 production_scoring_strategy(tokens_over_parsed).
+
+%!	dogfooding(+Boolean) is det.
+%
+%	Whether to keep derived grammar elements for subsequent runs of
+%	the main loop or not.
+%
+dogfooding(false).

@@ -120,10 +120,15 @@ assert_given_productions:-
 %	before that.
 %
 retract_derived_productions:-
-%	retract_derived_productions(rules)
-%	,retract_derived_productions(references)
-	retract_derived_productions(clauses)
-	.
+	% If we're feeding the algorithm its output we want
+	% to keep rules and references learned in the last run
+	% in the database for subsequent runs. I fnot, retract them.
+	(   dogfooding(false)
+	->  retract_derived_productions(rules)
+	   ,retract_derived_productions(references)
+	;   true
+	)
+	,retract_derived_productions(clauses).
 
 
 %!	retract_derived_productions(+Type) is nondet.
