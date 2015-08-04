@@ -22,9 +22,9 @@
 %		,examples_simple).
 %		,examples_mtg_lexicalized).
 %		,examples_mtg).
-%		,examples_mtg_hand_simulation).
+		,examples_mtg_hand_simulation).
 %		,examples_mtg_destroy).
-		,examples_mtg_destroy_short).
+%		,examples_mtg_destroy_short).
 %		,examples_mtg_all_destroy_one_sentence_per_line).
 
 

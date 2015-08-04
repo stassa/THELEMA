@@ -519,13 +519,21 @@ examples_corpus(Examples):-
 	findall(Example,configuration:example_string(Example),Examples).
 
 
-%!	pruned_corpus(+Corpus,+Production,-Pruned_corpus) is det.
+%!	pruned_corpus(+Corpus,+Grammar,-Pruned_corpus) is det.
 %
-%	Remove tokens from each example in the Corpus up to the first
-%	token the given Production can't parse and bind the rest to
-%	Pruned_corpus.
+%	Prune the Corpus using productions in the current Grammar,
+%	binding the result in Pruned_corpus.
+%
+%	Each example in the Corpus is parsed by each production in
+%	Grammar, then replaced with the tokens left unparsed by that
+%	production.
 %
 %	Empty examples (ie ones fully parsed) are removed altogether.
+%
+%	@TODO: I wonder if I should be parsing with the complete
+%	grammar, from the start symbol onwards; would that give me a
+%	more hierarchical grammar like I want it?
+%
 pruned_corpus(Corpus, [_S,_Ns,_Ts,Ps], Pruned):-
 	pruned_corpus_(Ps,Corpus,Pruned).
 
