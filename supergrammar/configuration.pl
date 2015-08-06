@@ -130,7 +130,7 @@ grammar_term(p, productions).
 %	A dumny production name to give productions we are in the
 %	process of deriving.
 %
-internal_production_name(ypsilon).
+internal_production_name(p).
 
 
 %!	production_scoring_strategy(?Strategy) is det.
