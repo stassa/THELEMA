@@ -1015,7 +1015,8 @@ scored_production(Corpus, Production, (Name, [Score] --> Body)):-
 %
 production_score(Corpus, (Name --> Body), Score):-
 	configuration:production_scoring_strategy(S)
-	,production_score(S, Corpus, (Name --> Body), Score).
+	,production_score(S, Corpus, (Name --> Body), Score)
+	,debug(score_production, '~w ~w ~w ~w', ['Scored',(Name --> Body),with,Score]).
 
 
 %!	production_score(+Strategy,+Corpus,+Production,-Score) is nondet.
@@ -1036,8 +1037,7 @@ production_score(parsed, Corpus, (Name --> Body), Score):-
 		,Parsed)
 	,length(Parsed, Parses)
 	,unpruned_corpus_length(Unpruned_length)
-	,Score is Parses / Unpruned_length
-	,debug(score_production, '~w ~w ~w ~w', ['Scored',(Name --> Body),with,Score]).
+	,Score is Parses / Unpruned_length.
 
 production_score(tokens, Corpus, (Name --> Body), Score):-
 	configuration:language_module(M)
@@ -1054,8 +1054,7 @@ production_score(tokens, Corpus, (Name --> Body), Score):-
 		)
 		,Proportions)
 	,sort(Proportions, Sorted)
-	,reverse(Sorted, [Score|_])
-	,debug(score_production, '~w ~w ~w ~w', ['Scored',(Name --> Body),with,Score]).
+	,reverse(Sorted, [Score|_]).
 
 production_score(tokens_over_parsed, Corpus, (Name --> Body), Score):-
 	configuration:language_module(M)
@@ -1067,15 +1066,14 @@ production_score(tokens_over_parsed, Corpus, (Name --> Body), Score):-
 		     ,length(Unparsed_tokens, Unparsed_length)
 		     ,Parsed_length is Example_length - Unparsed_length
 		     ,Parsed_proportion is Parsed_length / Example_length
-		  ;  Parsed_proportion = 0 % Example failed to parse.
+		  ;  Parsed_proportion = 0
 		  )
 		)
 		,Parsed_proportions)
 	,foldl(sum_of, Parsed_proportions, 0, Sum_of_proportions)
 	,unpruned_corpus_length(Unpruned_length)
 	,Score is Sum_of_proportions / Unpruned_length
-	,true
-	,debug(score_production, '~w ~w ~w ~w', ['Scored',(Name --> Body),with,Score]).
+	,true.
 
 
 
