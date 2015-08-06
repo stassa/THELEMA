@@ -379,6 +379,7 @@ language_module_exports(Module, Exports):-
 complete_grammar(Complete_grammar):-
 	timestamp(Start_time)
 	,debug(main_loop, '~w ~w', ['Starting new run on',Start_time])
+	,configuration_logging
 	,initialisation(G,Cs)
 	,complete_grammar(G, Cs, Cs, Complete_grammar)
 	,timestamp(End_time)
@@ -386,6 +387,30 @@ complete_grammar(Complete_grammar):-
 	,! % Red- need to understand where choicepoints are created
 	   % and which ones can be nipped in the bud.
 	.
+
+
+
+%!	configuration_logging is det.
+%
+%	Convenience predicate to log a list of configuration
+%	options declared in configuration module. Used by
+%	complete_grammar/1 to log the context of the current run.
+%
+configuration_logging:-
+	debug(main_loop, '~w ', ['Configured options for this run:'])
+	,rule_complexity(C)
+	,debug(main_loop, '~w ~w', ['Rule complexity:',C])
+	,initial_score(Score)
+	,debug(main_loop, '~w ~w', ['Initial score:',Score])
+	,output_stream(output(F))
+	,debug(main_loop, '~w ~w', ['Output stream:',F])
+	,output_type(T)
+	,debug(main_loop, '~w ~w', ['Output type:',T])
+	,production_scoring_strategy(Strategy)
+	,debug(main_loop, '~w ~w', ['Production scoring strategy:',Strategy])
+	,dogfooding(D)
+	,debug(main_loop, '~w ~w', ['Dogfooding:',D]).
+
 
 
 %Exit with a new grammar
@@ -1039,7 +1064,7 @@ production_score(parsed, Corpus, (Name --> Body), Score):-
 	,unpruned_corpus_length(Unpruned_length)
 	,Score is Parses / Unpruned_length.
 
-production_score(tokens, Corpus, (Name --> Body), Score):-
+production_score(mode, Corpus, (Name --> Body), Score):-
 	configuration:language_module(M)
 	,dcg_translate_rule(Name --> Body, R)
 	,findall(Parsed_proportion
@@ -1056,7 +1081,7 @@ production_score(tokens, Corpus, (Name --> Body), Score):-
 	,sort(Proportions, Sorted)
 	,reverse(Sorted, [Score|_]).
 
-production_score(tokens_over_parsed, Corpus, (Name --> Body), Score):-
+production_score(sum_of_means, Corpus, (Name --> Body), Score):-
 	configuration:language_module(M)
 	,dcg_translate_rule(Name --> Body, R)
 	,findall(Parsed_proportion

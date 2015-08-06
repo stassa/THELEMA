@@ -12,6 +12,8 @@ Highlight 72 % Asserted given_production.*
 Highlight 15 % Asserted terminal.*
 Highlight 49 % Added example tokens to the set of Terminals
 Highlight 37 % \(\(Starting new\)\|Ended\) run on.*
+Highlight 39 % Configured options for this run: 
+Highlight 42 % \(\(Rule complexity\)\|\(Initial score\)\|\(Output stream\)\|\(Output type\)\|\(Production scoring strategy\)\|\(Dogfooding\)\):.*
 Highlight 22 % Selected new example.*
 Highlight 25 % Skipped one fully consumed example.*
 Highlight 9 % Built new augmentation set.*

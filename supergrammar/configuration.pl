@@ -22,8 +22,8 @@
 %		,examples_simple).
 %		,examples_mtg_lexicalized).
 %		,examples_mtg).
-%		,examples_mtg_hand_simulation).
-		,examples_mtg_destroy).
+		,examples_mtg_hand_simulation).
+%		,examples_mtg_destroy).
 %		,examples_mtg_destroy_short).
 %		,examples_mtg_all_destroy_one_sentence_per_line).
 
@@ -138,21 +138,21 @@ internal_production_name(p).
 %	How to score newly-augmented productions, to select the best.
 %	One of:
 %	* parsed
-%	* tokens
-%	* tokens_over_parsed
+%	* mode
+%	* sum_of_means
 %
 %	With "parsed" selected, a newly augmented production is scored
 %	with P/C where P the number of examples the production can parse
 %	at least partially and C the number of examples in the original,
 %	unpruned corpus.
 %
-%	With "tokens", the score is the best value of P/T where P the
+%	With "mode", the score is the best value of P/T where P the
 %	number of tokens of a example the production has parsed and T
 %	the number of tokens in that example. To clarify, the end result
 %	is that the production is scored with the highest P/T ratio it
 %	achieved over the (unpruned) corpus.
 %
-%	With "tokens_over_parsed" the score is S/C where C the number of
+%	With "sum_of_means" the score is S/C where C the number of
 %	examples in the unpruned corpus and S the sum of the value P/T
 %	for each example, ie the ratio of tokens parsed over the number
 %	of tokens of each example. Or in other words:
@@ -166,11 +166,11 @@ internal_production_name(p).
 %	and p the proportion of tokens of this exapmle parsed by the
 %	production.
 %
-production_scoring_strategy(tokens_over_parsed).
+production_scoring_strategy(mode).
 
 %!	dogfooding(+Boolean) is det.
 %
 %	Whether to keep derived grammar elements for subsequent runs of
 %	the main loop or not.
 %
-dogfooding(false).
+dogfooding(true).
