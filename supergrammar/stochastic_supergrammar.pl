@@ -455,7 +455,6 @@ derived_production([A|As], Cs, P, Acc):-
 	%    If the score is 0, discard this version of the production
 	%    Otherwise, keep the newest, best scored version of the production
 	,once(best_scored_production(Cs, P, P_, P_best))
-	,debug(score_production,'~w ~w ~w ~w~w ~w ~w',['Best scored',P_best,'(between:',P,',',P_,')'])
 	%  Repeat while there are more terms [in the augset]
 	,derived_production(As,Cs,P_best,Acc).
 
@@ -938,7 +937,9 @@ production_name(N):-
 %
 best_scored_production(Cs, P, P_, P_best):-
 	scored_production(Cs, P_, P_scored)
-	,best_scored_production(P, P_scored, P_best).
+	,best_scored_production(P, P_scored, P_best)
+	,debug(score_production,'~w ~w ~w ~w~w ~w ~w',['Best scored',P_best,'(between:',P,',',P_scored,')'])
+	.
 
 
 
@@ -1153,13 +1154,15 @@ augmentation_set(Example, [_S,Ns,Ts,_Ps], Augset):-
 augmented_production(ypsilon, Token, (Name, Score --> Token)):-
 	empty_production((Name, Score --> [])).
 
-augmented_production((Name, Score --> [T|Terminals]), Token, (Name, Score --> Augmented)):-
-	augmented_production([], [T|Terminals], Token, [T|Terminals], Augmented).
+augmented_production((Name, _ --> [T|Terminals]), Token, (Name, [S] --> Augmented)):-
+	augmented_production([], [T|Terminals], Token, [T|Terminals], Augmented)
+	,configuration:initial_score(S).
 
-augmented_production((Name, Score --> Body), Token, (Name, Score --> Augmented)):-
+augmented_production((Name, _ --> Body), Token, (Name, [S] --> Augmented)):-
 	tree_list(Body, Tokens)
 	,once(phrase(symbols(nonterminal, Nonterminals), Tokens, Terminals))
-	,augmented_production(Nonterminals, Terminals, Token, Tokens, Augmented).
+	,augmented_production(Nonterminals, Terminals, Token, Tokens, Augmented)
+	,configuration:initial_score(S).
 
 
 %!	augmented_production(+Nonterminals,+Terminals,+Token,+Body,-Augmented)	is nondet.

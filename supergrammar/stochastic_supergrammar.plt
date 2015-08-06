@@ -35,6 +35,20 @@ test(production_structure_out_in_name_score_body, []):-
 
 :-begin_tests(best_scored_production).
 
+/*
+Seems like all the augmented productions are based on a production
+scored with [-1] which they carry out as the augmented form's score.
+This turns out to be convenient to do away with an error: the score of
+the original form is _not_ the score of the augmented form and should
+really be _discarded_ until the augmented form is scored. In versions
+of the program so far, the score is indeed discarded but only inside
+scored_production/3. There's no reason to keep it around until then and
+a new production should really be getting the default score (-1 so far).
+
+Needless to say, I'll need to add tests that at least demonstrate this
+is the case. So: TODO. To do this that is.
+*/
+
 % Zero scores and ypsilon.
 
 % Only semidet really.
