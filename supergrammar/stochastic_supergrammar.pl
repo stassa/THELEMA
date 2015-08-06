@@ -1081,6 +1081,25 @@ production_score(mode, Corpus, (Name --> Body), Score):-
 	,sort(Proportions, Sorted)
 	,reverse(Sorted, [Score|_]).
 
+production_score(mean, Corpus, (Name --> Body), Score):-
+	configuration:language_module(M)
+	,dcg_translate_rule(Name --> Body, R)
+	,findall(Parsed_proportion
+		,(member(Example, Corpus)
+		 ,(   derivation(M:R, Example, Unparsed_tokens)
+		  ->  length(Example, Example_length)
+		     ,length(Unparsed_tokens, Unparsed_length)
+		     ,Parsed_length is Example_length - Unparsed_length
+		     ,Parsed_proportion is Parsed_length / Example_length
+		  ;  Parsed_proportion = 0
+		  )
+		)
+		,Parsed_proportions)
+	,foldl(sum_of, Parsed_proportions, 0, Sum_of_proportions)
+	,length(Corpus, Corpus_length)
+	,Score is Sum_of_proportions / Corpus_length
+	,true.
+
 production_score(sum_of_means, Corpus, (Name --> Body), Score):-
 	configuration:language_module(M)
 	,dcg_translate_rule(Name --> Body, R)

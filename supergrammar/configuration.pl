@@ -139,6 +139,7 @@ internal_production_name(p).
 %	One of:
 %	* parsed
 %	* mode
+%	* mean
 %	* sum_of_means
 %
 %	With "parsed" selected, a newly augmented production is scored
@@ -151,6 +152,10 @@ internal_production_name(p).
 %	the number of tokens in that example. To clarify, the end result
 %	is that the production is scored with the highest P/T ratio it
 %	achieved over the (unpruned) corpus.
+%
+%	With "mean" the score is the ratio P/X where X is the number
+%	of examples in the pruned corpus and P the number of parsed
+%	tokens from each of those examples.
 %
 %	With "sum_of_means" the score is S/C where C the number of
 %	examples in the unpruned corpus and S the sum of the value P/T
@@ -166,7 +171,7 @@ internal_production_name(p).
 %	and p the proportion of tokens of this exapmle parsed by the
 %	production.
 %
-production_scoring_strategy(mode).
+production_scoring_strategy(mean).
 
 %!	dogfooding(+Boolean) is det.
 %
