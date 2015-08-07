@@ -72,7 +72,11 @@ given_productions([]).
 %	Declared here to make it available to
 %	assert_given_productions/0.
 retract_given_productions:-
-	retractall(given_production(_,_))
+	forall(given_production(N,P)
+	       ,(retract(given_production(N,P))
+		,debug(clear_database, '~w ~w', ['Retracted',given_production(N,P)])
+	       )
+	      )
 	,debug(clear_database, '~w', ['Retracted all clauses of given_production/2']).
 
 
@@ -171,7 +175,11 @@ retract_derived_productions(references):-
 	       ).
 
 retract_derived_productions(clauses):-
-	retractall(derived_production(_,_))
+	forall(derived_production(N,P)
+	      ,(retract(derived_production(N,P))
+	       ,debug(clear_database, '~w ~w', ['Retracted',derived_production(N,P)])
+	       )
+	      )
 	,debug(clear_database, '~w', ['Retracted all clauses of derived_production/2']).
 
 
@@ -209,6 +217,10 @@ assert_unpruned_corpus_length:-
 %	* Clauses of nonterminal//0 and terminal//0
 %	* The corresponding Prolog rules.
 %	* Clauses of given_production/2.
+%
+%	@Bug: not all terminals have explicitly stated rules with their
+%	name- ie, there isn't necessarily a preterminal for each
+%	terminal. So the listing will fail with an error.
 %
 listing_grammar_knowledge:-
 	listing(given_production)
@@ -413,8 +425,17 @@ configuration_logging:-
 
 
 
-%Exit with a new grammar
-complete_grammar(G, [], _, G).
+%!	complete_grammar(+Grammar,+Corpus,+Corpus_copy,-Updated_gramamr) is det.
+%
+%	Business end of complete_grammar/1.
+%
+%	@TODO: Corpus_copy is um... redundant? I'm not sure entirely-
+%	give it a look and fix if needed. I think it was there
+%	originally to carry around the unpruned corpus when I was using
+%	it in deriving a new production; I'm now using the pruned corpus
+%	I think.
+%
+complete_grammar(G, [], _, G). %Exit with a new grammar
 	%  For each example in the examples corpus
 complete_grammar(G, [C|_Xs], Cs, Acc):-
 	debug(next_example, '~w ~w ~w~w ~w', ['Selected',new,example,:,C])
