@@ -633,6 +633,10 @@ pruned_corpus(Corpus, [_S,_Ns,_Ts,Ps], Pruned):-
 %	Business end of pruned_corpus/3. Prune Corpus using eacy
 %	Production and bind the result to Pruned_corpus.
 %
+%	@TODO: As an optimisation, if Corpus = [], there's no need to
+%	keep going and trying to prune with more rules; so add a second
+%	boundary condition: pruned_corpus(_, [], []).
+%
 pruned_corpus_([],Pruned,Pruned).
 pruned_corpus_([P|Ps],Corpus,Acc):-
 	debug(prune_corpus,'~w ~w',['Pruning corpus using',P])
@@ -692,11 +696,11 @@ production_pruned_corpus([], _, _, Denurp, Pruned):-
 	reverse(Denurp, Pruned).
 production_pruned_corpus([C|Cs], M, R, Temp, Acc):-
 	derivation(M:R, C, Rest)
+	,debug(prune_corpus,'~w ~w ~w ~w ~w ~w',['Used rule',R,'to prune',C,to,Rest])
 	,optimisation(fully_consumed_example, [Rest, Temp], Updated)
-	,debug(prune_corpus,'~w ~w ~w ~w ~w ~w',['Used rule',R,'to prune',C,to,Updated])
 	,production_pruned_corpus(Cs, M, R, Updated, Acc).
 production_pruned_corpus([C|Cs], M, R, Temp, Acc):-
-	debug(prune_corpus,'~w ~w ~w',[R,'Pruned 0 tokens from',C])
+	debug(prune_corpus,'~w ~w ~w',[R,'pruned 0 tokens from',C])
 	,production_pruned_corpus(Cs, M, R, [C|Temp], Acc).
 
 
@@ -1380,5 +1384,5 @@ symbols(terminal,[]) --> [].
 %	optimisation/3 clauses. Too bad.
 %
 optimisation(fully_consumed_example, [[], Temp], Temp):-
-	debug(next_example, '~w', ['Skipped one fully consumed example']).
+	debug(next_example, '~w', ['Dropped one fully consumed example']).
 optimisation(fully_consumed_example, [Example, Temp], [Example|Temp]).

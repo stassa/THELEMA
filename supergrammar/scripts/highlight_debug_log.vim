@@ -29,7 +29,7 @@ Highlight 46 % Asserted derived_production.*
 Highlight 48 % Asserted nonterminal.*
 Highlight 44 % Asserted rule.*
 Highlight 14 % Updated grammar.*
-Highlight 25 % Skipped one fully consumed example.*
+Highlight 25 % Dropped one fully consumed example.*
 Highlight 65 % Pruned corpus.*
 
 

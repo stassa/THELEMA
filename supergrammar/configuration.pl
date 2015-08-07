@@ -171,7 +171,7 @@ internal_production_name(p).
 %	and p the proportion of tokens of this exapmle parsed by the
 %	production.
 %
-production_scoring_strategy(mean).
+production_scoring_strategy(parsed).
 
 %!	dogfooding(+Boolean) is det.
 %
