@@ -17,6 +17,9 @@ user:file_search_path(output, supergrammar(output)).
 :-nodebug(clear_database).
 :-debug(clear_database > 'debug.log').
 
+:-nodebug(query_database).
+:-debug(query_database > 'debug.log').
+
 :-nodebug(main_loop).
 :-debug(main_loop > 'debug.log').
 

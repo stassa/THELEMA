@@ -52,7 +52,11 @@
 %	use as directive.
 %
 given_productions(Ps):-
-	configuration:rule_complexity(C)
+	% If we're using previously derived productions, get them
+	% from nonterminal//0 clauses and treat them as given.
+	configuration:dogfooding(true)
+	,!
+	,configuration:rule_complexity(C)
 	,configuration:language_module(M)
 	% Note this will only get terms with arity //0.
 	,findall(P
@@ -60,9 +64,50 @@ given_productions(Ps):-
 		 ,functor(T,N,C)
 		 ,clause(M:T,B)
 		 ,once(prolog_dcg(T:-B, P)))
-	       ,Ps).
+	       ,Ps)
+	,debug(query_database, '~w ~w', ['Found given productions (df): ',Ps]).
+
+given_productions(Ps):-
+	% If we're not using previously derived productions, treat only the
+	% clauses of nonterminal//0 actually declared in the source file
+	% as given.
+	configuration:dogfooding(false)
+	,!
+	,findall(Name
+		 ,source_file_of(Name, _, _, _)
+	       ,Ps)
+	,debug(query_database, '~w ~w', ['Found given productions: ',Ps]).
+
 % Dangerous, rather.
-given_productions([]).
+given_productions([]):-
+	debug(query_database, '~w', ['Found no given productions.']).
+
+
+%!	source_file_of(?Name,?Production,?Clause_index,?File) is det.
+%
+%	True when Production is a production declared as a given
+%	production (in a given_production/2 term) and also connected to
+%	nonterminal//0 and actually declared in the source file of the
+%	currently configured language module.
+%
+%	File is the full path of the source file and Clause_index the
+%	index of the nonterminal//0 clause that production is connected
+%	to.
+%
+%	This predicate is meant to help in identifying hand-crafted
+%	productions from productions derived in a given run and declared
+%	as "given" in subsequent runs (with dogfooding option set to
+%	true).
+%
+source_file_of(Name, Production, Clause_index, File):-
+	configuration:language_module(M)
+	,given_production(Name, Production)
+	,dcg_translate_rule(nonterminal --> [Name], H:-B)
+	,copy_term(H:-B, H_:-B_)
+	,clause(M:H_, B_, Ref)
+	,(H:-B) =@= (H_:-B_)
+	,nth_clause(M:H_, Clause_index, Ref)
+	,clause_property(Ref, source(File)).
 
 
 
@@ -234,7 +279,6 @@ listing_grammar_knowledge:-
 %:-retract_derived_productions.
 %:-assert_given_productions.
 %:-assert_unpruned_corpus_length.
-
 
 
 %!	initialisation(Grammar,Corpus) is det.
