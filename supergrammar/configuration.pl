@@ -178,4 +178,5 @@ production_scoring_strategy(mean).
 %	Whether to keep derived grammar elements for subsequent runs of
 %	the main loop or not.
 %
-dogfooding(true).
+dogfooding(false).
+

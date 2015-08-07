@@ -456,7 +456,6 @@ complete_grammar(G, [C|_Xs], Cs, Acc):-
 	,debug(update_grammar,'~w ~w', ['Updated grammar:',G_])
 	%Prune the corpus
 	,pruned_corpus(Cs,G_,Cs_)
-	,debug(prune_corpus,'~w ~w',['Pruned corpus:',Cs_])
 	%Repeat while there are more examples [in the _un_ pruned corpus]
 	,complete_grammar(G_,Cs_,Cs_,Acc).
 
@@ -580,7 +579,9 @@ examples_corpus(Examples):-
 %	more hierarchical grammar like I want it?
 %
 pruned_corpus(Corpus, [_S,_Ns,_Ts,Ps], Pruned):-
-	pruned_corpus_(Ps,Corpus,Pruned).
+	debug(prune_corpus,'~w ~w',['Pruning corpus:',Corpus])
+	,pruned_corpus_(Ps,Corpus,Pruned)
+	,debug(prune_corpus,'~w ~w',['Pruned corpus:',Pruned]).
 
 
 %!	pruned_corpus_(+Productions,+Corpus,-Pruned_corpus) is det.
@@ -590,7 +591,9 @@ pruned_corpus(Corpus, [_S,_Ns,_Ts,Ps], Pruned):-
 %
 pruned_corpus_([],Pruned,Pruned).
 pruned_corpus_([P|Ps],Corpus,Acc):-
-	production_pruned_corpus(Corpus, P, Pruned_corpus)
+	debug(prune_corpus,'~w ~w',['Pruning corpus using',P])
+	,production_pruned_corpus(Corpus, P, Pruned_corpus)
+	,debug(prune_corpus,'~w ~w ~w ~w',['Pruned with',P,to,Pruned_corpus])
 	,pruned_corpus_(Ps,Pruned_corpus,Acc).
 
 
@@ -646,9 +649,11 @@ production_pruned_corpus([], _, _, Denurp, Pruned):-
 production_pruned_corpus([C|Cs], M, R, Temp, Acc):-
 	derivation(M:R, C, Rest)
 	,optimisation(fully_consumed_example, [Rest, Temp], Updated)
+	,debug(prune_corpus,'~w ~w ~w ~w ~w ~w',['Used rule',R,'to prune',C,to,Updated])
 	,production_pruned_corpus(Cs, M, R, Updated, Acc).
 production_pruned_corpus([C|Cs], M, R, Temp, Acc):-
-	production_pruned_corpus(Cs, M, R, [C|Temp], Acc).
+	debug(prune_corpus,'~w ~w ~w',[R,'Pruned 0 tokens from',C])
+	,production_pruned_corpus(Cs, M, R, [C|Temp], Acc).
 
 
 
