@@ -18,7 +18,7 @@
 				  ,production//1
 				  ]).
 
-:-use_module(utilities).
+:-use_module(project_root(utilities)).
 :-use_module(configuration).
 :-use_module(library(ordsets)).
 

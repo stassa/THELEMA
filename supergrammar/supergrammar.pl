@@ -96,7 +96,7 @@ Clear all new productions generated until now:
 
 
 */
-:-use_module(utilities).
+:-use_module(project_root(utilities)).
 :-use_module(configuration).
 
 :- dynamic production/3.

@@ -1,21 +1,23 @@
+:-prolog_load_context(directory, Dir)
+  ,asserta(user:file_search_path(supergrammar, Dir)).
+
+:- absolute_file_name(.., Dir)
+  ,asserta(user:file_search_path(project_root, Dir)).
 
 :-use_module(supergrammar).
-:-use_module(stochastic_supergrammar).
 :-load_test_files([]).
 
 edit_source:-
-	edit('load_supergrammar.pl')
-	,edit('utilities.pl')
-	,edit('supergrammar.pl')
-	,edit('stochastic_supergrammar.pl')
-	,edit('stochastic_supergrammar.plt')
-	,edit('configuration.pl')
-	,edit('examples_simple.pl')
-	,edit('examples_mtg_hand_simulation.pl')
-	,edit('examples_mtg.pl')
-	,edit('examples_mtg_lexicalized.pl')
-	,edit('examples_mtg_stochastic.pl')
-	,edit('run_demo.pl')
+	edit(supergrammar(load_supergrammar))
+	,edit(project_root(utilities))
+	,edit(supergrammar(supergrammar))
+	,edit(supergrammar(configuration))
+	,edit(supergrammar(examples_simple))
+	,edit(supergrammar(examples_mtg_hand_simulation))
+	,edit(supergrammar(examples_mtg))
+	,edit(supergrammar(examples_mtg_lexicalized))
+	,edit(supergrammar(examples_mtg_stochastic))
+	,edit(supergrammar(run_demo))
 	%,edit('C:\\Users\\spatsant\\AppData\\Roaming\\SWI-Prolog\\swipl.ini')
 	.
 

@@ -1,6 +1,11 @@
 :-prolog_load_context(directory, Dir)
   ,asserta(user:file_search_path(supergrammar, Dir)).
 
+:- absolute_file_name(.., Dir)
+   %absolute_file_name(supergrammar('..'), Dir, [file_type(directory)])
+  ,asserta(user:file_search_path(project_root, Dir)).
+
+
 % Corpus files.
 user:file_search_path(corpus, supergrammar(corpus)).
 % Directory for examples and language modules
@@ -64,8 +69,8 @@ user:file_search_path(output, supergrammar(output)).
 %	Opens work files in the editor.
 
 edit_source:-
-	edit(supergrammar(load_supergrammar))
-	,edit(supergrammar(utilities))
+	edit(supergrammar(load_production_learning))
+	,edit(project_root(utilities))
 	,edit(supergrammar(production_induction))
 	%,edit(supergrammar('stochastic_supergrammar.plt'))
 	,edit(supergrammar(configuration))
@@ -82,6 +87,9 @@ edit_source:-
 	.
 
 :-edit_source.
+
+
+
 
 
 
