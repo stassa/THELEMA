@@ -54,7 +54,7 @@ user:file_search_path(output, supergrammar(output)).
 % Loads language predicates into global module user where inheriting
 % language modules can access them (using add_import_module/3).
 :-use_module(language).
-:-use_module(stochastic_supergrammar).
+:-use_module(production_induction).
 %:-use_module(supergrammar).
 
 :-load_test_files([]).
@@ -66,7 +66,7 @@ user:file_search_path(output, supergrammar(output)).
 edit_source:-
 	edit(supergrammar(load_supergrammar))
 	,edit(supergrammar(utilities))
-	,edit(supergrammar(stochastic_supergrammar))
+	,edit(supergrammar(production_induction))
 	%,edit(supergrammar('stochastic_supergrammar.plt'))
 	,edit(supergrammar(configuration))
 	,edit(supergrammar(load_configuration))

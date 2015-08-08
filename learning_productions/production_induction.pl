@@ -1,4 +1,4 @@
-﻿:-module(stochastic_supergrammar, [given_productions/1
+﻿:-module(production_induction, [given_productions/1
 				  ,retract_given_productions/0
 				  ,retract_derived_productions/0
 				  ,listing_grammar_knowledge/0
