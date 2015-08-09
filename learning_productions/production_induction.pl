@@ -56,15 +56,7 @@ given_productions(Ps):-
 	% from nonterminal//0 clauses and treat them as given.
 	configuration:dogfooding(true)
 	,!
-	,configuration:rule_complexity(C)
-	,configuration:language_module(M)
-	% Note this will only get terms with arity //0.
-	,findall(P
-		,(phrase(M:nonterminal, [N])
-		 ,functor(T,N,C)
-		 ,clause(M:T,B)
-		 ,once(prolog_dcg(T:-B, P)))
-	       ,Ps)
+	,known_productions(Ps)
 	,debug(query_database, '~w ~w', ['Found given productions (df): ',Ps]).
 
 given_productions(Ps):-
@@ -81,6 +73,27 @@ given_productions(Ps):-
 % Dangerous, rather.
 given_productions([]):-
 	debug(query_database, '~w', ['Found no given productions.']).
+
+
+%!	known_productions(?Productions) is det.
+%
+%	Convenience predicate to collect the set of known productions
+%	attached to nonterminal//0 terms and asserted in the dynamic
+%	database, regardless of whether they were loaded from a source
+%	file, learned in a previous run and preserved with the
+%	dogfooding option set to true, or indeed derived in the latest
+%	run.
+%
+known_productions(Ps):-
+	configuration:rule_complexity(C)
+	,configuration:language_module(M)
+	% Note this will only get terms with arity //0.
+	,findall(P
+		,(phrase(M:nonterminal, [N])
+		 ,functor(T,N,C)
+		 ,clause(M:T,B)
+		 ,once(prolog_dcg(T:-B, P)))
+	       ,Ps).
 
 
 %!	source_file_of(?Name,?Production,?Clause_index,?File) is det.
@@ -352,7 +365,33 @@ print_grammar(Stream,[S,Ns,Ts,Ps], terms):-
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
 print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
-	configuration:language_module(M)
+	configuration:compression_level(string)
+	,configuration:language_module(M)
+	,stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(New_module_name, _Extension, Filename)
+	,language_module_exports(M,Es)
+	% Print module name, exports list and use_module statements.
+	,format(Stream, '~w~w~w~w~w~n', [':-module(',New_module_name,',',[S//0|Es],').'])
+	% Print the start symbol rule
+	,write(Stream, '\n')
+	,print_term(Stream, p, (start --> [S]))
+	% Print each terminal rule
+	,write(Stream, '\n')
+	,forall(member(T, Ts), print_term(Stream, p, terminal --> [[T]]))
+	% Print each nonterminal rule
+	,write(Stream, '\n')
+	,forall(member(N, Ns), print_term(Stream, p, nonterminal --> [N]))
+	% Connect each production to the start symbol
+	,write(Stream, '\n')
+	,forall(member(Name-->_Body, Ps),(print_term(Stream,p,S --> Name)))
+	% Print each production
+	,write(Stream, '\n')
+	,forall(member(P,Ps),(print_term(Stream,p,P))).
+
+print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
+	configuration:compression_level(production)
+	,configuration:language_module(M)
 	,stream_property(Stream, file_name(Path))
 	,file_base_name(Path, Filename)
 	,file_name_extension(New_module_name, _Extension, Filename)

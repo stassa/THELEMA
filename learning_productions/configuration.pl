@@ -6,6 +6,7 @@
 			,internal_production_name/1
 			,production_scoring_strategy/1
 			,dogfooding/1
+			,compression_level/1
 			]).
 
 %:-register_world(language_simple
@@ -22,8 +23,9 @@
 %		,examples_simple).
 %		,examples_mtg_lexicalized).
 %		,examples_mtg).
-		,examples_mtg_hand_simulation).
-%		,examples_mtg_destroy).
+%		,examples_mtg_hand_simulation).
+%		,examples_mtg_higher_order).
+		,examples_mtg_destroy).
 %		,examples_mtg_destroy_short).
 %		,examples_mtg_all_destroy_one_sentence_per_line).
 
@@ -179,4 +181,33 @@ production_scoring_strategy(parsed).
 %	the main loop or not.
 %
 dogfooding(false).
+
+
+%!	compression_level(?Level) is det.
+%
+%	The level of compression of the input examples. One of: %
+%	* string
+%	* production
+%
+%	Compression at "string" level implies examples are simple
+%	strings of tokens. In that case the algorithm will learn a set
+%	of rewrite rules each of which explains a subset of the tokens
+%	of each example.
+%
+%	Compression at "production" level implies the algorithm
+%	has already larned a set of rewrite rules from the original
+%	string examples and its input is the examples replaced by their
+%	rewrite rules (therefore, compressed).
+%
+compression_level(string).
+
+
+
+
+
+
+
+
+
+
 
