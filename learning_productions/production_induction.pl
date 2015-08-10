@@ -390,7 +390,29 @@ print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
-print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
+/*What I really want to do here is produce a file like the one in
+higher_order_grammars/first_order_grammar. It _may_ need to declare
+start//0, terminal//0 and nonterminal//0 as multifile and make sure to
+refer correctly to them over module boundaries. Most importantly, it
+needs to import (with use_module/1) the lower-order grammar. Which is
+actually the _first_ order grammar. Misnomers, see today's notes. The
+lower order file needs to define the rules used by the higher order
+file.
+
+For example, higher order:
+destroy_target_t_artifact--> destroy_target, t_artifact.
+
+Lower order:
+t_creature-->[creature].
+destroy_target-->[destroy, target].
+
+And that's all- we just want to make both modules be parseable grammars.
+Never mind the multi-bracketing shennanigans, it will take a lot of work
+to make DCGs work with the higher order grammar scheme and there's no
+reason to do that right now. Focus, right?
+
+	*/
+print_grammar(Stream, [S,Ns,Ts,Ps], second_order_grammar):-
 	configuration:compression_level(production)
 	,configuration:language_module(M)
 	,stream_property(Stream, file_name(Path))
