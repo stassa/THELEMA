@@ -1,22 +1,23 @@
 ﻿:-module(production_induction, [given_productions/1
-				  ,retract_given_productions/0
-				  ,retract_derived_productions/0
-				  ,listing_grammar_knowledge/0
-				  ,complete_grammar/0
-				  ,complete_grammar/1
-				  ,examples_corpus/1
-				  ,pruned_corpus/3
-				  ,derivation/3
-				  ,grammar/4
-				  ,updated_grammar/3
-				  ,production_structure/4
-				  ,production_constituents/4
-				  ,best_scored_production/4
-				  ,production_score/3
-				  ,augmentation_set/3
-				  ,augmented_production/3
-				  ,production//1
-				  ]).
+			       ,known_productions/1
+			       ,retract_given_productions/0
+			       ,retract_derived_productions/0
+			       ,listing_grammar_knowledge/0
+			       ,complete_grammar/0
+			       ,complete_grammar/1
+			       ,examples_corpus/1
+			       ,pruned_corpus/3
+			       ,derivation/3
+			       ,grammar/4
+			       ,updated_grammar/3
+			       ,production_structure/4
+			       ,production_constituents/4
+			       ,best_scored_production/4
+			       ,production_score/3
+			       ,augmentation_set/3
+			       ,augmented_production/3
+			       ,production//1
+			       ]).
 
 :-use_module(project_root(utilities)).
 :-use_module(configuration).
