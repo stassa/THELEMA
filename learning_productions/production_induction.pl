@@ -366,8 +366,7 @@ print_grammar(Stream,[S,Ns,Ts,Ps], terms):-
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
 print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
-	configuration:compression_level(string)
-	,configuration:language_module(M)
+	configuration:language_module(M)
 	,stream_property(Stream, file_name(Path))
 	,file_base_name(Path, Filename)
 	,file_name_extension(New_module_name, _Extension, Filename)
@@ -390,49 +389,94 @@ print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
-/*What I really want to do here is produce a file like the one in
-higher_order_grammars/first_order_grammar. It _may_ need to declare
-start//0, terminal//0 and nonterminal//0 as multifile and make sure to
-refer correctly to them over module boundaries. Most importantly, it
-needs to import (with use_module/1) the lower-order grammar. Which is
-actually the _first_ order grammar. Misnomers, see today's notes. The
-lower order file needs to define the rules used by the higher order
-file.
+print_grammar(Stream, [_S,_Ns,_Ts,Ps], higher_order_grammar):-
+	configuration:compression_level(first_order)
+	,stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(New_module_name, _Extension, Filename)
+	,grammar_module_exports(Ps,[],Es)
+	% Print module name, exports list and use_module statements.
+	,format(Stream, '~w~w~w~w~w~n', [':-module(',New_module_name,',',Es,').'])
+	% Print each production
+	,write(Stream, '\n')
+	,forall(member(P,Ps),(print_term(Stream,p,P))).
+
+/*
+Still need to print this:
 
 For example, higher order:
 destroy_target_t_artifact--> destroy_target, t_artifact.
 
-Lower order:
-t_creature-->[creature].
-destroy_target-->[destroy, target].
-
-And that's all- we just want to make both modules be parseable grammars.
-Never mind the multi-bracketing shennanigans, it will take a lot of work
-to make DCGs work with the higher order grammar scheme and there's no
-reason to do that right now. Focus, right?
+ie, no brackets.
 
 	*/
-print_grammar(Stream, [S,Ns,Ts,Ps], second_order_grammar):-
-	configuration:compression_level(production)
-	,configuration:language_module(M)
+print_grammar(Stream, [S,Ns,Ts,Ps], higher_order_grammar):-
+	configuration:language_module(M)
+	,configuration:compression_level(second_order)
 	,stream_property(Stream, file_name(Path))
 	,file_base_name(Path, Filename)
 	,file_name_extension(New_module_name, _Extension, Filename)
-	,language_module_exports(M,Es)
+	,grammar_module_exports([S-->[]|Ps],[],G_Es)
+	,language_module_exports(M,L_Es)
+	,append(L_Es, G_Es, Exports)
 	% Print module name, exports list and use_module statements.
-	,format(Stream, '~w~w~w~w~w~n', [':-module(',New_module_name,',',[S//0|Es],').'])
+	,format(Stream, '~w~w~w~w~w~n~n',
+		[':-module(',New_module_name,',',[first_order_phrase/3,second_order_phrase/2|Exports],').'])
+	% Print multifile declaration of language module exports
+	,write_term(Stream, (:-multifile L_Es),
+		    [fullstop(true),nl(true),spacing(next_argument)] )
+	% Print use_module/1 directive.
+	,higher_order_grammar_filename(first_order, FOG_module)
+	,write_term(Stream, (:-use_module(FOG_module)),
+		    [fullstop(true),nl(true),spacing(next_argument)] )
+	% Print first_order_phrase/3 term.
+	,write(Stream, '\n')
+	,write_term(Stream,
+		    (first_order_phrase(Rule, Derivation, Rest_of_sentence):-
+		      phrase(nonterminal, [Rule])
+		     ,atom(Rule)
+		    ,phrase(Rule, Derivation, Rest_of_sentence)
+		    )
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,variable_names(['Rule'=Rule
+				    ,'Derivation'=Derivation
+				    ,'Rest_of_sentence'=Rest_of_sentence])
+		    ])
+	% Print second_order_phrase/3 term used to parse using second order grammar.
+	,write(Stream, '\n')
+	,write_term(Stream,
+		    (second_order_phrase(Rule, Derivation):-
+		      phrase(nonterminal, [Rule])
+		     ,atom(Rule)
+		     ,phrase(Rule, Second_order_rules)
+		     ,findall(D,
+			     (member(Second_order_rule, Second_order_rules),
+			      phrase(Second_order_rule, D)),
+			     Derivation)
+		    )
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,variable_names(['Rule'=Rule
+				    ,'Derivation'=Derivation
+				    ,'Second_order_rule'=Second_order_rule
+				    ,'Second_order_rules'=Second_order_rules
+				    ,'D'=D])]
+		   )
 	% Print the start symbol rule
 	,write(Stream, '\n')
 	,print_term(Stream, p, (start --> [S]))
 	% Print each terminal rule
 	,write(Stream, '\n')
-	,forall(member(T, Ts), print_term(Stream, p, terminal --> [[T]]))
+	,forall(member(T, Ts),print_term(Stream, p, terminal --> [[T]]))
 	% Print each nonterminal rule
 	,write(Stream, '\n')
-	,forall(member(N, Ns), print_term(Stream, p, nonterminal --> [N]))
+	,forall(member(N, Ns),print_term(Stream, p, nonterminal --> [N]))
 	% Connect each production to the start symbol
 	,write(Stream, '\n')
-	,forall(member(Name-->_Body, Ps),(print_term(Stream,p,S --> Name)))
+	,forall(member(Name-->_Body,Ps),(print_term(Stream,p,S -->Name)))
 	% Print each production
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
@@ -487,6 +531,21 @@ language_module_exports(Module, Exports):-
 		 ,A_DCG is A - 2
 		 )
 		,Exports).
+
+
+%!	grammar_module_exports(+Productions,+Temp,-Acc) is det.
+%
+%	Converts between a list of productions and a list of module
+%	exports, for example [(p --> [t_1],[t_2])] is converted to
+%	[p//0].
+%
+grammar_module_exports([], Es, Es).
+grammar_module_exports([P --> _B|Ps], Temp, Acc):-
+       configuration:rule_complexity(C)
+       ,Rule_arity is C - 2 % The two vars added by DCG compiler
+	,grammar_module_exports(Ps, [P//Rule_arity|Temp], Acc).
+
+
 
 
 %!	complete_grammar(-Grammar) is det.

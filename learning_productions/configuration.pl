@@ -7,6 +7,7 @@
 			,production_scoring_strategy/1
 			,dogfooding/1
 			,compression_level/1
+			,higher_order_grammar_filename/2
 			]).
 
 %:-register_world(language_simple
@@ -50,6 +51,14 @@ initial_score(-1).
 %	language or examples module. Cause more fun.
 %
 output_stream(output(Output_file_name)):-
+	output_type(higher_order_grammar)
+	,!
+	,compression_level(C)
+	,higher_order_grammar_filename(C, Name)
+	,output_format(higher_order_grammar,F)
+	,atom_concat(Name,F, Output_file_name)
+	.
+output_stream(output(Output_file_name)):-
 	examples_module(M_ex)
 	,language_module(M_lang)
 	,production_scoring_strategy(S)
@@ -75,6 +84,12 @@ output_stream(output(Output_file_name)):-
 %	conforming to the specification in register_world/2 (in other
 %	words, the module should export the predicates in the reexport
 %	list of register_world/2).
+%	* higher_order_grammar. As grammar, but assumes a two-step
+%	scheme where a first-order grammar file will be generated, then
+%	a second-order grammar referring to the first-order one.
+%
+%	Outputting a grammar file
+%	-------------------------
 %
 %	The 'grammar' option connects each terminal in the output
 %	grammar to an appropriate DCG rule.
@@ -100,7 +115,19 @@ output_stream(output(Output_file_name)):-
 %	Where on successive backtracking each derivation of the grammar
 %	will be bound to D.
 %
-output_type(grammar).
+%	Outputting two grammar files
+%	----------------------------
+%
+%	The option higher_order_grammar sets the environment for
+%	printing of two consecutive grammar files, one in each of two
+%	consecutive runs of the algorithm.
+%
+%	The first run prints a first-order grammar derived from example
+%	strings. This grammar is used to compress the same examples,
+%	then a second run takes the compressed examples as input and
+%	produces a second-order grammar.
+%
+output_type(higher_order_grammar).
 
 %!	output_format(?Type,?Extension) is nondet.
 %
@@ -110,6 +137,7 @@ output_type(grammar).
 output_format(loose, '.log').
 output_format(terms, '.pl').
 output_format(grammar, '.pl').
+output_format(higher_order_grammar, '.pl').
 
 
 %!	grammar_term(?Member,?Name) is nondet.
@@ -139,7 +167,7 @@ internal_production_name(p).
 %
 %	How to score newly-augmented productions, to select the best.
 %	One of:
-%	* parsed
+%	* parsed  @TODO: this should be "count".
 %	* mode
 %	* mean
 %	* sum_of_means
@@ -185,24 +213,34 @@ dogfooding(false).
 
 %!	compression_level(?Level) is det.
 %
-%	The level of compression of the input examples. One of: %
-%	* string
-%	* production
+%	The level of compression of the input examples. One of:
+%	* first_order
+%	* second_order
 %
-%	Compression at "string" level implies examples are simple
+%	Compression at "first_order" level implies examples are simple
 %	strings of tokens. In that case the algorithm will learn a set
 %	of rewrite rules each of which explains a subset of the tokens
 %	of each example.
 %
-%	Compression at "production" level implies the algorithm
+%	Compression at "second_order" level implies the algorithm
 %	has already larned a set of rewrite rules from the original
 %	string examples and its input is the examples replaced by their
 %	rewrite rules (therefore, compressed).
 %
-compression_level(string).
+compression_level(second_order).
 
 
-
+%!	second_order_output_filename(?Name) is det.
+%
+%	Name of the output file holding a higher-order grammar.
+%
+%	When the compression_level option is set to "first_order" a
+%	first-order grammar file is printed. When the compression_level
+%	option is set to "second_order" a second-order grammar file is
+%	printed.
+%
+higher_order_grammar_filename(first_order, first_order_grammar).
+higher_order_grammar_filename(second_order, second_order_grammar).
 
 
 
