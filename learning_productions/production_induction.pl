@@ -3,7 +3,7 @@
 			       ,retract_given_productions/0
 			       ,retract_derived_productions/0
 			       ,listing_grammar_knowledge/0
-			       ,compress_corpus/0
+			       ,compress_corpus/1
 			       ,complete_grammar/0
 			       ,complete_grammar/1
 			       ,examples_corpus/1
@@ -333,20 +333,35 @@ initialisation([S,Ns,Ts,Ps],Cs):-
 %	file. The compressed corpus is then ready to be used to a new
 %	run with compression_level set to "second_order".
 %
-compress_corpus:-
-	configuration:language_module(M)
-	,examples_corpus(Cs)
-	,grammar(_,Ns,_,_)
-	,M:productions_compressed_strings(Ns,Cs,Compressed)
-	,!
-	,configuration:compressed_corpus_output_stream(O)
+compress_corpus([St,Ns,Ts,Ps]):-
+	configuration:compression_level(first_order)
+	% Ain't getting the right grammar here.
+	% Rather a bug don't you think dear?
+	%grammar(St,Ns,Ts,Ps)
+	%,!
+	,configuration:compression_grammar_output_stream(O)
 	,expand_file_search_path(O,P)
 	,open(P, write, S, [])
-	,print_compressed_corpus(S, Compressed)
+	,print_grammar(S, [St,Ns,Ts,Ps], compression_grammar)
 	,close(S)
-	,edit(P).
+	,ensure_loaded(O)
+	,edit(P)
 
-print_compressed_corpus(Stream, Compressed):-
+	,writeln('Compressed corpus')
+
+	,examples_corpus(Cs)
+	,configuration:compressed_corpus_output_stream(C_O)
+	,expand_file_search_path(C_O,C_P)
+	,open(C_P, write, C_S, [])
+	,print_compressed_corpus(C_S, compression_grammar, Cs)
+	,close(C_S)
+	,edit(C_P)
+
+	,writeln('Printed compressed corpus')
+	.
+compress_corpus(_).
+
+print_compressed_corpus(Stream, Module, Corpus):-
 	stream_property(Stream, file_name(Path))
 	,file_base_name(Path, Filename)
 	,file_name_extension(Corpus_module_name, _Extension, Filename)
@@ -354,16 +369,19 @@ print_compressed_corpus(Stream, Compressed):-
 	       ,[':-module(',Corpus_module_name,','
 		,[example_string/1],').'])
 	,write(Stream, '\n')
-	,forall(member(C, Compressed)
-	       ,write_term(Stream
-			  ,example_string(C)
-			  ,[fullstop(true)
-			   ,nl(true)
-			   ,spacing(next_argument)
-			   ,quoted(true)
-			   ]
-			  )
-	       ).
+	,forall(member(C, Corpus)
+	       ,( phrase(Module:compression_grammar(Comp), C)
+		 ,write_term(Stream
+			   ,example_string(Comp)
+			   ,[fullstop(true)
+			    ,nl(true)
+			    ,spacing(next_argument)
+			    ,quoted(true)
+			    ]
+			   )
+		)
+	       )
+	.
 
 
 %!	complete_grammar is det.
@@ -372,6 +390,7 @@ print_compressed_corpus(Stream, Compressed):-
 %	output stream.
 %
 complete_grammar:-
+	% TODO: remove this from my sight.
 	make
 	,complete_grammar(G)
 	,configuration:output_stream(O)
@@ -380,7 +399,11 @@ complete_grammar:-
 	,configuration:output_type(T)
 	,once(print_grammar(S, G, T))
 	,close(S)
-	,edit(P).
+	,edit(P)
+	,(   configuration:output_type(higher_order_grammar)
+	->   compress_corpus(G)
+	 ;   true
+	).
 
 
 %!	print_grammar(+Stream,+Grammar) is semidet.
@@ -430,88 +453,6 @@ print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
-% TODO: I'm hijacking print_grammar/3 to get it to print out what I
-% want. Remember to separate later.
-print_grammar(Stream, [_S,_Ns,Ts,Ps], higher_order_grammar):-
-	configuration:compression_level(first_order)
-	,stream_property(Stream, file_name(Path))
-	,file_base_name(Path, Filename)
-	,file_name_extension(New_module_name, _Extension, Filename)
-	% Print module name, exports list and use_module statements.
-	,write_term(Stream, (:-module(New_module_name,[compression_grammar//1]))
-		   ,[fullstop(true)
-		    ,nl(true)
-		    ,spacing(next_argument)
-		    ,quoted(true)]
-		   )
-	% Print compression_grammar//1 term; easiest thing to do to
-	% resolve scope of terminal//1 and nonterminal//1 is to print it
-	% In the same file as the nonterminal//1 and terminal//1 terms.
-	,write(Stream, '\n')
-	,write_term(Stream, compression_grammar([]) --> []
-		   ,[fullstop(true)
-		    ,nl(true)
-		    ,spacing(next_argument)
-		    ,quoted(true)
-		    ]
-		   )
-	,write_term(Stream,
-		    (compression_grammar([A|As])-->terminal(A),!,compression_grammar(As))
-		   ,[fullstop(true)
-		    ,nl(true)
-		    ,spacing(next_argument)
-		    ,quoted(true)
-		    ,variable_names(['A'=A
-				    ,'As'=As])
-		    ]
-		   )
-	,write_term(Stream,
-		   (compression_grammar([A|As])-->nonterminal(A),!,compression_grammar(As))
-		   ,[fullstop(true)
-		    ,nl(true)
-		    ,spacing(next_argument)
-		    ,quoted(true)
-		    ,variable_names(['A'=A
-				    ,'As'=As])
-		    ]
-		   )
-	% Print each production as a nonterminal//1 clause with the
-	% name of the production as the argument.
-	,write(Stream, '\n')
-	,forall(member(P --> B,Ps)
-	       ,(write_term(Stream, nonterminal(P) --> B
-			   ,[fullstop(true)
-			    ,nl(true)
-			    ,spacing(next_argument)
-			    ,quoted(true)]
-			   )
-		)
-	       )
-	% Print the single necessary terminal//1 clause.
-	,write(Stream, '\n')
-	,(write_term(Stream,
-		     (terminal(T)-->{phrase(terminal,T)},T)
-		    ,[fullstop(true)
-		     ,nl(true)
-		     ,spacing(next_argument)
-		     ,quoted(true)
-		     ,variable_names(['T'=T])
-		     ]
-		    )
-	 )
-	% Print each terminal as a terminal//0 clause.
-	,write(Stream, '\n')
-	,forall(member(T ,Ts)
-	       ,(write_term(Stream, terminal --> [T]
-			   ,[fullstop(true)
-			    ,nl(true)
-			    ,spacing(next_argument)
-			    ,quoted(true)]
-			   )
-		)
-	       ).
-
-/*
 print_grammar(Stream, [_S,_Ns,_Ts,Ps], higher_order_grammar):-
 	configuration:compression_level(first_order)
 	,stream_property(Stream, file_name(Path))
@@ -528,7 +469,6 @@ print_grammar(Stream, [_S,_Ns,_Ts,Ps], higher_order_grammar):-
 	% Print each production
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
-*/
 
 /*
 Still need to print this:
@@ -611,6 +551,90 @@ print_grammar(Stream, [S,Ns,Ts,Ps], higher_order_grammar):-
 	% Print each production
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
+
+% TODO: I'm hijacking print_grammar/3 to get it to print out what I
+% want. Remember to separate later.
+print_grammar(Stream, [_S,_Ns,Ts,Ps], compression_grammar):-
+	%configuration:compression_level(first_order)
+	%,writeln(you_are_here)
+	stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(New_module_name, _Extension, Filename)
+	% Print module name, exports list and use_module statements.
+	,write_term(Stream, (:-module(New_module_name,[compression_grammar//1]))
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)]
+		   )
+	% Print compression_grammar//1 term; easiest thing to do to
+	% resolve scope of terminal//1 and nonterminal//1 is to print it
+	% In the same file as the nonterminal//1 and terminal//1 terms.
+	,write(Stream, '\n')
+	,write_term(Stream, compression_grammar([]) --> []
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)
+		    ]
+		   )
+	,write_term(Stream,
+		   (compression_grammar([A|As])-->nonterminal(A),!,compression_grammar(As))
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)
+		    ,variable_names(['A'=A
+				    ,'As'=As])
+		    ]
+		   )
+	,write_term(Stream,
+		    (compression_grammar([A|As])-->terminal(A),!,compression_grammar(As))
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)
+		    ,variable_names(['A'=A
+				    ,'As'=As])
+		    ]
+		   )
+	% Print each production as a nonterminal//1 clause with the
+	% name of the production as the argument.
+	,write(Stream, '\n')
+	,forall(member(P --> B,Ps)
+	       ,(write_term(Stream, nonterminal(P) --> B
+			   ,[fullstop(true)
+			    ,nl(true)
+			    ,spacing(next_argument)
+			    ,quoted(true)]
+			   )
+		)
+	       )
+	% Print the single necessary terminal//1 clause.
+	,write(Stream, '\n')
+	,(write_term(Stream,
+		     (terminal(T)-->{phrase(terminal,T)},T)
+		    ,[fullstop(true)
+		     ,nl(true)
+		     ,spacing(next_argument)
+		     ,quoted(true)
+		     ,variable_names(['T'=T])
+		     ]
+		    )
+	 )
+	% Print each terminal as a terminal//0 clause.
+	,write(Stream, '\n')
+	,forall(member(T ,Ts)
+	       ,(write_term(Stream, terminal --> [T]
+			   ,[fullstop(true)
+			    ,nl(true)
+			    ,spacing(next_argument)
+			    ,quoted(true)]
+			   )
+		)
+	       ).
+%print_grammar(_, _, compression_grammar).
+
 
 
 %!	print_term(+Stream,+Term_type,+Term) is det.

@@ -1,6 +1,7 @@
 :-module(configuration, [rule_complexity/1
 			,initial_score/1
 			,compressed_corpus_output_stream/1
+			,compression_grammar_output_stream/1
 			,output_stream/1
 			,output_type/1
 			,grammar_term/2
@@ -15,6 +16,8 @@ examples_file_name(examples_mtg_destroy_short).
 
 language_file_name(language_mtg_hand_simulation).
 
+%	@TODO: Move to load_configuration module and keep only the name
+%	of the file here.
 %:-register_world(language_simple
 %:-register_world(language_mtg_lexicalized
 %:-register_world(language_mtg
@@ -32,8 +35,8 @@ language_file_name(language_mtg_hand_simulation).
 %		,examples_mtg_hand_simulation).
 %		,examples_mtg_higher_order).
 %		,examples_mtg_destroy).
-		,examples_mtg_destroy_short).
-%                ,examples_mtg_destroy_short_compressed).
+%		,examples_mtg_destroy_short).
+               ,examples_mtg_destroy_short_compressed).
 %		,examples_mtg_all_destroy_one_sentence_per_line).
 
 
@@ -52,6 +55,9 @@ initial_score(-1).
 %
 %	The name of the (probably file) stream to which we should write
 %	output of an induction attempt.
+%
+%	@TODO: Move to load_configuration module and keep only the name
+%	of the file here.
 %
 output_stream(output(Output_file_name)):-
 	output_type(higher_order_grammar)
@@ -76,12 +82,28 @@ output_stream(output(Output_file_name)):-
 %	used in the second step of an inductiona attempt when
 %	compression_level option is set to second_order.
 %
+%	@TODO: Move to load_configuration module and keep only the name
+%	of the file here.
+%
 compressed_corpus_output_stream(language(Output_file_name)):-
 	examples_module(M)
 	,output_type(T)
 	,output_format(T,Ext)
 	,atom_concat(M, '_compressed', N)
 	,atom_concat(N, Ext, Output_file_name).
+
+%!	compression_grammar_output_stream(?Stream) is det.
+%
+%	The name of the file holding the grammar used to compress the
+%	corpus.
+%
+%	@TODO: Move to load_configuration module and keep only the name
+%	of the file here.
+%
+compression_grammar_output_stream(language(Output_file_name)):-
+	output_type(T)
+	,output_format(T,Ext)
+	,atom_concat(compression_grammar, Ext, Output_file_name).
 
 %!	output_type(?Type) is det.
 %
@@ -217,7 +239,7 @@ internal_production_name(p).
 %	and p the proportion of tokens of this exapmle parsed by the
 %	production.
 %
-production_scoring_strategy(parsed).
+production_scoring_strategy(mode).
 
 %!	dogfooding(+Boolean) is det.
 %
@@ -243,7 +265,7 @@ dogfooding(false).
 %	string examples and its input is the examples replaced by their
 %	rewrite rules (therefore, compressed).
 %
-compression_level(first_order).
+compression_level(second_order).
 
 
 %!	second_order_output_filename(?Name) is det.
