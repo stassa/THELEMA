@@ -1431,7 +1431,15 @@ production_score(mode, Corpus, (Name --> Body), Score):-
 		     ,length(Unparsed_tokens, Unparsed_length)
 		     ,Parsed_length is Example_length - Unparsed_length
 		     ,Parsed_proportion is Parsed_length / Example_length
+		     ,debug(score_production, '~w ~w ~w ~w ~w ~w ~w ~w ~w ~w'
+			   ,['Unparsed tokens:',Unparsed_tokens
+			    ,'Example length',Example_length
+			    ,'Parsed',Parsed_length
+			    ,'Unparsed',Unparsed_length
+			    ,'Parsed %',Parsed_proportion
+						       ])
 		  ;  Parsed_proportion = 0 % Example failed to parse.
+		  ,debug(score_production, '~w ~w', [(Name --> Body),'failed to parse example'])
 		  )
 		)
 		,Proportions)
