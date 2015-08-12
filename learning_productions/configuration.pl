@@ -143,7 +143,7 @@ compressed_corpus_output_stream(language(Output_file_name)):-
 %	then a second run takes the compressed examples as input and
 %	produces a second-order grammar.
 %
-output_type(grammar).
+output_type(higher_order_grammar).
 
 %!	output_format(?Type,?Extension) is nondet.
 %

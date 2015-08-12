@@ -430,6 +430,88 @@ print_grammar(Stream, [S,Ns,Ts,Ps], grammar):-
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
+% TODO: I'm hijacking print_grammar/3 to get it to print out what I
+% want. Remember to separate later.
+print_grammar(Stream, [_S,_Ns,Ts,Ps], higher_order_grammar):-
+	configuration:compression_level(first_order)
+	,stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(New_module_name, _Extension, Filename)
+	% Print module name, exports list and use_module statements.
+	,write_term(Stream, (:-module(New_module_name,[compression_grammar//1]))
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)]
+		   )
+	% Print compression_grammar//1 term; easiest thing to do to
+	% resolve scope of terminal//1 and nonterminal//1 is to print it
+	% In the same file as the nonterminal//1 and terminal//1 terms.
+	,write(Stream, '\n')
+	,write_term(Stream, compression_grammar([]) --> []
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)
+		    ]
+		   )
+	,write_term(Stream,
+		    (compression_grammar([A|As])-->terminal(A),!,compression_grammar(As))
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)
+		    ,variable_names(['A'=A
+				    ,'As'=As])
+		    ]
+		   )
+	,write_term(Stream,
+		   (compression_grammar([A|As])-->nonterminal(A),!,compression_grammar(As))
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)
+		    ,variable_names(['A'=A
+				    ,'As'=As])
+		    ]
+		   )
+	% Print each production as a nonterminal//1 clause with the
+	% name of the production as the argument.
+	,write(Stream, '\n')
+	,forall(member(P --> B,Ps)
+	       ,(write_term(Stream, nonterminal(P) --> B
+			   ,[fullstop(true)
+			    ,nl(true)
+			    ,spacing(next_argument)
+			    ,quoted(true)]
+			   )
+		)
+	       )
+	% Print the single necessary terminal//1 clause.
+	,write(Stream, '\n')
+	,(write_term(Stream,
+		     (terminal(T)-->{phrase(terminal,T)},T)
+		    ,[fullstop(true)
+		     ,nl(true)
+		     ,spacing(next_argument)
+		     ,quoted(true)
+		     ,variable_names(['T'=T])
+		     ]
+		    )
+	 )
+	% Print each terminal as a terminal//0 clause.
+	,write(Stream, '\n')
+	,forall(member(T ,Ts)
+	       ,(write_term(Stream, terminal --> [T]
+			   ,[fullstop(true)
+			    ,nl(true)
+			    ,spacing(next_argument)
+			    ,quoted(true)]
+			   )
+		)
+	       ).
+
+/*
 print_grammar(Stream, [_S,_Ns,_Ts,Ps], higher_order_grammar):-
 	configuration:compression_level(first_order)
 	,stream_property(Stream, file_name(Path))
@@ -437,13 +519,16 @@ print_grammar(Stream, [_S,_Ns,_Ts,Ps], higher_order_grammar):-
 	,file_name_extension(New_module_name, _Extension, Filename)
 	,grammar_module_exports(Ps,[],Es)
 	% Print module name, exports list and use_module statements.
-	,write_term(Stream, (:-module(New_module_name,Es)
-			    )
-		   ,[fullstop(true),nl(true),spacing(next_argument),quoted(true)]
+	,write_term(Stream, (:-module(New_module_name,Es))
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)]
 		   )
 	% Print each production
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
+*/
 
 /*
 Still need to print this:
@@ -452,8 +537,7 @@ For example, higher order:
 destroy_target_t_artifact--> destroy_target, t_artifact.
 
 ie, no brackets.
-
-	*/
+*/
 print_grammar(Stream, [S,Ns,Ts,Ps], higher_order_grammar):-
 	configuration:language_module(M)
 	,configuration:compression_level(second_order)
@@ -723,7 +807,10 @@ derived_production([A|As], Cs, P, Acc):-
 %	concatenation of the atomic forms of the production's right-hand
 %	side elements.
 %
+%	@TODO: fix the hardcoding.
+%
 named_production(_ --> [Body], New_name --> [Body]):-
+	% Grrr- don't hard-code these!! Daaah.
 	atomic_concat(t_, Body, New_name)
 	,!.
 % Not sure if this is possible anymore.
