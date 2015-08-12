@@ -25,9 +25,9 @@
 %		,examples_mtg_lexicalized).
 %		,examples_mtg).
 %		,examples_mtg_hand_simulation).
-		,examples_mtg_higher_order).
+%		,examples_mtg_higher_order).
 %		,examples_mtg_destroy).
-%		,examples_mtg_destroy_short).
+		,examples_mtg_destroy_short).
 %		,examples_mtg_all_destroy_one_sentence_per_line).
 
 
@@ -127,7 +127,7 @@ output_stream(output(Output_file_name)):-
 %	then a second run takes the compressed examples as input and
 %	produces a second-order grammar.
 %
-output_type(higher_order_grammar).
+output_type(grammar).
 
 %!	output_format(?Type,?Extension) is nondet.
 %
@@ -201,7 +201,7 @@ internal_production_name(p).
 %	and p the proportion of tokens of this exapmle parsed by the
 %	production.
 %
-production_scoring_strategy(mode).
+production_scoring_strategy(parsed).
 
 %!	dogfooding(+Boolean) is det.
 %
@@ -227,7 +227,7 @@ dogfooding(false).
 %	string examples and its input is the examples replaced by their
 %	rewrite rules (therefore, compressed).
 %
-compression_level(second_order).
+compression_level(first_order).
 
 
 %!	second_order_output_filename(?Name) is det.

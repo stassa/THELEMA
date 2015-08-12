@@ -907,6 +907,10 @@ grammar_terminals(Terminals):-
 %
 %	The set of all Production known to the given grammar. Can be [].
 %
+%	@BUG: this only gets given productions; if there are any derived
+%	shouldn't it also present them, at the very least depending on
+%	the value of the dogfooding option?
+%
 grammar_productions(Productions):-
 	  setof(P,N^given_production(N,P),Productions)
 	; Productions = [].

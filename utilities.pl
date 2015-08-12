@@ -69,26 +69,8 @@ production_compressed_string(M:Production, Tokens, Temp, Acc):-
 	M:phrase(Production,Tokens,Unparsed_tokens)
 	,!
 	,production_compressed_string(M:Production, Unparsed_tokens, [Production|Temp], Acc).
-/*production_compressed_string(Production, [Token|Tokens], Temp, Acc):-
-	phrase(Production,[Token],Unparsed_tokens)
-	,compressed_string(Production,Unparsed_tokens,Temp, Compressed_string)
-	,!
-	,production_compressed_string(Production, Tokens, Compressed_string, Acc).*/
 production_compressed_string(Production, [Token|Tokens], Temp, Acc):-
 	production_compressed_string(Production,Tokens,[Token|Temp], Acc).
-
-
-%!	compressed_string(+Production,+Unparsed_tokens,+Results_so_far,-Accumulator) is det.
-%
-%	Convenience predicate used to construct the accumulator for
-%	production_compressed_string/4. If the list of Unparsed_tokens
-%	is empty, meaning that the current string is fully consumed by
-%	Production, the name of the production is bound to the
-%	accumulator. Otherwise, the unparsed tokens are also added.
-%
-compressed_string(_M:P, [], Temp, [P|Temp]).
-compressed_string(_M:P, Unparsed_tokens, Temp, [P,Unparsed_tokens|Temp]).
-
 
 
 

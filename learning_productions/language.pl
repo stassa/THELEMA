@@ -5,6 +5,9 @@
 		   ,nonterminal//0
 		   ,e//0]).
 
+% Imported to allow it to see productions in language modules.
+:-use_module(project_root(utilities), [productions_compressed_strings/3]).
+
 :-dynamic start//0.
 :-dynamic nonterminal//0.
 :-dynamic terminal//0.
