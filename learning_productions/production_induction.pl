@@ -3,6 +3,7 @@
 			       ,retract_given_productions/0
 			       ,retract_derived_productions/0
 			       ,listing_grammar_knowledge/0
+			       ,compress_corpus/0
 			       ,complete_grammar/0
 			       ,complete_grammar/1
 			       ,examples_corpus/1
@@ -325,6 +326,46 @@ initialisation([S,Ns,Ts,Ps],Cs):-
 
 
 
+%!	compress_corpus is det.
+%
+%	Compress the examples corpus using the set of productions in the
+%	currently known grammar and write the result to a new examples
+%	file. The compressed corpus is then ready to be used to a new
+%	run with compression_level set to "second_order".
+%
+compress_corpus:-
+	configuration:language_module(M)
+	,examples_corpus(Cs)
+	,grammar(_,Ns,_,_)
+	,M:productions_compressed_strings(Ns,Cs,Compressed)
+	,!
+	,configuration:compressed_corpus_output_stream(O)
+	,expand_file_search_path(O,P)
+	,open(P, write, S, [])
+	,print_compressed_corpus(S, Compressed)
+	,close(S)
+	,edit(P).
+
+print_compressed_corpus(Stream, Compressed):-
+	stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(Corpus_module_name, _Extension, Filename)
+	,format(Stream, '~w~w~w~w~w~n'
+	       ,[':-module(',Corpus_module_name,','
+		,[example_string/1],').'])
+	,write(Stream, '\n')
+	,forall(member(C, Compressed)
+	       ,write_term(Stream
+			  ,example_string(C)
+			  ,[fullstop(true)
+			   ,nl(true)
+			   ,spacing(next_argument)
+			   ,quoted(true)
+			   ]
+			  )
+	       ).
+
+
 %!	complete_grammar is det.
 %
 %	Run that_algorithm and print the results to the configured
@@ -396,7 +437,10 @@ print_grammar(Stream, [_S,_Ns,_Ts,Ps], higher_order_grammar):-
 	,file_name_extension(New_module_name, _Extension, Filename)
 	,grammar_module_exports(Ps,[],Es)
 	% Print module name, exports list and use_module statements.
-	,format(Stream, '~w~w~w~w~w~n', [':-module(',New_module_name,',',Es,').'])
+	,write_term(Stream, (:-module(New_module_name,Es)
+			    )
+		   ,[fullstop(true),nl(true),spacing(next_argument),quoted(true)]
+		   )
 	% Print each production
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
@@ -420,9 +464,12 @@ print_grammar(Stream, [S,Ns,Ts,Ps], higher_order_grammar):-
 	,language_module_exports(M,L_Es)
 	,append(L_Es, G_Es, Exports)
 	% Print module name, exports list and use_module statements.
-	,format(Stream, '~w~w~w~w~w~n~n',
-		[':-module(',New_module_name,',',[first_order_phrase/3,second_order_phrase/2|Exports],').'])
+	,write_term(Stream, (:-module(New_module_name,[first_order_phrase/3,second_order_phrase/2|Exports])
+			    )
+		   ,[fullstop(true),nl(true),spacing(next_argument),quoted(true)]
+		   )
 	% Print multifile declaration of language module exports
+	,write(Stream, '\n')
 	,write_term(Stream, (:-multifile L_Es),
 		    [fullstop(true),nl(true),spacing(next_argument)] )
 	% Print use_module/1 directive.

@@ -1,5 +1,6 @@
 :-module(configuration, [rule_complexity/1
 			,initial_score/1
+			,compressed_corpus_output_stream/1
 			,output_stream/1
 			,output_type/1
 			,grammar_term/2
@@ -9,6 +10,10 @@
 			,compression_level/1
 			,higher_order_grammar_filename/2
 			]).
+
+examples_file_name(examples_mtg_destroy_short).
+
+language_file_name(language_mtg_hand_simulation).
 
 %:-register_world(language_simple
 %:-register_world(language_mtg_lexicalized
@@ -28,6 +33,7 @@
 %		,examples_mtg_higher_order).
 %		,examples_mtg_destroy).
 		,examples_mtg_destroy_short).
+%                ,examples_mtg_destroy_short_compressed).
 %		,examples_mtg_all_destroy_one_sentence_per_line).
 
 
@@ -47,9 +53,6 @@ initial_score(-1).
 %	The name of the (probably file) stream to which we should write
 %	output of an induction attempt.
 %
-%	@TODO: Build the output file name up from the configured
-%	language or examples module. Cause more fun.
-%
 output_stream(output(Output_file_name)):-
 	output_type(higher_order_grammar)
 	,!
@@ -66,6 +69,19 @@ output_stream(output(Output_file_name)):-
 	,output_type(T)
 	,output_format(T,Ext)
 	,atom_concat(Name, Ext, Output_file_name).
+
+%!	compressed_corpus_output_stream(?Stream) is det.
+%
+%	The name of the Stream where to output the compressed corpus
+%	used in the second step of an inductiona attempt when
+%	compression_level option is set to second_order.
+%
+compressed_corpus_output_stream(language(Output_file_name)):-
+	examples_module(M)
+	,output_type(T)
+	,output_format(T,Ext)
+	,atom_concat(M, '_compressed', N)
+	,atom_concat(N, Ext, Output_file_name).
 
 %!	output_type(?Type) is det.
 %

@@ -67,6 +67,7 @@ production_compressed_string(_, [], Gnirts_desserpmoc, Compressed_string):-
 	reverse(Gnirts_desserpmoc, Compressed_string).
 production_compressed_string(M:Production, Tokens, Temp, Acc):-
 	M:phrase(Production,Tokens,Unparsed_tokens)
+	,Unparsed_tokens \= Tokens % parse consumed at least one token
 	,!
 	,production_compressed_string(M:Production, Unparsed_tokens, [Production|Temp], Acc).
 production_compressed_string(Production, [Token|Tokens], Temp, Acc):-
