@@ -1,4 +1,5 @@
-﻿:-module(utilities, [sum_of/3
+﻿:-module(utilities, [productions_compressed_strings/3
+		    ,sum_of/3
 		    ,timestamp/1
 		    ,prolog_dcg/2
 		    ,ord_add_elements/3
@@ -19,6 +20,76 @@
 
 /** <module> Utility predicates used across the project.
 */
+
+:- meta_predicate utilities:productions_compressed_strings(//,*,*).
+
+%!	productions_compressed_strings(+Productions,+Strings,-Compressed) is det.
+%
+%	Compresses a list of tokenised Strings using a list of rewrite
+%	rules. Productions is a list of productions. Compressed is the
+%	tokenised list with subsets of the tokens in each string
+%	substituted with the name of the first production that fully
+%	consumes those tokens.
+%
+%	For example, in the example below the string abc is replaced
+%	with the rewrite rules ab and c because ab --> [a,b] and c -->
+%	[c]:
+%	==
+%	productions_compressed_strings([ab --> [a,b], c -->[c]], [[a,b,c]], [ab,c]).
+%	==
+%
+productions_compressed_strings(_M:[], Compressed, Compressed).
+productions_compressed_strings(M:[Production|Ps], Strings, Acc):-
+	production_compressed_strings(M:Production, Strings, [], Compressed_examples)
+	,productions_compressed_strings(M:Ps, Compressed_examples, Acc).
+
+
+%!	production_compressed_strings(+Production,+Strings,+Temp,-Acc) is det.
+%
+%	Compresses a list of tokenised Strings using the given
+%	Production and binds the result to the Accumulator. Temp should
+%	be initialised to the empty list.
+%
+production_compressed_strings(_, [], Compressed, Compressed).
+production_compressed_strings(Production, [Example|Es], Temp, Acc):-
+	production_compressed_string(Production, Example, [], Compressed_string)
+	,!
+	,production_compressed_strings(Production, Es, [Compressed_string|Temp], Acc).
+
+
+%!	production_compressed_string(+Production,+String,+Temp,-Acc) is det.
+%
+%	Compresses a tokenised String using the given Production rule.
+%	The result is bound to the Accumulator. Temp should be
+%	initialised to the empty list.
+%
+production_compressed_string(_, [], Gnirts_desserpmoc, Compressed_string):-
+	reverse(Gnirts_desserpmoc, Compressed_string).
+production_compressed_string(M:Production, Tokens, Temp, Acc):-
+	M:phrase(Production,Tokens,Unparsed_tokens)
+	,!
+	,production_compressed_string(M:Production, Unparsed_tokens, [Production|Temp], Acc).
+/*production_compressed_string(Production, [Token|Tokens], Temp, Acc):-
+	phrase(Production,[Token],Unparsed_tokens)
+	,compressed_string(Production,Unparsed_tokens,Temp, Compressed_string)
+	,!
+	,production_compressed_string(Production, Tokens, Compressed_string, Acc).*/
+production_compressed_string(Production, [Token|Tokens], Temp, Acc):-
+	production_compressed_string(Production,Tokens,[Token|Temp], Acc).
+
+
+%!	compressed_string(+Production,+Unparsed_tokens,+Results_so_far,-Accumulator) is det.
+%
+%	Convenience predicate used to construct the accumulator for
+%	production_compressed_string/4. If the list of Unparsed_tokens
+%	is empty, meaning that the current string is fully consumed by
+%	Production, the name of the production is bound to the
+%	accumulator. Otherwise, the unparsed tokens are also added.
+%
+compressed_string(_M:P, [], Temp, [P|Temp]).
+compressed_string(_M:P, Unparsed_tokens, Temp, [P,Unparsed_tokens|Temp]).
+
+
 
 
 %!	sum_of(+A,+B,-Sum) is det.
