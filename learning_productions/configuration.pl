@@ -23,8 +23,8 @@ language_file_name(language_mtg_hand_simulation).
 %:-register_world(language_mtg
 %:-register_world(examples_mtg_destroy_language_mtg_hand_simulation
 %:-register_world(examples_mtg_hand_simulation_language_mtg_hand_simulation
-%:-register_world(language_mtg_hand_simulation
-:-register_world(language_mtg_hand_simulation_partial
+:-register_world(language_mtg_hand_simulation
+%:-register_world(language_mtg_hand_simulation_partial
 %:-register_world(language_mtg_hand_simulation_lexicalised
 		,[start//0 as start
 		 ,terminal//0 as terminal
