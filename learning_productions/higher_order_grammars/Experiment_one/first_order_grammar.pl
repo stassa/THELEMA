@@ -1,0 +1,20 @@
+:-module(first_order_grammar, [t_t_destroy_all_artifacts_t_and_t_enchantments//0, t_t_destroy_all_artifacts_t_creatures_t_and_t_enchantments//0, t_t_destroy_all_artifacts_t_creatures_t_and_t_lands//0, t_t_destroy_all_artifacts//0, t_t_destroy_any_number_of_target_t_artifacts_and_or_t_enchantments//0, t_t_destroy_any_number_of_target_t_creatures//0, t_t_destroy_each_artifact_with_converted_mana_cost_X_or_less//0, t_t_destroy_each_artifact_creature_and_enchantment_with_converted_mana_cost_X//0, t_t_destroy_t_six_target_creatures//0, t_t_destroy_t_target_t_artifact_t_and_all_other_artifacts_with_the_same_name_as_that_artifact//0, t_t_destroy_t_target_t_artifact_t_and_t_target_t_enchantment//0, t_t_destroy_t_target_t_artifact_t_creature_or_black_creature//0, t_t_destroy_t_target_white_creature//0, t_t_destroy_t_three_target_permanents//0, t_t_destroy_two_target_t_artifacts//0, 't_t_destroy_two_target_nonblack_creatures_unless_either_one_is_a_color_the_other_isn\'t'//0, t_t_destroy_X_target_t_artifacts//0, t_t_destroy_X_target_snow_lands//0]).
+
+t_t_destroy_X_target_snow_lands-->[t_t_destroy, 'X_target_snow_lands'].
+t_t_destroy_X_target_t_artifacts-->[t_t_destroy, 'X_target_t_artifacts'].
+'t_t_destroy_two_target_nonblack_creatures_unless_either_one_is_a_color_the_other_isn\'t'-->[t_t_destroy, 'two_target_nonblack_creatures_unless_either_one_is_a_color_the_other_isn\'t'].
+t_t_destroy_two_target_t_artifacts-->[t_t_destroy, two_target_t_artifacts].
+t_t_destroy_t_three_target_permanents-->[t_t_destroy, t_three_target_permanents].
+t_t_destroy_t_target_white_creature-->[t_t_destroy, t_target_white_creature].
+t_t_destroy_t_target_t_artifact_t_creature_or_black_creature-->[t_t_destroy, t_target_t_artifact, t_creature_or_black_creature].
+t_t_destroy_t_target_t_artifact_t_and_t_target_t_enchantment-->[t_t_destroy, t_target_t_artifact, t_and_t_target_t_enchantment].
+t_t_destroy_t_target_t_artifact_t_and_all_other_artifacts_with_the_same_name_as_that_artifact-->[t_t_destroy, t_target_t_artifact, [t_and], [all_other_artifacts_with_the_same_name_as_that_artifact]].
+t_t_destroy_t_six_target_creatures-->[t_t_destroy, t_six_target_creatures].
+t_t_destroy_each_artifact_creature_and_enchantment_with_converted_mana_cost_X-->[t_t_destroy, each_artifact_creature_and_enchantment_with_converted_mana_cost_X].
+t_t_destroy_each_artifact_with_converted_mana_cost_X_or_less-->[t_t_destroy, each_artifact_with_converted_mana_cost_X_or_less].
+t_t_destroy_any_number_of_target_t_creatures-->[t_t_destroy, [any_number_of_target], [t_creatures]].
+t_t_destroy_any_number_of_target_t_artifacts_and_or_t_enchantments-->[t_t_destroy, any_number_of_target_t_artifacts_and_or_t_enchantments].
+t_t_destroy_all_artifacts-->[t_t_destroy, [all_artifacts]].
+t_t_destroy_all_artifacts_t_creatures_t_and_t_lands-->[t_t_destroy, [all_artifacts], t_creatures_t_and_t_lands].
+t_t_destroy_all_artifacts_t_creatures_t_and_t_enchantments-->[t_t_destroy, [all_artifacts], t_creatures_t_and_t_enchantments].
+t_t_destroy_all_artifacts_t_and_t_enchantments-->[t_t_destroy, [all_artifacts], t_and_t_enchantments].

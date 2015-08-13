@@ -23,7 +23,8 @@ language_file_name(language_mtg_hand_simulation).
 %:-register_world(language_mtg
 %:-register_world(examples_mtg_destroy_language_mtg_hand_simulation
 %:-register_world(examples_mtg_hand_simulation_language_mtg_hand_simulation
-:-register_world(language_mtg_hand_simulation
+%:-register_world(language_mtg_hand_simulation
+:-register_world(language_mtg_hand_simulation_partial
 %:-register_world(language_mtg_hand_simulation_lexicalised
 		,[start//0 as start
 		 ,terminal//0 as terminal
@@ -33,10 +34,12 @@ language_file_name(language_mtg_hand_simulation).
 %		,examples_mtg_lexicalized).
 %		,examples_mtg).
 %		,examples_mtg_hand_simulation).
+		,examples_mtg_hand_simulation_compressed).
 %		,examples_mtg_higher_order).
 %		,examples_mtg_destroy).
 %		,examples_mtg_destroy_short).
-               ,examples_mtg_destroy_short_compressed).
+%               ,examples_mtg_destroy_short_compressed).
+%               ,examples_mtg_destroy_short_compressed_compressed).
 %		,examples_mtg_all_destroy_one_sentence_per_line).
 
 

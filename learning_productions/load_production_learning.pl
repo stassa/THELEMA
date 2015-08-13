@@ -70,12 +70,12 @@ user:file_search_path(output, supergrammar(output)).
 
 edit_source:-
 	edit(supergrammar(load_production_learning))
-	,edit(project_root(utilities))
+%	,edit(project_root(utilities))
 	,edit(supergrammar(production_induction))
 	%,edit(supergrammar('stochastic_supergrammar.plt'))
 	,edit(supergrammar(configuration))
-	,edit(supergrammar(load_configuration))
-	,edit(supergrammar(language))
+%	,edit(supergrammar(load_configuration))
+%	,edit(supergrammar(language))
 	% Load configured language and examples files :D
 	,configuration:language_module(Language)
 	,configuration:examples_module(Examples)

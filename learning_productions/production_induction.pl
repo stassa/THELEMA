@@ -67,8 +67,8 @@ given_productions(Ps):-
 	% as given.
 	configuration:dogfooding(false)
 	,!
-	,findall(Name
-		 ,source_file_of(Name, _, _, _)
+	,findall(Production
+		 ,source_file_of(_, Production, _, _)
 	       ,Ps)
 	,debug(query_database, '~w ~w', ['Found given productions: ',Ps]).
 
@@ -114,15 +114,16 @@ known_productions(Ps):-
 %	as "given" in subsequent runs (with dogfooding option set to
 %	true).
 %
-source_file_of(Name, Production, Clause_index, File):-
+%	@TODO: Remove the vestigial third argument (Clause_index).
+%
+source_file_of(Name, (Name --> B), _Clause_index, language(Source_file_name)):-
 	configuration:language_module(M)
-	,given_production(Name, Production)
-	,dcg_translate_rule(nonterminal --> [Name], H:-B)
-	,copy_term(H:-B, H_:-B_)
-	,clause(M:H_, B_, Ref)
-	,(H:-B) =@= (H_:-B_)
-	,nth_clause(M:H_, Clause_index, Ref)
-	,clause_property(Ref, source(File)).
+	,configuration:output_type(T)
+	,configuration:output_format(T,Ext)
+	,atom_concat(M, Ext, Source_file_name)
+	,read_file_to_terms(language(Source_file_name), Terms, [])
+	,member(M:nonterminal --> [Name], Terms)
+	,member((Name --> B), Terms).
 
 
 
@@ -552,8 +553,6 @@ print_grammar(Stream, [S,Ns,Ts,Ps], higher_order_grammar):-
 	,write(Stream, '\n')
 	,forall(member(P,Ps),(print_term(Stream,p,P))).
 
-% TODO: I'm hijacking print_grammar/3 to get it to print out what I
-% want. Remember to separate later.
 print_grammar(Stream, [_S,_Ns,Ts,Ps], compression_grammar):-
 	%configuration:compression_level(first_order)
 	%,writeln(you_are_here)
@@ -601,8 +600,9 @@ print_grammar(Stream, [_S,_Ns,Ts,Ps], compression_grammar):-
 	% Print each production as a nonterminal//1 clause with the
 	% name of the production as the argument.
 	,write(Stream, '\n')
-	,forall(member(P --> B,Ps)
-	       ,(write_term(Stream, nonterminal(P) --> B
+	,forall(member(P,Ps)
+	       ,(compression_nonterminal(P, Term)
+		    ,write_term(Stream, Term
 			   ,[fullstop(true)
 			    ,nl(true)
 			    ,spacing(next_argument)
@@ -633,8 +633,34 @@ print_grammar(Stream, [_S,_Ns,Ts,Ps], compression_grammar):-
 			   )
 		)
 	       ).
-%print_grammar(_, _, compression_grammar).
 
+
+%!	compression_nonterminal(+Production,-Nonterminal) is det.
+%
+%	Ensures nonterminals in the body of a production are properly
+%	wrapped in nonterminal//1 terms for use in compression grammar.
+%
+compression_nonterminal(N --> [T], nonterminal(N) --> [T]).
+compression_nonterminal(N --> B, nonterminal(N) --> B):-
+	% The body is a list of terminals.
+	is_list(B).
+compression_nonterminal(N --> B, nonterminal(N) --> nonterminal(B)):-
+	% The body is a single nonterminal reference
+	atomic(B).
+compression_nonterminal(Name --> B, (nonterminal(Name) --> Ts_tree)):-
+	% The body is a sequence of nonterminal references
+	tree_list(B, Tokens_list)
+	% Wrap the nonterminals to nonterminal//1 terms
+	,findall(Token
+		,(member(T, Tokens_list)
+		 ,(is_list(T)
+		  ->  Token = T
+		  ;   atomic(T)
+		  ->  Token = nonterminal(T)
+		  )
+		 )
+		,Ts_list)
+	,list_tree(Ts_list, Ts_tree).
 
 
 %!	print_term(+Stream,+Term_type,+Term) is det.
