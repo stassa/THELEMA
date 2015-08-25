@@ -1,12 +1,6 @@
-:-module(production_induction, [example_string/1
-			       ,corpus_productions/2]).
+:-module(production_induction, [corpus_productions/2]).
 
-:-edit('production_induction.pl').
-
-example_string([destroy,target,creature]).
-example_string([destroy,target,artifact]).
-example_string([exile,target,creature]).
-
+:-use_module(configuration).
 
 
 /*
