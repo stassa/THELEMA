@@ -116,22 +116,42 @@ branch_productions([C|Cs], Hp, Cs_, Cs_acc, Bs, Bs_acc, Ps, Ps_acc):-
 	,branch_productions(Cs,Hp,Cs_beh,Cs_acc,Bs_,Bs_acc,[A_Hp|Ps]
 			   ,Ps_acc).
 
+
+%!	beheaded_example(+Example,-Beheaded) is det.
+%
+%	Remove the first token of Example.
+%
 beheaded_example([C], [C]).
 beheaded_example([_|C], C).
 
+
+%!	beheaded_examples(+Example,+Examples,-Together) is det.
+%
+%	Add Example to the list of beheaded Examples.
+%
 beheaded_examples(C, Cs, [C|Cs]).
 
+
+%!	example_head(?Example, ?Head) is det.
+%
+%	True when Head is the first token in Example. This is just to
+%	clarify what's going on in branch_productions/8.
 example_head([H|_C], H).
+
 
 %!	branch_production(+Branch_head, -Head_production) is det.
 %
 %	A new production from the first token in a new branch.
+%
 branch_production(H, H --> [H]).
+
 
 %!	leaf_production(+Head, -Production) is det.
 %
 %	A new production from the leaf of a branch
+%
 leaf_production(H, H --> [H]).
+
 
 %!	augmented_branch_production(+Branch_production,+Leaf_production,-Augmented_branch_production) is det.
 %
