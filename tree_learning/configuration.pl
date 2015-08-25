@@ -10,6 +10,9 @@
 %	Basename of the examples file to use in induction.
 %examples_file_name(examples_mtg_hand_simulation).
 examples_file_name(examples_mtg_destroy_short).
+%examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
+
+
 
 
 %!	language_file_name(?Name) is det.

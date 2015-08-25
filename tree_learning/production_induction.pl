@@ -116,7 +116,7 @@ branch_productions([C|Cs], Hp, Cs_, Cs_acc, Bs, Bs_acc, Ps, Ps_acc):-
 	,branch_productions(Cs,Hp,Cs_beh,Cs_acc,Bs_,Bs_acc,[A_Hp|Ps]
 			   ,Ps_acc).
 
-
+beheaded_example([C], [C]).
 beheaded_example([_|C], C).
 
 beheaded_examples(C, Cs, [C|Cs]).
