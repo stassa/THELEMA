@@ -1,7 +1,7 @@
 :-module(production_induction, [corpus_productions/2]).
 
 :-use_module(configuration).
-
+:-use_module(project_root(utilities)).
 
 /*
 findall(C, example_string(C), Cs), corpus_productions(Cs, Ps), !,writeln(Ps).
@@ -102,9 +102,15 @@ branch_productions(Cs,Ph,Ps):-
 branch_productions([], _, Cs, Cs, Bs, Bs, Ps, Ps).
 
 % Just one token left- only add a leaf production.
-branch_productions([[C]], _Hp, Cs, Cs, Bs, Bs_, Ps, [Tp|Ps]):-
+branch_productions([[C]], Hp, Cs, Cs, Bs, Bs_, Ps, [Hp,Tp|Ps]):-
 	leaf_production(C, Tp)
 	,ord_add_element(Bs, C, Bs_).
+
+% A single example left; keep augmenting the branch head production
+branch_productions([[_H|C]], Hp, Cs_, Cs_acc, Bs, Bs_acc, Ps, Ps_acc):-
+	example_head(C, H_)
+	,augmented_branch_production(Hp, [H_], A_Hp)
+	,branch_productions([C], A_Hp, Cs_, Cs_acc, Bs, Bs_acc, Ps, Ps_acc).
 
 branch_productions([C|Cs], Hp, Cs_, Cs_acc, Bs, Bs_acc, Ps, Ps_acc):-
 	beheaded_example(C, C_)
@@ -156,6 +162,10 @@ leaf_production(H, H --> [H]).
 %!	augmented_branch_production(+Branch_production,+Leaf_production,-Augmented_branch_production) is det.
 %
 %	Augment Branch_production with a reference to Leaf_production.
+augmented_branch_production(Ph --> B , [H], (Ph --> Bs_t)):-
+	tree_list(B, Bs)
+	,append(Bs, [[H]], Bs_)
+	,list_tree(Bs_, Bs_t).
 augmented_branch_production(Ph --> [Ph] , Tp --> [_TP], (Ph --> [Ph], Tp)).
 
 /*
