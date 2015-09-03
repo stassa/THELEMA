@@ -7,210 +7,136 @@
 findall(C, example_string(C), Cs), corpus_productions(Cs, Ps), !,writeln(Ps).
 */
 
+
 corpus_productions(Cs, Ps):-
-	corpus_branches(Cs, Bs)
-	,branches_productions(Cs, Bs, Ps).
+	node_heads(Cs, Bs)
+	,start_production(Ph)
+	,derived_productions(Cs,Bs,Ph,[],Ps).
 
 
-/*
-findall(C, example_string(C), Cs), production_induction:corpus_branches(Cs, Bs).	*/
-
-%!	corpus_branches(+Examples, -Branches) is nondet.
+%!	derived_productions(+Corpus,+Node_heads,+Node_production,+Temp,-Acc) is det.
 %
-%	Branches is the set of parse tree branches beginning with the
-%	heads of examples in Examples.
-corpus_branches(Cs, Bs_):-
-	corpus_branches(Cs, [], Bs)
-	% Make into set
-	,sort(Bs, Bs_).
-
-%!	corpus_branches(+Examples,+Temp,-Acc) is nondet.
+%	Derive Productions from Corpus.
 %
-%	Business end of corpus_branches/2.
-corpus_branches([], Sb, Bs):-
-	reverse(Sb, Bs).
-corpus_branches([[H|_C]|Cs], Bs, Acc):-
-	corpus_branches(Cs, [H|Bs], Acc).
-
-
-%!	branches_productions(+Examples, +Branches, -Productions) is nondet.
+%	@TODO: document.
 %
-%	Infer a tree of Productions from Branches in Examples.
-%	Clearly this needs better documentation :P
-branches_productions(Cs, Bs, Ps):-
-	branches_productions(Cs, Bs, [], Ps).
+derived_productions(_,[],_,Ps,Ps).
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	node_corpus(Hi,Cs,Cs_hi)
+	,node_production(Cs_hi,[Hi|Bs],Ph,A_Ph,Ph_i)
+	,expanded_productions(Ps,Ph_i,A_Ph,Ps_)
+	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
+	,node_heads(B_Cs_hi,Bs_)
+	,derived_productions(B_Cs_hi,Bs_,Ph_i,Ps_,Acc).
 
 
-%!	branches_productions(+Corpus,+Branches,+Temp,-Acc) is nondet.
-%
-%	Business end of branches_productions/3.
-%
-branches_productions(_, [], Ps, Ps_):-
-	% sort to remove accumulated duplicates
-	sort(Ps, Ps_).
-branches_productions(Cs, [H|Bs], Ps, Acc):-
-	branch_corpus(H, Cs, Cs_)
-	,branch_production(H, Ph)
-	,branch_productions(Cs_,Ph,Ps_)
-	,append(Ps, Ps_, Ps_0)
-	,branches_productions(Cs, Bs, Ps_0, Acc).
-
-/*
-branches_productions(Cs, [H|Bs], Ps, Acc):-
-	branch_corpus(H, Cs, Cs_)
-	,branch_production(H, Ph)
-	,corpus_productions(Cs_, Ph, [], Cs_beh, [], Bs_from_H, [], Ps_)
-	,branches_productions(Cs_beh, Bs_from_H, [], Ps_1)
-	,branches_productions(Cs, Bs, [Ps_1|[Ps_|Ps]], Acc).
-*/
-
-/*
-findall(C, example_string(C), Cs), production_induction:branch_corpus(exile, Cs, Cs_).
-	*/
-
-%!	branch_corpus(+Branch_head,+Corpus,-Branch_corpus) is semidet.
+%!	node_corpus(+Node_head,+Corpus,-Node_corpus) is semidet.
 %
 %	Split Corpus to a new Branch_corpus with all the examples that
 %	begin with Branch_head and none of the examples that don't.
 %
-branch_corpus(H, Cs, Cs_):-
-	branch_corpus(H, Cs, [], Cs_).
-
-%!	branch_corpus(+Branch_head,+Corpus,+Temp,-Acc) is nondet.
+%	@NOTE: if I implement that idea of ordering the corpus by
+%	information content/ entropy, I'll have to add a reverse/2 call
+%	after the call to node_corpus/4 here, else the minimum entropic
+%	ordering will be reversed after it.
 %
-%	Business end of branch_corpus/3.
-branch_corpus(_, [], Cs, Cs).
-branch_corpus(H, [[H|C]|Cs], Cs_, Acc):-
+node_corpus(H, Cs, Cs_):-
+	node_corpus(H, Cs, [], Cs_).
+
+%!	node_corpus(+Branch_head,+Corpus,+Temp,-Acc) is nondet.
+%
+%	Business end of node_corpus/3.
+node_corpus(_, [], Cs, Cs).
+node_corpus(H, [[H|C]|Cs], Cs_, Acc):-
 	!, % Avoid backtracking into third clause head.
-	branch_corpus(H, Cs, [[H|C]|Cs_], Acc).
-branch_corpus(H, [_C|Cs], Cs_, Acc):-
-	branch_corpus(H, Cs, Cs_, Acc).
+	node_corpus(H, Cs, [[H|C]|Cs_], Acc).
+node_corpus(H, [_C|Cs], Cs_, Acc):-
+	node_corpus(H, Cs, Cs_, Acc).
 
 
-%!	examples_branches(+Corpus,+Head_production,-Productions) is nondet.
+%!	node_production(+Node_corpus,+Node_heads,+Node_head,+Node_head_production,-Augmented_node_head_production,-Node_production) is nondet.
 %
-%	Construct productions for the current branch.
-branch_productions(Cs,Ph,Ps):-
-	branch_productions(Cs, Ph, [], Cs_, [], Bs, [], Ps_0)
-	,branches_productions(Cs_, Bs, Ps_1)
-	,append(Ps_0, Ps_1, Ps).
-
-
-%!	branch_productions(+Corpus,+Head_production,+Temp,-Acc) is nondet.
+%	@TODO: Document
 %
-%	Business end of branch_productions/3.
-branch_productions([], _, Cs, Cs, Bs, Bs, Ps, Ps).
+node_production(Cs,Bs,Ph,A_Ph,Ph_i):-
+	% Many examples and more than one branch indicate a branch node.
+	length(Cs, Cs_l)
+	,length(Bs, Bs_l)
+	,Cs_l > 1
+	,Bs_l > 1
+	,[Hi|_] = Bs
+	,Ph_i = (Hi --> [Hi])
+	,A_Ph = Ph.
 
-% Just one token left- only add a leaf production.
-branch_productions([[C]], Hp, Cs, Cs, Bs, Bs_, Ps, [Hp,Tp|Ps]):-
-	leaf_production(C, Tp)
-	,ord_add_element(Bs, C, Bs_).
+node_production(Cs,Bs,Ph,A_Ph,Ph_i):-
+	% Many examples and more than one branch indicate a branch node.
+	length(Cs, Cs_l)
+	,length(Bs, Bs_l)
+	,Cs_l > 1
+	,Bs_l = 1
+	,[Hi|_] = Bs
+	,Ph_i = (Hi --> [Hi])
+	,A_Ph = Ph.
 
-% A single example left; keep augmenting the branch head production
-branch_productions([[_H|C]], Hp, Cs_, Cs_acc, Bs, Bs_acc, Ps, Ps_acc):-
-	example_head(C, H_)
-	,augmented_branch_production(Hp, [H_], A_Hp)
-	,branch_productions([C], A_Hp, Cs_, Cs_acc, Bs, Bs_acc, Ps, Ps_acc).
+node_production([[C]],_,Ph,[],Ph_i):-
+	augmented_branch_head_production(Ph, [C], Ph_i).
 
-branch_productions([C|Cs], Hp, Cs_, Cs_acc, Bs, Bs_acc, Ps, Ps_acc):-
-	beheaded_example(C, C_)
-	,beheaded_examples(C_, Cs_, Cs_beh)
-	,example_head(C_, H_)
-	,leaf_production(H_, Tp)
-	,augmented_branch_production(Hp, Tp, A_Hp)
-	,ord_add_element(Bs, H_, Bs_)
-	,branch_productions(Cs,Hp,Cs_beh,Cs_acc,Bs_,Bs_acc,[A_Hp|Ps]
-			   ,Ps_acc).
+node_production([[C|_Cs]],_,Ph,[],Ph_i):-
+	augmented_branch_head_production(Ph, [C], Ph_i).
 
+node_production([[[Ci|_Cs]|_N_Cs]],[_B],Ph,[],Ph_i):-
+	augmented_branch_head_production(Ph, Ci, Ph_i).
 
-%!	beheaded_example(+Example,-Beheaded) is det.
-%
-%	Remove the first token of Example.
-%
-beheaded_example([C], [C]).
-beheaded_example([_|C], C).
+node_production([[Ci|_Cs]|_N_Cs],[_B|_Bs],Ph,[],Ph_i):-
+	augmented_branch_head_production(Ph, Ci, Ph_i).
 
-
-%!	beheaded_examples(+Example,+Examples,-Together) is det.
-%
-%	Add Example to the list of beheaded Examples.
-%
-beheaded_examples(C, Cs, [C|Cs]).
-
-
-%!	example_head(?Example, ?Head) is det.
-%
-%	True when Head is the first token in Example. This is just to
-%	clarify what's going on in branch_productions/8.
-example_head([H|_C], H).
-
-
-%!	branch_production(+Branch_head, -Head_production) is det.
-%
-%	A new production from the first token in a new branch.
-%
-branch_production(H, H --> [H]).
-
-
-%!	leaf_production(+Head, -Production) is det.
-%
-%	A new production from the leaf of a branch
-%
-leaf_production(H, H --> [H]).
-
-
-%!	augmented_branch_production(+Branch_production,+Leaf_production,-Augmented_branch_production) is det.
+%!	augmented_branch_head_production(+Branch_production,+Leaf_production,-Augmented_branch_production) is det.
 %
 %	Augment Branch_production with a reference to Leaf_production.
-augmented_branch_production(Ph --> B , [H], (Ph --> Bs_t)):-
+augmented_branch_head_production(Ph --> [] , T, (Ph --> T)).
+augmented_branch_head_production(Ph --> B , [H], (Ph --> Bs_t)):-
 	tree_list(B, Bs)
 	,append(Bs, [[H]], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_branch_production(Ph --> [Ph] , Tp --> [_TP], (Ph --> [Ph], Tp)).
+augmented_branch_head_production(Ph --> B , Tp, (Ph --> Bs_t)):-
+	atomic(Tp) % a terminal
+	,tree_list(B, Bs)
+	,append(Bs, [Tp], Bs_)
+	,list_tree(Bs_, Bs_t).
 
-/*
+%!	expanded_productions(+Productions,+Node_production,+Node_head_production,-New_productions) is det.
+%
+%
+expanded_productions(Ps,[],A_Ph,Ps_):-
+	ord_add_element(Ps,A_Ph,Ps_).
+expanded_productions(Ps,Ph_i,[],Ps_):-
+	ord_add_element(Ps, Ph_i,Ps_).
+expanded_productions(Ps,Ph_i,A_Ph,Ps_):-
+	ord_add_element(Ps, Ph_i,Ps0)
+	,ord_add_element(Ps0,A_Ph,Ps_).
 
-  0) Initialise:
-     C, a set of tokenised examples in the target language
-     B, the set of heads of branches (a.k.a. names of nodes) from the
-     current node in the induced parse tree
-     G, the target grammar, a quadruple: [S,N,T,P] where S the start
-     symbol, N the set of nonterminals, T the set of Terminals and P the
-     set of Productions.
+%!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
+%
+%	@TODO: document
+%
+beheaded_node_corpus(Cs, Cs_):-
+	findall(Cs_r
+	       ,member([_|Cs_r], Cs)
+	       ,Cs_).
 
-  1) For each example c in C:
-     2) Take h, the head of c
-     3) Add h to B
-	> At the beginning of a run, the first node is s, the start symbol
-	for G.
-  4) For each node h in B
-     5) Split C to C',the corpus for h: a new corpus with all the
-     examples in C that begin with h and none of the examples that
-     don't.
+%!	node_heads(+Corpus,-Node_heads) is det.
+%
+%	@TODO: document.
+%
+node_heads(Cs, Bs):-
+	setof(H
+	       ,T^member([H|T], Cs)
+	       ,Bs).
 
-     6) Create ph, the head-production for h: a production named as h
-        expanding to a literal h as a terminal:
-	ph = h --> [h].
-
-     7) For each example c' in C':
-        8) Behead c': remove its head, h
-	9) If c' = [] end loop.
-	    * Or, we could end the loop when length(c') = 1; see notes.
-	10) Add the beheaded c', c" to C", the set of beheaded examples in C'
-
-        11) Take h', the new head of c"
-	12) Create pt the tail-production for h': a production named as h'
-	    expanding to a literal h' as a terminal:
-	    pt = h' --> [h'].
-
-	13) Look-back/retraugment: create a new clause for head-production
-	ph starting with the head-production ph augmented with a reference
-	to the tail-production, pt:
-	    ph' = h --> [h], pt.
-
-	14) Add h' to B' the set of heads of branches from h
-     15) Repeat from 1) with B = B' and C = C"
-
-*/
-
-
+%!	start_production(?Start_production) is det.
+%
+%	The first branch-head production expanding the start symbol to
+%	the empty string.
+%
+start_production(S --> []):-
+	phrase(configuration:start, [S]).

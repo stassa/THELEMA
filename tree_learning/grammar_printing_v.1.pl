@@ -11,7 +11,9 @@
 %
 print_productions:-
 	configuration:examples_module(Es)
-	,findall(C, Es:example_string(C), Cs)
+	,configuration:language_module(L)
+	,phrase(L:start, [S])
+	,findall([S|C], Es:example_string(C), Cs)
 	,corpus_productions(Cs, Ps)
 	,!
 	,forall(member(P, Ps), writeln(P)).
@@ -27,7 +29,7 @@ print_grammar:-
 	configuration:examples_module(Es)
 	,configuration:language_module(L)
 	,phrase(L:start, [S])
-	,findall(C, Es:example_string(C), Cs)
+	,findall([S|C], Es:example_string(C), Cs)
 	,corpus_productions(Cs, Ps)
 	,!
 	,configuration:output_stream(O)
