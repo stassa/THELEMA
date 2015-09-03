@@ -31,7 +31,6 @@ derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
 	,node_heads(B_Cs_hi,Bs_hi)
 	% Follow current branch
-%	,derived_productions(B_Cs_hi,Bs_,Ph_i,Ps_,Acc)
 	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,Ps_,Ps_hi)
 	% Follow subsequent branches
 	,derived_productions(Cs,Bs,Ph,Ps_hi,Acc).
@@ -158,6 +157,7 @@ expanded_productions(Ps,Ph_i,A_Ph,Ps_):-
 %
 %	@TODO: document
 %
+beheaded_node_corpus([[_]], []).
 beheaded_node_corpus(Cs, Cs_):-
 	findall(Cs_r
 	       ,member([_|Cs_r], Cs)
@@ -167,7 +167,7 @@ beheaded_node_corpus(Cs, Cs_):-
 %
 %	@TODO: document.
 %
-node_heads([[]], []).
+node_heads([], []).
 node_heads(Cs, Bs):-
 	setof(H
 	       ,T^member([H|T], Cs)
