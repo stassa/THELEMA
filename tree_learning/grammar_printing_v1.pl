@@ -1,7 +1,7 @@
 :-module(grammar_printing, [print_productions/0
 			   ,print_grammar/0]).
 
-:-use_module(production_induction, [corpus_productions/2]).
+:-use_module(production_induction_v1, [corpus_productions/2]).
 
 
 %!	print_corpus_productions is det.

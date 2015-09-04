@@ -8,10 +8,11 @@ findall(C, example_string(C), Cs), corpus_productions(Cs, Ps), !,writeln(Ps).
 */
 
 
-corpus_productions(Cs, Ps):-
+corpus_productions(Cs, Ps_):-
 	node_heads(Cs, Bs)
 	,start_production(Ph)
-	,derived_productions(Cs,Bs,Ph,[],Ps).
+	,derived_productions(Cs,Bs,Ph,[],Ps)
+	,sort(Ps, Ps_).
 
 
 %!	derived_productions(+Corpus,+Node_heads,+Node_production,+Temp,-Acc) is det.
@@ -23,7 +24,7 @@ corpus_productions(Cs, Ps):-
 %	only. But try to preserve the order of rules derivation because
 %	it's nice to read them like that.
 %
-derived_productions(_,[],Ph,Ps,Ps_):-
+/*derived_productions(_,[],Ph,Ps,Ps_):-
 	append(Ps, [Ph], Ps_).
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	node_corpus(Hi,Cs,Cs_hi)
@@ -34,7 +35,43 @@ derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,Ps_,Ps_hi)
 	% Follow subsequent branches
 	,derived_productions(Cs,Bs,Ph,Ps_hi,Acc).
+*/
+%derived_productions(_,_,[],Ps,Ps).
+%derived_productions([],_,_,Ps,Ps).
+%derived_productions(_,[],_,Ps,Ps).
 
+derived_productions([],_,_,Ps,Ps).
+
+/*
+derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
+	% A leaf node
+	augmented_node_head_production(Ph, [Hi], A_Ph).
+
+derived_productions([[_|[H|Cs]]],[Hi],Ph,Ps,Acc):-
+	% A stem node (single example, single branch)
+	augmented_node_head_production(Ph, [Hi], A_Ph)
+	,derived_productions(Cs, [H], A_Ph, Ps, Acc).
+
+derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
+	% A branch node (multiple examples for a single branch)
+	Ph_i = (Hi --> [Hi])
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,beheaded_node_corpus([C|Cs],B_Cs)
+	,node_heads(B_Cs, Bs_Hs)
+	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
+*/
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	you_are_here(4),
+	Ph_i = (Hi --> [Hi])
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
+	,node_heads(B_Cs_hi,Bs_hi)
+	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
+	% would be nice to drop the examples processed already from Cs
+	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
+
+you_are_here(_).
 
 %!	node_corpus(+Node_head,+Corpus,-Node_corpus) is semidet.
 %
@@ -60,6 +97,100 @@ node_corpus(H, [_C|Cs], Cs_, Acc):-
 	node_corpus(H, Cs, Cs_, Acc).
 
 
+%!	split_corpus(+Node_head,+Corpus,-Node_corpus,-Rest_of_corpus) is semidet.
+%
+%	Same as node_corpus/3 but also binds the Rest_of_corpus to the
+%	list of examples that don't begin with Node_head.
+%
+split_corpus(H, Cs, Cs_H, Cs_Rest):-
+	split_corpus(H, Cs, [], Cs_H, [], Cs_Rest).
+
+%!	split_corpus(+Branch_head,+Corpus,+Temp,-Acc) is nondet.
+%
+%	Business end of split_corpus/3.
+split_corpus(_, [], Cs_H, Cs_H, Cs_Rest, Cs_Rest).
+split_corpus(H, [[H|C]|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
+	!, % Avoid backtracking into third clause head.
+	split_corpus(H, Cs, [[H|C]|Cs_H], Cs_H_Acc, Cs_Rest, Cs_Rest_Acc).
+
+split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
+	split_corpus(H, Cs, Cs_H, Cs_H_Acc, [C|Cs_Rest], Cs_Rest_Acc).
+
+
+%!	augmented_node_head_production(+Branch_production,+Leaf_production,-Augmented_branch_production) is det.
+%
+%	Augment Branch_production with a reference to Leaf_production.
+augmented_node_head_production(Ph --> [] , H, (Ph --> H)).
+augmented_node_head_production(Ph --> [T] , [H], (Ph --> [T,H])).
+augmented_node_head_production(Ph --> [T] , H, (Ph --> [T],H)):-
+	atomic(H).
+augmented_node_head_production(Ph --> B , [H], (Ph --> Bs_t)):-
+	tree_list(B, Bs)
+	,append(Bs, [[H]], Bs_)
+	,list_tree(Bs_, Bs_t).
+augmented_node_head_production(Ph --> B , Tp, (Ph --> Bs_t)):-
+	atomic(Tp) % a terminal
+	,tree_list(B, Bs)
+	,append(Bs, [Tp], Bs_)
+	,list_tree(Bs_, Bs_t).
+
+%!	expanded_productions(+Productions,+Node_production,+Node_head_production,-New_productions) is det.
+%
+%
+expanded_productions(Ps,[],A_Ph,Ps_):-
+	ord_add_element(Ps,A_Ph,Ps_).
+expanded_productions(Ps,Ph_i,[],Ps_):-
+	ord_add_element(Ps, Ph_i,Ps_).
+expanded_productions(Ps,Ph_i,A_Ph,Ps_):-
+	ord_add_element(Ps, Ph_i,Ps0)
+	,ord_add_element(Ps0,A_Ph,Ps_).
+
+%!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
+%
+%	@TODO: document
+%
+beheaded_node_corpus([[_]], []).
+beheaded_node_corpus(Cs, Cs_):-
+	findall(Cs_r
+	       ,member([_|Cs_r], Cs)
+	       ,Cs_).
+
+
+%!	node_heads(+Corpus,-Node_heads) is det.
+%
+%	@TODO: document.
+%
+node_heads([], []).
+node_heads(Cs, Bs):-
+	setof(H
+	       ,T^member([H|T], Cs)
+	       ,Bs).
+
+%!	start_production(?Start_production) is det.
+%
+%	The first branch-head production expanding the start symbol to
+%	the empty string.
+%
+start_production(S --> []):-
+	phrase(configuration:start, [S]).
+
+
+/*
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	% A branch node
+	Ph_i = (Hi --> [Hi])
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
+	,node_heads(B_Cs_hi,Bs_hi)
+	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
+	% would be nice to drop the examples processed already from Cs
+	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
+
+	*/
+
+
+/*
 %!	node_production(+Node_corpus,+Branch_heads,+Productions,+Node_head_production,-Expanded_productions,-Node_production) is nondet.
 %
 %	Implementation of v. 2.2.0 production-composition rules.
@@ -125,59 +256,5 @@ node_production(Cs,Bs,Ps,Ph,Ps_,Ph_i):-
 	,Ps_ = Ps.
 
 
-%!	augmented_node_head_production(+Branch_production,+Leaf_production,-Augmented_branch_production) is det.
-%
-%	Augment Branch_production with a reference to Leaf_production.
-augmented_node_head_production(Ph --> [] , H, (Ph --> H)).
-augmented_node_head_production(Ph --> [T] , [H], (Ph --> [T,H])).
-augmented_node_head_production(Ph --> [T] , H, (Ph --> [T],H)):-
-	atomic(H).
-augmented_node_head_production(Ph --> B , [H], (Ph --> Bs_t)):-
-	tree_list(B, Bs)
-	,append(Bs, [[H]], Bs_)
-	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(Ph --> B , Tp, (Ph --> Bs_t)):-
-	atomic(Tp) % a terminal
-	,tree_list(B, Bs)
-	,append(Bs, [Tp], Bs_)
-	,list_tree(Bs_, Bs_t).
 
-%!	expanded_productions(+Productions,+Node_production,+Node_head_production,-New_productions) is det.
-%
-%
-expanded_productions(Ps,[],A_Ph,Ps_):-
-	ord_add_element(Ps,A_Ph,Ps_).
-expanded_productions(Ps,Ph_i,[],Ps_):-
-	ord_add_element(Ps, Ph_i,Ps_).
-expanded_productions(Ps,Ph_i,A_Ph,Ps_):-
-	ord_add_element(Ps, Ph_i,Ps0)
-	,ord_add_element(Ps0,A_Ph,Ps_).
-
-%!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
-%
-%	@TODO: document
-%
-beheaded_node_corpus([[_]], []).
-beheaded_node_corpus(Cs, Cs_):-
-	findall(Cs_r
-	       ,member([_|Cs_r], Cs)
-	       ,Cs_).
-
-%!	node_heads(+Corpus,-Node_heads) is det.
-%
-%	@TODO: document.
-%
-node_heads([], []).
-node_heads(Cs, Bs):-
-	setof(H
-	       ,T^member([H|T], Cs)
-	       ,Bs).
-
-%!	start_production(?Start_production) is det.
-%
-%	The first branch-head production expanding the start symbol to
-%	the empty string.
-%
-start_production(S --> []):-
-	phrase(configuration:start, [S]).
-
+	*/
