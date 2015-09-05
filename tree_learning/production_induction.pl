@@ -68,7 +68,6 @@ derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
 	,node_heads(B_Cs_hi,Bs_hi)
 	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
-	% would be nice to drop the examples processed already from Cs
 	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
 
 you_are_here(_).
@@ -152,7 +151,9 @@ expanded_productions(Ps,Ph_i,A_Ph,Ps_):-
 beheaded_node_corpus([[_]], []).
 beheaded_node_corpus(Cs, Cs_):-
 	findall(Cs_r
-	       ,member([_|Cs_r], Cs)
+	       ,(member([_|Cs_r], Cs)
+		,Cs_r \= []
+		)
 	       ,Cs_).
 
 
