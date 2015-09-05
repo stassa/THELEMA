@@ -122,15 +122,18 @@ split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 augmented_node_head_production(Ph --> [] , H, (Ph --> H)).
 augmented_node_head_production(Ph --> [T] , [H], (Ph --> [T,H])).
 augmented_node_head_production(Ph --> [T] , H, (Ph --> [T],H)):-
-	atomic(H).
+	% not a terminal; not checking with atomic/1
+	% because of tokens like 'and/or' etc that are not (atomic).
+	\+ is_list(H).
 augmented_node_head_production(Ph --> B , [H], (Ph --> Bs_t)):-
 	tree_list(B, Bs)
 	,append(Bs, [[H]], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(Ph --> B , Tp, (Ph --> Bs_t)):-
-	atomic(Tp) % a terminal
+augmented_node_head_production(Ph --> B , H, (Ph --> Bs_t)):-
+	% not a terminal
+	\+ is_list(H)
 	,tree_list(B, Bs)
-	,append(Bs, [Tp], Bs_)
+	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
 
 %!	expanded_productions(+Productions,+Node_production,+Node_head_production,-New_productions) is det.
