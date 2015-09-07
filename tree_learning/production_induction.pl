@@ -28,33 +28,33 @@ corpus_productions(Cs, Ps_):-
 derived_productions([],_,_,Ps,Ps).
 
 derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
-	% A leaf node
+	% A leaf node (single, single token example, single branch)
+	you_are_here(1),
 	augmented_node_head_production(Ph, [Hi], A_Ph).
 
-/*derived_productions([[_|[H|Cs]]],[Hi],Ph,Ps,Acc):-
+derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
+	you_are_here(2),
 	% A stem node (single example, single branch)
-	augmented_node_head_production(Ph, [Hi], A_Ph)
-	,derived_productions(Cs, [H], A_Ph, Ps, Acc).
+	augmented_node_head_production(Ph, [C|Cs], A_Ph).
 
 derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
 	% A branch node (multiple examples for a single branch)
+	you_are_here(3),
 	Ph_i = (Hi --> [Hi])
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 	,beheaded_node_corpus([C|Cs],B_Cs)
 	,node_heads(B_Cs, Bs_Hs)
 	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
-*/
 
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	you_are_here(3),
-	%Ph_i = (Hi --> [Hi])
+	you_are_here(4),
 	augmented_node_head_production(Ph, [Hi], A_Ph)
 	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
 	,beheaded_node_corpus(Cs_hi,[])
 	,derived_productions(Cs_Rest,Bs,Ph,[A_Ph|Ps],Acc).
 
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	you_are_here(4),
+	you_are_here(5),
 	Ph_i = (Hi --> [Hi])
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
@@ -128,6 +128,13 @@ augmented_node_head_production(Ph --> B , H, (Ph --> Bs_t)):-
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
+augmented_node_head_production(Ph --> B , H, (Ph --> Bs_t)):-
+	% a string of terminals
+	is_list(H)
+	,tree_list(B, Bs)
+	,append(Bs, [H], Bs_)
+	,list_tree(Bs_, Bs_t).
+
 
 %!	expanded_productions(+Productions,+Node_production,+Node_head_production,-New_productions) is det.
 %
