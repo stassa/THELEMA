@@ -24,30 +24,14 @@ corpus_productions(Cs, Ps_):-
 %	only. But try to preserve the order of rules derivation because
 %	it's nice to read them like that.
 %
-/*derived_productions(_,[],Ph,Ps,Ps_):-
-	append(Ps, [Ph], Ps_).
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	node_corpus(Hi,Cs,Cs_hi)
-	,node_production(Cs_hi,[Hi|Bs],Ps,Ph,Ps_,Ph_i)
-	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
-	,node_heads(B_Cs_hi,Bs_hi)
-	% Follow current branch
-	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,Ps_,Ps_hi)
-	% Follow subsequent branches
-	,derived_productions(Cs,Bs,Ph,Ps_hi,Acc).
-*/
-%derived_productions(_,_,[],Ps,Ps).
-%derived_productions([],_,_,Ps,Ps).
-%derived_productions(_,[],_,Ps,Ps).
 
 derived_productions([],_,_,Ps,Ps).
 
-/*
 derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
 	% A leaf node
 	augmented_node_head_production(Ph, [Hi], A_Ph).
 
-derived_productions([[_|[H|Cs]]],[Hi],Ph,Ps,Acc):-
+/*derived_productions([[_|[H|Cs]]],[Hi],Ph,Ps,Acc):-
 	% A stem node (single example, single branch)
 	augmented_node_head_production(Ph, [Hi], A_Ph)
 	,derived_productions(Cs, [H], A_Ph, Ps, Acc).
@@ -60,6 +44,15 @@ derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
 	,node_heads(B_Cs, Bs_Hs)
 	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
 */
+
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	you_are_here(3),
+	%Ph_i = (Hi --> [Hi])
+	augmented_node_head_production(Ph, [Hi], A_Ph)
+	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	,beheaded_node_corpus(Cs_hi,[])
+	,derived_productions(Cs_Rest,Bs,Ph,[A_Ph|Ps],Acc).
+
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	you_are_here(4),
 	Ph_i = (Hi --> [Hi])
@@ -177,6 +170,56 @@ node_heads(Cs, Bs):-
 %
 start_production(S --> []):-
 	phrase(configuration:start, [S]).
+
+
+/*
+Whole attempt to stick production-composition rules in clause-heads.
+
+derived_productions([],_,_,Ps,Ps).
+
+derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
+	% A leaf node
+	augmented_node_head_production(Ph, [Hi], A_Ph).
+derived_productions([[_|[H|Cs]]],[Hi],Ph,Ps,Acc):-
+	% A stem node (single example, single branch)
+	augmented_node_head_production(Ph, [Hi], A_Ph)
+	,derived_productions(Cs, [H], A_Ph, Ps, Acc).
+
+derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
+	% A branch node (multiple examples for a single branch)
+	Ph_i = (Hi --> [Hi])
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,beheaded_node_corpus([C|Cs],B_Cs)
+	,node_heads(B_Cs, Bs_Hs)
+	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	you_are_here(4),
+	Ph_i = (Hi --> [Hi])
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
+	,node_heads(B_Cs_hi,Bs_hi)
+	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
+	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
+
+you_are_here(_).
+*/
+
+
+
+
+/*derived_productions(_,[],Ph,Ps,Ps_):-
+	append(Ps, [Ph], Ps_).
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	node_corpus(Hi,Cs,Cs_hi)
+	,node_production(Cs_hi,[Hi|Bs],Ps,Ph,Ps_,Ph_i)
+	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
+	,node_heads(B_Cs_hi,Bs_hi)
+	% Follow current branch
+	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,Ps_,Ps_hi)
+	% Follow subsequent branches
+	,derived_productions(Cs,Bs,Ph,Ps_hi,Acc).
+*/
 
 
 /*
