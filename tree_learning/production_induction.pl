@@ -20,11 +20,7 @@ corpus_productions(Cs, Ps_):-
 %	Derive Productions from Corpus.
 %
 %	@TODO: document.
-%	@TODO: don't use append at first clause- is there fore clarity
-%	only. But try to preserve the order of rules derivation because
-%	it's nice to read them like that.
 %
-
 derived_productions([],_,_,Ps,Ps).
 
 derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
