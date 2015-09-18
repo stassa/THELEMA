@@ -15,15 +15,25 @@
 corpus_productions(Cs, Ps_):-
 	node_heads(Cs, Bs)
 	,start_production(Ph)
-	,derived_productions(Cs,Bs,Ph,[],Ps)
+	,derived_productions(Cs,Bs,Ph,Ps)
 	,sort(Ps, Ps_).
+
+
+%!	derived_productions(+Corpus,+Node_heads,+Node_production,-Productions) is det.
+%
+%	Derive a set of grammar Productions from Corpus. Node_heads is
+%	the set of heads of nodes under the currently examined node, as
+%	a list of atoms. Node_production is the node-head production for
+%	the current node.
+%
+derived_productions(Cs, Bs, Ph, Ps):-
+	derived_productions(Cs, Bs, Ph, [], Ps).
 
 
 %!	derived_productions(+Corpus,+Node_heads,+Node_production,+Temp,-Acc) is det.
 %
-%	Derive Productions from Corpus.
+%	Business end of derived_productions/4.
 %
-%	@TODO: document.
 %
 derived_productions([],_,_,Ps,Ps).
 
@@ -40,7 +50,7 @@ derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
 derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
 	% A branch node (multiple examples for a single branch)
 	you_are_here(3),
-	Ph_i = (Hi --> [Hi])
+	node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 	,beheaded_node_corpus([C|Cs],B_Cs)
 	,node_heads(B_Cs, Bs_Hs)
@@ -57,7 +67,7 @@ derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	you_are_here(5),
-	Ph_i = (Hi --> [Hi])
+	node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
 	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
@@ -111,6 +121,23 @@ split_corpus(H, [[H|C]|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 
 split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 	split_corpus(H, Cs, Cs_H, Cs_H_Acc, [C|Cs_Rest], Cs_Rest_Acc).
+
+
+%!	node_head_productions(+Node_head, -Production) is semidet.
+%
+%	Construct the node-head Production for the given Node_head.
+%
+node_head_production(Hi, Ph_i):-
+	configuration:lexicalisation_strategy(S)
+	,node_head_production(S, Hi, Ph_i).
+
+
+%!	node_head_production(+Strategy, +Node_head, -Production) is semidet.
+%
+%	Business end of node_head_production/2. Strategy is the value of
+%	configuration option lexicalisation_strategy/1.
+%
+node_head_production(none, Hi, (Hi --> [Hi])).
 
 
 %!	augmented_node_head_production(+Branch_production,+Leaf_production,-Augmented_branch_production) is det.

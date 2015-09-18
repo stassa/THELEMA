@@ -1,5 +1,6 @@
 :-module(configuration, [examples_file_name/1
 			,language_file_name/1
+			,lexicalisation_strategy/1
 			,output_stream/1
 			,output_type/1
 			,output_format/2]).
@@ -8,11 +9,10 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-%examples_file_name(examples_mtg_hand_simulation).
+examples_file_name(examples_mtg_hand_simulation).
 %examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
-examples_file_name(examples_mtg_all_destroy_cleaned).
-
+%examples_file_name(examples_mtg_all_destroy_cleaned).
 
 
 %!	language_file_name(?Name) is det.
@@ -22,14 +22,23 @@ examples_file_name(examples_mtg_all_destroy_cleaned).
 language_file_name(language_mtg_hand_simulation).
 
 
-:-examples_file_name(E)
-,language_file_name(L)
-,register_world(L
-	       ,[start//0 as start
-		,terminal//0 as terminal
-		,nonterminal//0 as nonterminal
-		]
-	       ,E).
+%!	lexicalisation_strategy(?Strategy:atom) is det.
+%
+%	How to add lexical parameters to derived productions.
+%	One of:
+%	* none; don't add lexical parameters.
+%	* branch; at a branch add the name of the branch-head production
+%	  as a lexical parameter
+%       * token; always add the next token as a lexical parameter.
+%	* tokens; always add all of the next tokens as lexical
+%	  parameters.
+%
+%	Above, "next token" means the first token after the production's
+%	synonym token, ie the token that is the literal name of the
+%	production.
+%
+lexicalisation_strategy(none).
+
 
 
 %!	output_stream(?Name) is det.
@@ -63,3 +72,33 @@ output_type(grammar).
 %	configured.
 %
 output_format(grammar, '.pl').
+
+
+/*
+ * Loads language and examples files.
+ * Don't mess with this bit unless you know what you're doing (tm)
+*/
+:-examples_file_name(E)
+,language_file_name(L)
+,register_world(L
+	       ,[start//0 as start
+		,terminal//0 as terminal
+		,nonterminal//0 as nonterminal
+		]
+	       ,E).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
