@@ -27,53 +27,60 @@ corpus_productions(Cs, Ps_):-
 %	the current node.
 %
 derived_productions(Cs, Bs, Ph, Ps):-
-	derived_productions(Cs, Bs, Ph, [], Ps).
+	% Note: we build up the third argument as a stack beginning here.
+	derived_productions(Cs, Bs, [Ph], [], Ps).
 
 
 %!	derived_productions(+Corpus,+Node_heads,+Node_production,+Temp,-Acc) is det.
 %
 %	Business end of derived_productions/4.
 %
+%	@TODO: Document; particularly the bit where we build a stack of
+%	node-head productions.
 %
 derived_productions([],_,_,Ps,Ps).
 
-derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
+derived_productions([[_C]],[Hi],[Ph|_],Ps,[A_Ph|Ps]):-
 	% A leaf node (single, single token example, single branch)
 	you_are_here(1),
 	augmented_node_head_production(Ph, [Hi], A_Ph).
 
-derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
+derived_productions([[C|Cs]],[_Hi],[Ph|_],Ps,[Ph,A_Ph|Ps]):-
 	you_are_here(2),
 	% A stem node (single example, single branch)
 	augmented_node_head_production(Ph, [C|Cs], A_Ph).
 
-derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
+derived_productions([C|Cs],[Hi],[Ph|Ph_s],Ps,Acc):-
 	% A branch node (multiple examples for a single branch)
 	you_are_here(3),
 	node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 	,beheaded_node_corpus([C|Cs],B_Cs)
 	,node_heads(B_Cs, Bs_Hs)
-	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
+	,derived_productions(B_Cs, Bs_Hs, [Ph_i,A_Ph|Ph_s], [A_Ph|Ps], Acc).
 
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+derived_productions(Cs,[Hi|Bs],[Ph|Ph_s],Ps,Acc):-
 	you_are_here(4),
 	% Softcuts avoid unproductive backtracking
 	% when beheaded node-corpus is not []
 	once(augmented_node_head_production(Ph, [Hi], A_Ph))
 	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
 	,beheaded_node_corpus(Cs_hi,[])
-	,derived_productions(Cs_Rest,Bs,Ph,[A_Ph|Ps],Acc).
+	% We continue with the rest-of-corpus and so drop the A_Ph
+	% from the node-production stack, else it will replace the one
+	% We actually need.
+	,derived_productions(Cs_Rest,Bs,[Ph|Ph_s],[A_Ph|Ps],Acc).
 
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+derived_productions(Cs,[Hi|Bs],[Ph|Ph_s],Ps,Acc):-
 	you_are_here(5),
 	node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
 	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
 	,node_heads(B_Cs_hi,Bs_hi)
-	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
-	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
+	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Ph_s],[A_Ph|Ps],Ps_hi)
+	,you_are_here(6)
+	,derived_productions(Cs_Rest,Bs,[Ph|Ph_s],Ps_hi,Acc).
 
 you_are_here(_).
 
