@@ -3,11 +3,15 @@
 :-use_module(configuration).
 :-use_module(project_root(utilities)).
 
-/*
-findall(C, example_string(C), Cs), corpus_productions(Cs, Ps), !,writeln(Ps).
-*/
 
-
+%!	corpus_productions(+Corpus:list, -Productions:list) is det.
+%
+%	Derive a set of grammar Productions from the given Corpus.
+%
+%	Corpus is a list of lists where each sub-list is a tokenised
+%	example in the target language. Productions is a list of grammar
+%	productions in DCG notation.
+%
 corpus_productions(Cs, Ps_):-
 	node_heads(Cs, Bs)
 	,start_production(Ph)
@@ -44,8 +48,10 @@ derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
 
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	you_are_here(4),
-	augmented_node_head_production(Ph, [Hi], A_Ph)
-	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	% Softcuts avoid unproductive backtracking
+	% when beheaded node-corpus is not []
+	once(augmented_node_head_production(Ph, [Hi], A_Ph))
+	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
 	,beheaded_node_corpus(Cs_hi,[])
 	,derived_productions(Cs_Rest,Bs,Ph,[A_Ph|Ps],Acc).
 
@@ -61,6 +67,7 @@ derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 
 you_are_here(_).
 
+
 %!	node_corpus(+Node_head,+Corpus,-Node_corpus) is semidet.
 %
 %	Split Corpus to a new Branch_corpus with all the examples that
@@ -73,6 +80,7 @@ you_are_here(_).
 %
 node_corpus(H, Cs, Cs_):-
 	node_corpus(H, Cs, [], Cs_).
+
 
 %!	node_corpus(+Branch_head,+Corpus,+Temp,-Acc) is nondet.
 %
@@ -132,17 +140,6 @@ augmented_node_head_production(Ph --> B , H, (Ph --> Bs_t)):-
 	,list_tree(Bs_, Bs_t).
 
 
-%!	expanded_productions(+Productions,+Node_production,+Node_head_production,-New_productions) is det.
-%
-%
-expanded_productions(Ps,[],A_Ph,Ps_):-
-	ord_add_element(Ps,A_Ph,Ps_).
-expanded_productions(Ps,Ph_i,[],Ps_):-
-	ord_add_element(Ps, Ph_i,Ps_).
-expanded_productions(Ps,Ph_i,A_Ph,Ps_):-
-	ord_add_element(Ps, Ph_i,Ps0)
-	,ord_add_element(Ps0,A_Ph,Ps_).
-
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
 %
 %	@TODO: document
@@ -173,138 +170,3 @@ node_heads(Cs, Bs):-
 %
 start_production(S --> []):-
 	phrase(configuration:start, [S]).
-
-
-/*
-Whole attempt to stick production-composition rules in clause-heads.
-
-derived_productions([],_,_,Ps,Ps).
-
-derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
-	% A leaf node
-	augmented_node_head_production(Ph, [Hi], A_Ph).
-derived_productions([[_|[H|Cs]]],[Hi],Ph,Ps,Acc):-
-	% A stem node (single example, single branch)
-	augmented_node_head_production(Ph, [Hi], A_Ph)
-	,derived_productions(Cs, [H], A_Ph, Ps, Acc).
-
-derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
-	% A branch node (multiple examples for a single branch)
-	Ph_i = (Hi --> [Hi])
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,beheaded_node_corpus([C|Cs],B_Cs)
-	,node_heads(B_Cs, Bs_Hs)
-	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	you_are_here(4),
-	Ph_i = (Hi --> [Hi])
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
-	,node_heads(B_Cs_hi,Bs_hi)
-	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
-	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
-
-you_are_here(_).
-*/
-
-
-
-
-/*derived_productions(_,[],Ph,Ps,Ps_):-
-	append(Ps, [Ph], Ps_).
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	node_corpus(Hi,Cs,Cs_hi)
-	,node_production(Cs_hi,[Hi|Bs],Ps,Ph,Ps_,Ph_i)
-	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
-	,node_heads(B_Cs_hi,Bs_hi)
-	% Follow current branch
-	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,Ps_,Ps_hi)
-	% Follow subsequent branches
-	,derived_productions(Cs,Bs,Ph,Ps_hi,Acc).
-*/
-
-
-/*
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	% A branch node
-	Ph_i = (Hi --> [Hi])
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
-	,node_heads(B_Cs_hi,Bs_hi)
-	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
-	% would be nice to drop the examples processed already from Cs
-	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
-
-	*/
-
-
-/*
-%!	node_production(+Node_corpus,+Branch_heads,+Productions,+Node_head_production,-Expanded_productions,-Node_production) is nondet.
-%
-%	Implementation of v. 2.2.0 production-composition rules.
-%	Currently made terribly, eye-wateringly explicit to make it
-%	perfectly clear and easier to debug/refactor.
-%
-%	@TODO: refactor to make more declarative.
-%
-node_production(Cs,Bs,Ps,Ph,Ps_,Ph_i):-
-	% Many examples and more than one branch indicate a branch node.
-	length(Cs, Cs_l)
-	,length(Bs, Bs_l)
-	,Cs_l > 1
-	,Bs_l > 1
-	,[Hi|_] = Bs
-	% Create a new node production
-	,Ph_i = (Hi --> [Hi])
-	% augment current node-head production
-	% with a nonterminal reference to Hi.
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	% Add the augmented node-head production to known Productions set
-	,expanded_productions(Ps,[],A_Ph,Ps_).
-
-node_production(Cs,Bs,Ps,Ph,Ps_,Ph_i):-
-	% Many examples for a single branch, indicating a branch node.
-	length(Cs, Cs_l)
-	,length(Bs, Bs_l)
-	,Cs_l > 1
-	,Bs_l = 1
-	,[Hi|_] = Bs
-	% Create a new node production
-	,Ph_i = (Hi --> [Hi])
-	% augment current node-head production
-	% with a nonterminal reference to Hi.
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	% Add the augmented node-head production to known Productions set
-	,expanded_productions(Ps,[],A_Ph,Ps_).
-
-node_production(Cs,Bs,Ps,Ph,Ps_,Ph_i):-
-	% C? is a single-token example, indicating a leaf node.
-	length(Cs, 1)
-	,Cs = [_C]
-	,[Hi|_] = Bs
-	% Augment Ph with a terminal Hi
-	,augmented_node_head_production(Ph, [Hi], A_Ph)
-	% Set the node-production to the augmented node-head production
-	,Ph_i = A_Ph
-	% Don't add it to the known productions yet (because it's not finished yet)
-	,Ps_ = Ps.
-
-node_production(Cs,Bs,Ps,Ph,Ps_,Ph_i):-
-	% A single example with more than one tokens indicates a stem node.
-	length(Cs, 1)
-	,member(C, Cs)
-	,length(C, C_l)
-	,C_l > 1
-	,[Hi|_] = Bs
-	% Augment Ph with a terminal Hi
-	,augmented_node_head_production(Ph, [Hi], A_Ph)
-	% Set the node-production to the augmented node-head production
-	,Ph_i = A_Ph
-	% Don't add it to the known productions yet (because it's not finished yet)
-	,Ps_ = Ps.
-
-
-
-	*/
