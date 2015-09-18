@@ -128,38 +128,58 @@ split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 %	Construct the node-head Production for the given Node_head.
 %
 node_head_production(Hi, Ph_i):-
-	configuration:lexicalisation_strategy(S)
+	configuration:production_composition(S)
 	,node_head_production(S, Hi, Ph_i).
 
 
 %!	node_head_production(+Strategy, +Node_head, -Production) is semidet.
 %
 %	Business end of node_head_production/2. Strategy is the value of
-%	configuration option lexicalisation_strategy/1.
+%	configuration option production_composition/1.
 %
-node_head_production(none, Hi, (Hi --> [Hi])).
+node_head_production(basic, Hi, (Hi --> [Hi])).
 
 
-%!	augmented_node_head_production(+Branch_production,+Leaf_production,-Augmented_branch_production) is det.
+%!	augmented_node_head_production(+Node_head_production,+Token,-Augmented_branch_production) is det.
 %
-%	Augment Branch_production with a reference to Leaf_production.
-augmented_node_head_production(Ph --> [] , H, (Ph --> H)).
-augmented_node_head_production(Ph --> [T] , [H], (Ph --> [T,H])).
-augmented_node_head_production(Ph --> [T] , H, (Ph --> [T],H)):-
+%	Augment Branch_production with Token.
+%
+%	Token is the head of a new child node in the currently expanding
+%	node and can be either a single-element list, or an atom.
+%
+%	A single-element list indicates a literal token, to be added as
+%	a terminal to the right-hand side of Node_head_production,
+%	whereas an atom indicates a reference to a newly created
+%	node-head production, to be added as a nonterminal to the rhs of
+%	Node_head_production.
+%
+augmented_node_head_production(Ph, Hi, A_Ph):-
+	configuration:lexicalisation_strategy(S)
+	,augmented_node_head_production(S,Ph,Hi,A_Ph).
+
+
+%!	augmented_node_head_production(+Strategy,+Node_head_production,+Token,-Augmented_branch_production) is det.
+%
+%	Business end of augmented_branch_production/3; Strategy is the
+%	value of configuration option lexicalisation_strategy/1.
+%
+augmented_node_head_production(none, Ph --> [] , H, (Ph --> H)).
+augmented_node_head_production(none, Ph --> [T] , [H], (Ph --> [T,H])).
+augmented_node_head_production(none, Ph --> [T] , H, (Ph --> [T],H)):-
 	% not a terminal; not checking with atomic/1
 	% because of tokens like 'and/or' etc that are not (atomic).
 	\+ is_list(H).
-augmented_node_head_production(Ph --> B , [H], (Ph --> Bs_t)):-
+augmented_node_head_production(none, Ph --> B , [H], (Ph --> Bs_t)):-
 	tree_list(B, Bs)
 	,append(Bs, [[H]], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(Ph --> B , H, (Ph --> Bs_t)):-
+augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
 	% not a terminal
 	\+ is_list(H)
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(Ph --> B , H, (Ph --> Bs_t)):-
+augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
 	% a string of terminals
 	is_list(H)
 	,tree_list(B, Bs)

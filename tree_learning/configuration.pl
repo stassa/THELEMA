@@ -3,14 +3,15 @@
 			,lexicalisation_strategy/1
 			,output_stream/1
 			,output_type/1
-			,output_format/2]).
+			,output_format/2
+			,production_composition/1]).
 
 
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-examples_file_name(examples_mtg_hand_simulation).
-%examples_file_name(examples_mtg_destroy_short).
+%examples_file_name(examples_mtg_hand_simulation).
+examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 
@@ -38,7 +39,6 @@ language_file_name(language_mtg_hand_simulation).
 %	production.
 %
 lexicalisation_strategy(none).
-
 
 
 %!	output_stream(?Name) is det.
@@ -73,6 +73,16 @@ output_type(grammar).
 %
 output_format(grammar, '.pl').
 
+
+%!	production_composition(?Type:atom) is det.
+%
+%	How to create new node-head productions. Type is one of:
+%
+%	* basic; node-head productions are created as a new production
+%	  named after the current node-head Hi and expanding to a
+%	  literal Hi as a terminal.
+%
+production_composition(basic).
 
 /*
  * Loads language and examples files.
