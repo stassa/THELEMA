@@ -163,28 +163,53 @@ augmented_node_head_production(Ph, Hi, A_Ph):-
 %	Business end of augmented_branch_production/3; Strategy is the
 %	value of configuration option lexicalisation_strategy/1.
 %
-augmented_node_head_production(none, Ph --> [] , H, (Ph --> H)).
-augmented_node_head_production(none, Ph --> [T] , [H], (Ph --> [T,H])).
+augmented_node_head_production(_, Ph --> [] , H, (Ph --> H)).
+
+/* Clauses for no-lexicalisation */
+augmented_node_head_production(S, Ph --> [T] , [H], (Ph --> [T,H])):-
+	(   S = none
+	;   S = branch
+	).
 augmented_node_head_production(none, Ph --> [T] , H, (Ph --> [T],H)):-
-	% not a terminal; not checking with atomic/1
+	% A branch from a brand new node-head production
+	% Not checking whether H is atomic with atomic/1
 	% because of tokens like 'and/or' etc that are not (atomic).
 	\+ is_list(H).
-augmented_node_head_production(none, Ph --> B , [H], (Ph --> Bs_t)):-
-	tree_list(B, Bs)
+augmented_node_head_production(S, Ph --> B , [H], (Ph --> Bs_t)):-
+	% A leaf
+	(   S = none
+	;   S = branch
+	)
+	,tree_list(B, Bs)
 	,append(Bs, [[H]], Bs_)
 	,list_tree(Bs_, Bs_t).
 augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
-	% not a terminal
+	% A branch for a previously augmented production
 	\+ is_list(H)
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
-	% a string of terminals
-	is_list(H)
+augmented_node_head_production(S, Ph --> B , H, (Ph --> Bs_t)):-
+	% A stem
+	(   S = none
+	;   S = branch
+	)
+	,is_list(H)
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
+
+
+augmented_node_head_production(branch, Ph --> [T] , H, (A_Ph --> [T],H)):-
+	\+ is_list(H)
+	,A_Ph =.. [Ph,H].
+augmented_node_head_production(branch, Ph --> B , H, (A_Ph --> Bs_t)):-
+	% A branch for a previously augmented production
+	\+ is_list(H)
+	,tree_list(B, Bs)
+	,append(Bs, [H], Bs_)
+	,list_tree(Bs_, Bs_t)
+	,A_Ph =.. [Ph,H].
 
 
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
