@@ -40,15 +40,38 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %
 derived_productions([],_,_,Ps,Ps).
 
-derived_productions([[_C]],[Hi],[Ph|_],Ps,[A_Ph|Ps]):-
+/*derived_productions([[_C]],[Hi],[Ph|[Ph_Prev|_]],Ps,[A_Ph,L_Ph_Prev|Ps]):-
 	% A leaf node (single, single token example, single branch)
 	you_are_here(1),
-	augmented_node_head_production(Ph, [Hi], A_Ph).
+	augmented_node_head_production(Ph, [Hi], A_Ph)
+	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev).*/
 
+derived_productions([[_C]],[Hi],Phs,Ps,[A_Ph,L_Ph_Prev|Ps]):-
+	% A leaf node (single, single token example, single branch)
+	(   Phs = [Ph] % Single-element node-head production stack
+	->  Ph_Prev = Ph
+	;   Phs = [Ph|[Ph_Prev|_]] % Multi-element stack
+	)
+	,you_are_here(1)
+	,augmented_node_head_production(Ph, [Hi], A_Ph)
+	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev).
+
+/*
 derived_productions([[C|Cs]],[_Hi],[Ph|_],Ps,[Ph,A_Ph|Ps]):-
 	you_are_here(2),
 	% A stem node (single example, single branch)
-	augmented_node_head_production(Ph, [C|Cs], A_Ph).
+	augmented_node_head_production(Ph, [C|Cs], A_Ph).*/
+
+
+derived_productions([[C|Cs]],[_Hi],Phs,Ps,[Ph,A_Ph,L_Ph_Prev|Ps]):-
+	% A stem node (single example, single branch)
+	(   Phs = [Ph] % Single-element node-head production stack
+	->  Ph_Prev = Ph
+	;   Phs = [Ph|[Ph_Prev|_]] % Multi-element stack
+	)
+	,you_are_here(2)
+	,augmented_node_head_production(Ph, [C|Cs], A_Ph)
+	,parameterised_node_head_production(Ph_Prev,C,L_Ph_Prev).
 
 derived_productions([C|Cs],[Hi],[Ph|[Ph_Prev|Ph_s]],Ps,Acc):-
 	% A branch node (multiple examples for a single branch)
@@ -58,7 +81,7 @@ derived_productions([C|Cs],[Hi],[Ph|[Ph_Prev|Ph_s]],Ps,Acc):-
 	,node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 
-	% Lexicalisation- augmentation; hopefully.
+	% Lexicalisation- augmentation
 	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev)
 
 	,beheaded_node_corpus([C|Cs],B_Cs)
@@ -308,3 +331,12 @@ node_heads(Cs, Bs):-
 %
 start_production(S --> []):-
 	phrase(configuration:start, [S]).
+
+
+
+/*
+derived_productions([[_C]],[Hi],[Ph|_],Ps,[A_Ph|Ps]):-
+	% A leaf node (single, single token example, single branch)
+	you_are_here(1),
+	augmented_node_head_production(Ph, [Hi], A_Ph).	*/
+
