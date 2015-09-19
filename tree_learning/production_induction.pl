@@ -52,8 +52,10 @@ derived_productions([[C|Cs]],[_Hi],[Ph|_],Ps,[Ph,A_Ph|Ps]):-
 
 derived_productions([C|Cs],[Hi],[Ph|[Ph_Prev|Ph_s]],Ps,Acc):-
 	% A branch node (multiple examples for a single branch)
-	you_are_here(3),
-	node_head_production(Hi, Ph_i)
+	you_are_here(3)
+	,configuration:lexicalisation_strategy(S)
+	,S \= none
+	,node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 
 	% Lexicalisation- augmentation; hopefully.
@@ -62,6 +64,16 @@ derived_productions([C|Cs],[Hi],[Ph|[Ph_Prev|Ph_s]],Ps,Acc):-
 	,beheaded_node_corpus([C|Cs],B_Cs)
 	,node_heads(B_Cs, Bs_Hs)
 	,derived_productions(B_Cs, Bs_Hs, [Ph_i,A_Ph|Ph_s], [A_Ph,L_Ph_Prev|Ps], Acc).
+
+derived_productions([C|Cs],[Hi],[Ph|Ph_s],Ps,Acc):-
+	% A branch node (multiple examples for a single branch)
+	you_are_here(3)
+	,node_head_production(Hi, Ph_i)
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,beheaded_node_corpus([C|Cs],B_Cs)
+	,node_heads(B_Cs, Bs_Hs)
+	,derived_productions(B_Cs, Bs_Hs, [Ph_i,A_Ph|Ph_s], [A_Ph|Ps], Acc).
+
 
 derived_productions(Cs,[Hi|Bs],[Ph|Ph_s],Ps,Acc):-
 	you_are_here(4),
@@ -164,6 +176,10 @@ node_head_production(basic, Hi, (Hi --> [Hi])).
 %	node-head production, to be added as a nonterminal to the rhs of
 %	Node_head_production.
 %
+%	With lexicalisation_strategy/1 options "branch", "token" and
+%	"tokens" a number of lexical parameters will also be added to
+%	the heads of rules.
+%
 augmented_node_head_production(Ph, Hi, A_Ph):-
 	configuration:lexicalisation_strategy(S)
 	,augmented_node_head_production(S,Ph,Hi,A_Ph).
@@ -176,16 +192,29 @@ augmented_node_head_production(Ph, Hi, A_Ph):-
 %
 augmented_node_head_production(_, Ph --> [] , H, (Ph --> H)).
 
-/* Clauses for no-lexicalisation */
 augmented_node_head_production(S, Ph --> [T] , [H], (Ph --> [T,H])):-
+	% A leaf! We have only the rule-synonym token and we're adding
+	% a single terminal to it. So it's a leaf and we're about to close it.
 	(   S = none
 	;   S = branch
 	).
+augmented_node_head_production(token, Ph --> [T] , [H], (A_Ph --> [T,H])):-
+	% A leaf
+	A_Ph =.. [Ph,H].
+
 augmented_node_head_production(none, Ph --> [T] , H, (Ph --> [T],H)):-
 	% A branch from a brand new node-head production
 	% Not checking whether H is atomic with atomic/1
 	% because of tokens like 'and/or' etc that are not (atomic).
 	\+ is_list(H).
+augmented_node_head_production(S, Ph --> [T] , H, (A_Ph --> [T],H)):-
+	% A branch from a brand new node-head production
+	(   S = branch
+	;   S = token
+	)
+	,\+ is_list(H)
+	,A_Ph =.. [Ph,H].
+
 augmented_node_head_production(S, Ph --> B , [H], (Ph --> Bs_t)):-
 	% A leaf
 	(   S = none
@@ -194,12 +223,30 @@ augmented_node_head_production(S, Ph --> B , [H], (Ph --> Bs_t)):-
 	,tree_list(B, Bs)
 	,append(Bs, [[H]], Bs_)
 	,list_tree(Bs_, Bs_t).
+augmented_node_head_production(token, Ph --> B , [H], (A_Ph --> Bs_t)):-
+	% A leaf
+	tree_list(B, Bs)
+	,append(Bs, [[H]], Bs_)
+	,list_tree(Bs_, Bs_t)
+	,A_Ph =.. [Ph,H].
+
 augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
 	% A branch for a previously augmented production
 	\+ is_list(H)
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
+augmented_node_head_production(S, Ph --> B , H, (A_Ph --> Bs_t)):-
+	% A branch for a previously augmented production
+	(   S = branch
+	;   S = token
+	)
+	,\+ is_list(H)
+	,tree_list(B, Bs)
+	,append(Bs, [H], Bs_)
+	,list_tree(Bs_, Bs_t)
+	,A_Ph =.. [Ph,H].
+
 augmented_node_head_production(S, Ph --> B , H, (Ph --> Bs_t)):-
 	% A stem
 	(   S = none
@@ -209,22 +256,27 @@ augmented_node_head_production(S, Ph --> B , H, (Ph --> Bs_t)):-
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
-
-
-augmented_node_head_production(branch, Ph --> [T] , H, (A_Ph --> [T],H)):-
-	\+ is_list(H)
-	,A_Ph =.. [Ph,H].
-augmented_node_head_production(branch, Ph --> B , H, (A_Ph --> Bs_t)):-
-	% A branch for a previously augmented production
-	\+ is_list(H)
-	,tree_list(B, Bs)
-	,append(Bs, [H], Bs_)
+augmented_node_head_production(token, Ph --> B , [H|T], (A_Ph --> Bs_t)):-
+	% A stem
+	%is_list(H)
+	tree_list(B, Bs)
+	,append(Bs, [[H|T]], Bs_)
 	,list_tree(Bs_, Bs_t)
 	,A_Ph =.. [Ph,H].
 
 
-%parameterised_node_head_production(Ph_Prev, Hi, A_Ph_Prev).
 
+%!	parameterised_node_head_production(+Production,+Node_head,-Lexicalised) is semidet.
+%
+%	Lexicalised is the given Production with Node_head as a lexical
+%	parameter. For example:
+%
+%	==
+%	parameterised_node_head_production((destroy-->target(creature))
+%					  ,target
+%					  ,destroy(target)-->target(creature)
+%       ==
+%
 parameterised_node_head_production(Ph_Prev --> B, Hi, Ph_Prev --> Bs_t):-
 	tree_list(B, Bs)
 	,reverse(Bs, [T|Sb])
