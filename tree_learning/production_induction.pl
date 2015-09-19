@@ -65,16 +65,6 @@ derived_productions([C|Cs],[Hi],[Ph|[Ph_Prev|Ph_s]],Ps,Acc):-
 	,node_heads(B_Cs, Bs_Hs)
 	,derived_productions(B_Cs, Bs_Hs, [Ph_i,A_Ph|Ph_s], [A_Ph,L_Ph_Prev|Ps], Acc).
 
-derived_productions([C|Cs],[Hi],[Ph|Ph_s],Ps,Acc):-
-	% A branch node (multiple examples for a single branch)
-	you_are_here(3)
-	,node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,beheaded_node_corpus([C|Cs],B_Cs)
-	,node_heads(B_Cs, Bs_Hs)
-	,derived_productions(B_Cs, Bs_Hs, [Ph_i,A_Ph|Ph_s], [A_Ph|Ps], Acc).
-
-
 derived_productions(Cs,[Hi|Bs],[Ph|Ph_s],Ps,Acc):-
 	you_are_here(4),
 	% Softcuts avoid unproductive backtracking
@@ -277,6 +267,9 @@ augmented_node_head_production(token, Ph --> B , [H|T], (A_Ph --> Bs_t)):-
 %					  ,destroy(target)-->target(creature)
 %       ==
 %
+parameterised_node_head_production(Ph_Prev --> B, _, Ph_Prev --> B):-
+	configuration:lexicalisation_strategy(none).
+
 parameterised_node_head_production(Ph_Prev --> B, Hi, Ph_Prev --> Bs_t):-
 	tree_list(B, Bs)
 	,reverse(Bs, [T|Sb])
