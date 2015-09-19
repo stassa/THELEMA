@@ -28,9 +28,15 @@ edit_source:-
 	%,edit(tree_learning(grammar_printing_v1))
 	,edit(tree_learning(load_configuration))
 	,edit(tree_learning(configuration))
-	,edit(tree_learning(language))
-	,configuration:language_module(Language)
+%	,edit(tree_learning(language))
+%	,configuration:language_module(Language)
 	,configuration:examples_module(Examples)
-	,edit(language(Language))
+%	,edit(language(Language))
 	,edit(corpus(Examples)).
 :-edit_source.
+
+set_spy_points:-
+	spy([you_are_here
+	    ,derived_productions/5
+	    ,augmented_node_head_production/3
+	    ]).
