@@ -27,89 +27,53 @@ corpus_productions(Cs, Ps_):-
 %	the current node.
 %
 derived_productions(Cs, Bs, Ph, Ps):-
-	% Note: we build up the third argument as a stack beginning here.
-	derived_productions(Cs, Bs, [Ph], [], Ps).
+	derived_productions(Cs, Bs, Ph, [], Ps).
 
 
 %!	derived_productions(+Corpus,+Node_heads,+Node_production,+Temp,-Acc) is det.
 %
 %	Business end of derived_productions/4.
 %
-%	@TODO: Document; particularly the bit where we build a stack of
-%	node-head productions.
 %
 derived_productions([],_,_,Ps,Ps).
 
-derived_productions([[_C]],[Hi],Phs,Ps,[A_Ph,L_Ph_Prev|Ps]):-
+derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
 	% A leaf node (single, single token example, single branch)
 	you_are_here(1),
-	(   Phs = [Ph] % Single-element node-head production stack
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|_]] % Multi-element stack
-	)
-	,augmented_node_head_production(Ph, [Hi], A_Ph)
-	% Lexicalisation- augmentation
-	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev).
+	augmented_node_head_production(Ph, [Hi], A_Ph).
 
-derived_productions([[C|Cs]],[_Hi],Phs,Ps,[Ph,A_Ph,L_Ph_Prev|Ps]):-
-	% A stem node (single example, single branch)
+derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
 	you_are_here(2),
-	(   Phs = [Ph]
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|_]]
-	)
-	,augmented_node_head_production(Ph, [C|Cs], A_Ph)
-	,parameterised_node_head_production(Ph_Prev,C,L_Ph_Prev).
+	% A stem node (single example, single branch)
+	augmented_node_head_production(Ph, [C|Cs], A_Ph).
 
-derived_productions([C|Cs],[Hi],Phs,Ps,Acc):-
+derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
 	% A branch node (multiple examples for a single branch)
 	you_are_here(3),
-	(   Phs = [Ph]
-	    ,Ph_rest = []
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|Ph_rest]]
-	)
-	,node_head_production(Hi, Ph_i)
+	node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev)
 	,beheaded_node_corpus([C|Cs],B_Cs)
 	,node_heads(B_Cs, Bs_Hs)
-	,derived_productions(B_Cs, Bs_Hs, [Ph_i,A_Ph|Ph_rest], [A_Ph,L_Ph_Prev|Ps], Acc).
+	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
 
-derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	you_are_here(4),
-	(   Phs = [Ph]
-	    ,Ph_rest = []
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|Ph_rest]]
-	)
 	% Softcuts avoid unproductive backtracking
 	% when beheaded node-corpus is not []
-	,once(augmented_node_head_production(Ph, [Hi], A_Ph))
+	once(augmented_node_head_production(Ph, [Hi], A_Ph))
 	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
 	,beheaded_node_corpus(Cs_hi,[])
-	% We continue with the rest-of-corpus and so drop the A_Ph
-	% from the node-production stack, else it will replace the one
-	% We actually need.
-	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev)
-	,derived_productions(Cs_Rest,Bs,[Ph|Ph_rest],[A_Ph,L_Ph_Prev|Ps],Acc).
+	,derived_productions(Cs_Rest,Bs,Ph,[A_Ph|Ps],Acc).
 
-derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	you_are_here(5),
-	(   Phs = [Ph]
-	    ,Ph_rest = []
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|Ph_rest]]
-	)
-	,node_head_production(Hi, Ph_i)
+	node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
 	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
 	,node_heads(B_Cs_hi,Bs_hi)
-	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev)
-	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Ph_rest],[A_Ph,L_Ph_Prev|Ps],Ps_hi)
-	,you_are_here(6)
-	,derived_productions(Cs_Rest,Bs,[Ph|Ph_rest],Ps_hi,Acc).
+	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
+	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
 
 you_are_here(_).
 
@@ -189,10 +153,6 @@ node_head_production(basic, Hi, (Hi --> [Hi])).
 %	node-head production, to be added as a nonterminal to the rhs of
 %	Node_head_production.
 %
-%	With lexicalisation_strategy/1 options "branch", "token" and
-%	"tokens" a number of lexical parameters will also be added to
-%	the heads of rules.
-%
 augmented_node_head_production(Ph, Hi, A_Ph):-
 	configuration:lexicalisation_strategy(S)
 	,augmented_node_head_production(S,Ph,Hi,A_Ph).
@@ -203,106 +163,28 @@ augmented_node_head_production(Ph, Hi, A_Ph):-
 %	Business end of augmented_branch_production/3; Strategy is the
 %	value of configuration option lexicalisation_strategy/1.
 %
-augmented_node_head_production(_, Ph --> [] , H, (Ph --> H)).
-
-augmented_node_head_production(S, Ph --> [T] , [H], (Ph --> [T,H])):-
-	% A leaf! We have only the rule-synonym token and we're adding
-	% a single terminal to it. So it's a leaf and we're about to close it.
-	(   S = none
-	;   S = branch
-	).
-augmented_node_head_production(token, Ph --> [T] , [H], (A_Ph --> [T,H])):-
-	% A leaf
-	A_Ph =.. [Ph,H].
-
+augmented_node_head_production(none, Ph --> [] , H, (Ph --> H)).
+augmented_node_head_production(none, Ph --> [T] , [H], (Ph --> [T,H])).
 augmented_node_head_production(none, Ph --> [T] , H, (Ph --> [T],H)):-
-	% A branch from a brand new node-head production
-	% Not checking whether H is atomic with atomic/1
+	% not a terminal; not checking with atomic/1
 	% because of tokens like 'and/or' etc that are not (atomic).
 	\+ is_list(H).
-augmented_node_head_production(S, Ph --> [T] , H, (A_Ph --> [T],H)):-
-	% A branch from a brand new node-head production
-	(   S = branch
-	;   S = token
-	)
-	,\+ is_list(H)
-	,A_Ph =.. [Ph,H].
-
-augmented_node_head_production(S, Ph --> B , [H], (Ph --> Bs_t)):-
-	% A leaf
-	(   S = none
-	;   S = branch
-	)
-	,tree_list(B, Bs)
-	,append(Bs, [[H]], Bs_)
-	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(token, Ph --> B , [H], (A_Ph --> Bs_t)):-
-	% A leaf
+augmented_node_head_production(none, Ph --> B , [H], (Ph --> Bs_t)):-
 	tree_list(B, Bs)
 	,append(Bs, [[H]], Bs_)
-	,list_tree(Bs_, Bs_t)
-	,A_Ph =.. [Ph,H].
-
+	,list_tree(Bs_, Bs_t).
 augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
-	% A branch for a previously augmented production
+	% not a terminal
 	\+ is_list(H)
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(S, Ph --> B , H, (A_Ph --> Bs_t)):-
-	% A branch for a previously augmented production
-	(   S = branch
-	;   S = token
-	)
-	,\+ is_list(H)
-	,tree_list(B, Bs)
-	,append(Bs, [H], Bs_)
-	,list_tree(Bs_, Bs_t)
-	,A_Ph =.. [Ph,H].
-
-augmented_node_head_production(S, Ph --> B , H, (Ph --> Bs_t)):-
-	% A stem
-	(   S = none
-	;   S = branch
-	)
-	,is_list(H)
+augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
+	% a string of terminals
+	is_list(H)
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(token, Ph --> B , [H|T], (A_Ph --> Bs_t)):-
-	% A stem
-	%is_list(H)
-	tree_list(B, Bs)
-	,append(Bs, [[H|T]], Bs_)
-	,list_tree(Bs_, Bs_t)
-	,A_Ph =.. [Ph,H].
-
-
-
-%!	parameterised_node_head_production(+Production,+Node_head,-Lexicalised) is semidet.
-%
-%	Lexicalised is the given Production with Node_head as a lexical
-%	parameter. For example:
-%
-%	==
-%	parameterised_node_head_production((destroy-->target(creature))
-%					  ,target
-%					  ,destroy(target)-->target(creature)
-%       ==
-%
-parameterised_node_head_production(Ph_Prev --> B, _, Ph_Prev --> B):-
-	configuration:lexicalisation_strategy(none).
-
-parameterised_node_head_production(Ph_Prev --> B, Hi, Ph_Prev --> Bs_t):-
-	tree_list(B, Bs)
-	,reverse(Bs, [H_T|Sb])
-	,(   H_T = [T] % Head-token is a terminal, ie the production-synonym
-	;   H_T = T
-	)
-	,T_L =.. [T,Hi]
-	,reverse([T_L|Sb], Bs_L)
-	,list_tree(Bs_L, Bs_t).
-
 
 
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
@@ -335,115 +217,3 @@ node_heads(Cs, Bs):-
 %
 start_production(S --> []):-
 	phrase(configuration:start, [S]).
-
-
-
-/*
-derived_productions([[_C]],[Hi],[Ph|_],Ps,[A_Ph|Ps]):-
-	% A leaf node (single, single token example, single branch)
-	you_are_here(1),
-	augmented_node_head_production(Ph, [Hi], A_Ph).	*/
-
-
-/*
-derived_productions(Cs,[Hi|Bs],[Ph|Ph_s],Ps,Acc):-
-	you_are_here(5),
-	node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
-	,node_heads(B_Cs_hi,Bs_hi)
-
-	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Ph_s],[A_Ph|Ps],Ps_hi)
-
-	,you_are_here(6)
-	,derived_productions(Cs_Rest,Bs,[Ph|Ph_s],Ps_hi,Acc).
-
-	*/
-
-
-/*
-%!	derived_productions(+Corpus,+Node_heads,+Node_production,+Temp,-Acc) is det.
-%
-%	Business end of derived_productions/4.
-%
-%	@TODO: Document; particularly the bit where we build a stack of
-%	node-head productions.
-%
-derived_productions([],_,_,Ps,Ps).
-
-derived_productions([[_C]],[Hi],Phs,Ps,[A_Ph,L_Ph_Prev|Ps]):-
-	% A leaf node (single, single token example, single branch)
-	(   Phs = [Ph] % Single-element node-head production stack
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|_]] % Multi-element stack
-	)
-	,you_are_here(1)
-	,augmented_node_head_production(Ph, [Hi], A_Ph)
-	% Lexicalisation- augmentation
-	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev).
-
-derived_productions([[C|Cs]],[_Hi],Phs,Ps,[Ph,A_Ph,L_Ph_Prev|Ps]):-
-	% A stem node (single example, single branch)
-	(   Phs = [Ph]
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|_]]
-	)
-	,you_are_here(2)
-	,augmented_node_head_production(Ph, [C|Cs], A_Ph)
-	,parameterised_node_head_production(Ph_Prev,C,L_Ph_Prev).
-
-derived_productions([C|Cs],[Hi],Phs,Ps,Acc):-
-	% A branch node (multiple examples for a single branch)
-	(   Phs = [Ph]
-	    ,Ph_rest = []
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|Ph_rest]]
-	)
-	,you_are_here(3)
-	,configuration:lexicalisation_strategy(S)
-	,S \= none
-	,node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev)
-	,beheaded_node_corpus([C|Cs],B_Cs)
-	,node_heads(B_Cs, Bs_Hs)
-	,derived_productions(B_Cs, Bs_Hs, [Ph_i,A_Ph|Ph_rest], [A_Ph,L_Ph_Prev|Ps], Acc).
-
-derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
-	you_are_here(4),
-	(   Phs = [Ph]
-	    ,Ph_rest = []
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|Ph_rest]]
-	)
-	% Softcuts avoid unproductive backtracking
-	% when beheaded node-corpus is not []
-	,once(augmented_node_head_production(Ph, [Hi], A_Ph))
-	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
-	,beheaded_node_corpus(Cs_hi,[])
-	% We continue with the rest-of-corpus and so drop the A_Ph
-	% from the node-production stack, else it will replace the one
-	% We actually need.
-	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev)
-	,derived_productions(Cs_Rest,Bs,[Ph|Ph_rest],[A_Ph,L_Ph_Prev|Ps],Acc).
-
-derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
-	(   Phs = [Ph]
-	    ,Ph_rest = []
-	->  Ph_Prev = Ph
-	;   Phs = [Ph|[Ph_Prev|Ph_rest]]
-	)
-	,you_are_here(5)
-	,node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
-	,node_heads(B_Cs_hi,Bs_hi)
-	,parameterised_node_head_production(Ph_Prev,Hi,L_Ph_Prev)
-	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Ph_rest],[A_Ph,L_Ph_Prev|Ps],Ps_hi)
-	,you_are_here(6)
-	,derived_productions(Cs_Rest,Bs,[Ph|Ph_rest],Ps_hi,Acc).
-
-
-	*/
