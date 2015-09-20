@@ -154,32 +154,33 @@ node_head_production(basic, Hi, (Hi --> [Hi])).
 %	Node_head_production.
 %
 augmented_node_head_production(Ph, Hi, A_Ph):-
-	configuration:lexicalisation_strategy(S)
-	,augmented_node_head_production(S,Ph,Hi,A_Ph).
+	configuration:production_augmentation(Pa)
+	,augmented_node_head_production(Pa,Ph,Hi,A_Ph).
 
 
 %!	augmented_node_head_production(+Strategy,+Node_head_production,+Token,-Augmented_branch_production) is det.
 %
 %	Business end of augmented_branch_production/3; Strategy is the
-%	value of configuration option lexicalisation_strategy/1.
+%	value of configuration option production_augmentation/1 (which
+%	currently only supports a single option).
 %
-augmented_node_head_production(none, Ph --> [] , H, (Ph --> H)).
-augmented_node_head_production(none, Ph --> [T] , [H], (Ph --> [T,H])).
-augmented_node_head_production(none, Ph --> [T] , H, (Ph --> [T],H)):-
+augmented_node_head_production(tail, Ph --> [] , H, (Ph --> H)).
+augmented_node_head_production(tail, Ph --> [T] , [H], (Ph --> [T,H])).
+augmented_node_head_production(tail, Ph --> [T] , H, (Ph --> [T],H)):-
 	% not a terminal; not checking with atomic/1
 	% because of tokens like 'and/or' etc that are not (atomic).
 	\+ is_list(H).
-augmented_node_head_production(none, Ph --> B , [H], (Ph --> Bs_t)):-
+augmented_node_head_production(tail, Ph --> B , [H], (Ph --> Bs_t)):-
 	tree_list(B, Bs)
 	,append(Bs, [[H]], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
+augmented_node_head_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	% not a terminal
 	\+ is_list(H)
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(none, Ph --> B , H, (Ph --> Bs_t)):-
+augmented_node_head_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	% a string of terminals
 	is_list(H)
 	,tree_list(B, Bs)
