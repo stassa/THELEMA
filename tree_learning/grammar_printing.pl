@@ -3,6 +3,9 @@
 
 :-use_module(production_induction, [corpus_productions/2]).
 
+/** <module> Predicates for printing an induced grammar.
+
+*/
 
 %!	print_corpus_productions is det.
 %

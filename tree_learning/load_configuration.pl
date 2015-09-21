@@ -2,7 +2,7 @@
 			     ,language_module/1
 			     ,register_world/3]).
 
-/** <module> Configuration for supergrammar generate-and-test cycles.
+/** <module> Load configuration settings from configuration module into the dynamic database.
 */
 
 
