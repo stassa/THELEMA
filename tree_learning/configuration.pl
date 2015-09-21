@@ -5,14 +5,18 @@
 			,output_type/1
 			,output_format/2
 			,production_augmentation/1
-			,production_composition/1]).
+			,production_composition/1
+			,testing_protocol/1]).
 
+/** <module> Configuration settings for THELEMA
+
+*/
 
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-examples_file_name(examples_mtg_hand_simulation).
-%examples_file_name(examples_mtg_destroy_short).
+%examples_file_name(examples_mtg_hand_simulation).
+examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 
@@ -96,6 +100,18 @@ production_augmentation(tail).
 %
 production_composition(basic).
 
+
+%!	testing_protocol(?Protocol) is det.
+%
+%	The steps to follow to test and evaluate the derived grammar.
+%	Protocol is one of:
+%
+%	* precision_recall_bare_bones; only report whether a) all
+%	examples where parsed correctly and b) all parses are
+%	also examples.
+%
+%
+testing_protocol(precision_recall_bare_bones).
 
 /*
  * Loads language and examples files.

@@ -3,6 +3,9 @@
 :-use_module(configuration).
 :-use_module(project_root(utilities)).
 
+/** <module> Induce the structure of a grammar from examples given as flat strings of tokens.
+
+*/
 
 %!	corpus_productions(+Corpus:list, -Productions:list) is det.
 %
