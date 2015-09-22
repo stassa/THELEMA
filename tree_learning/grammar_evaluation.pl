@@ -25,6 +25,12 @@
 %
 precision_recall_bare_bones_format('~w~t~10+ ~w~t~13+ ~w~t~2+ ~`0t~d~6+ ~w~t~8|~n').
 
+%!	precision_recall_format(?Format) is det.
+%
+%	The format atom for option precision_recall.
+%
+precision_recall_format('~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~w~t~7+ ~`0t~d~7+ ~w~t~8|~n').
+
 %!	grammar_evaluation_inference_limit(?Limit) is det.
 %
 %	The number of inferences for each solution of each separate
@@ -51,6 +57,9 @@ grammar_evaluation:-
 %	depending on the currently configured testing_protocol/1 option.
 %
 grammar_evaluation(precision_recall_bare_bones):-
+	% TODO: Maybe refactor this, dunno. Could push the format/2 calls to
+	%  precision_test or recall_test, or bind its second argument to their
+	% "return" variable.
 	load_examples_module(Ex)
 	,examples_count(C)
 	,load_output_module(Out)
@@ -62,6 +71,21 @@ grammar_evaluation(precision_recall_bare_bones):-
 	,precision_test(Ex, Out, Precision)
 	,format(F,['Precision:',Precision,on,C,examples])
 	,! % Red cut- because I don't know what it's cutting :P
+	.
+
+grammar_evaluation(precision_recall):-
+	load_examples_module(Ex)
+	,examples_count(C)
+	,load_output_module(Out)
+	,precision_recall_format(F)
+	% Test recall
+	,recall_test(Ex,Out,Parsed)
+	,format(F,['Recall:',Parsed,parsed,'out of',C,examples])
+	% Test precision
+	,precision_test(Ex, Out, Generated)
+	% KLUDGE: If Generated is bound to -1, it will still be padded with 0's
+	,format(F,['Precision:',Generated,generated,from,C,examples])
+	,! % Red cut- because I still don't know what it's cutting
 	.
 
 
@@ -115,6 +139,7 @@ recall_test(Ex, Out, Res):-
 %
 %	Protocol is one of:
 %	* precision_recall_bare_bones.
+%	* precision_recall
 %
 %	With option precision_recall_bare_bones Recall is bound to the
 %	atom "total" iff the Grammar can parse each example in the
@@ -135,16 +160,16 @@ recall_test(precision_recall_bare_bones, Ex, Out, Recall):-
 	 ).
 recall_test(precision_recall_bare_bones, _Ex, _Out, partial).
 
-/*
-recall_test(precision_recall, Ex, Out):-
+recall_test(precision_recall, Ex, Out, Ps_L):-
 	findall(S, Ex:example_string(S), Ss)
 	,phrase(configuration:start, [St])
-	,findall(S, (member(S, Ss), phrase(Out:St, S)), Ps)
-	,length(Ss, Ss_L)
-	,length(Ps, Ps_L)
-	,Parsed = Ss_L - Ps_L
-	,writeln(Parsed).
-*/
+	,grammar_evaluation_inference_limit(L)
+	% Seems phrase/2 can backtrack over bindings of S and find duplicate parses.
+	% Hence the use of setof/3 rather than findall/2
+	,Goal = setof(S, (member(S, Ss), phrase(Out:St, S)), Ps)
+	,call_with_inference_limit(Goal, L, _Result)
+%	,length(Ss, Ss_L)
+	,length(Ps, Ps_L).
 
 
 %!	precision_test(+Examples_module,+Grammar_module) is det.
@@ -166,6 +191,7 @@ precision_test(Ex, Out, Result):-
 %
 %	Protocol is one of:
 %	* precision_recall_bare_bones
+%	* precision_recall
 %
 %	With precision_recall_bare_bones the atom "total" is bound to
 %	Recall iff the Grammar can generate each example in the training
@@ -173,6 +199,12 @@ precision_test(Ex, Out, Result):-
 %	the atom "undetermined" if generation fails to terminate within
 %	N inferences, where N the value of
 %	grammar_evaluation_inference_limit/1.
+%
+%	With precision_recall, Recall is bound to the number of strings
+%	generated. If generation fails completely, Recall is bound to 0.
+%	If the generation goes infinite (or in any case exceeds the
+%	specified gammar_evaluation_inference_limit) Recall is bound to
+%	-1.
 %
 precision_test(precision_recall_bare_bones, Ex, Out, Precision):-
 	findall(S, Ex:example_string(S), Ss)
@@ -186,6 +218,18 @@ precision_test(precision_recall_bare_bones, Ex, Out, Precision):-
 	 ).
 precision_test(precision_recall_bare_bones, _, _, partial).
 
+precision_test(precision_recall, Ex, Out, Ps_L):-
+	findall(S, Ex:example_string(S), Ss)
+	,phrase(configuration:start, [St])
+	,grammar_evaluation_inference_limit(L)
+	,Goal = findall(S, (phrase(Out:St, S), member(S, Ss)), Ps)
+	,call_with_inference_limit(Goal, L, Result)
+%	,length(Ss, Ss_L)
+	,(   Result = inference_limit_exceeded
+	->   Ps_L = -1
+	 ;   length(Ps, Ps_L)
+	 ).
+precision_test(precision_recall, _, _, 0).
 
 
 %!	examples_count(-Count) is det.
@@ -203,3 +247,42 @@ examples_count(Count):-
 	% Only inspect examples from the currently configured examples module.
 	,findall(S, Ex:example_string(S), Ss)
 	,length(Ss, Count).
+
+
+
+
+
+/*
+% Nice but no cigar. We only ever get a single result back, inference limit or not.
+%
+precision_test(precision_recall, Ex, Out, Ps_L):-
+	findall(S, Ex:example_string(S), Ss)
+	,phrase(configuration:start, [St])
+	,grammar_evaluation_inference_limit(L)
+	,grammar_evaluation_step_count(C)
+	% Kind of iterative deepening- if the grammar is left recursive
+	% we'd still like to get some idea of how many strings were generated
+	% before going infinite. So we take C steps at a time, with a limit to
+	% the number of inferences at each step until we hit infinity.
+	,findnsols(count(C)
+		  ,Ps
+		  ,call_with_inference_limit(findall(S
+						    ,(phrase(Out:St, S), member(S, Ss))
+						    ,Ps)
+					    ,L, _Result
+					    )
+		  ,Sols)
+	,length(Sols, Ps_L).
+
+You'll need this too if you want to fix it:
+
+%!	grammar_evaluation_step_count(?Count) is det.
+%
+%	The number of solutions to generate at each step when counting
+%	successful parsing or generation attempts. In short, this is
+%	passed to findnsols/4 to attempt to count at least some results
+%	before going infinite when the grammar is left-recursive.
+%
+grammar_evaluation_step_count(5).
+
+*/
