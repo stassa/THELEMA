@@ -57,24 +57,34 @@ grammar_evaluation(precision_recall_bare_bones):-
 	,load_output_module(Out)
 	,grammar_evaluation_inference_limit(L)
 	,precision_recall_bare_bones_format(F)
-	% Test recall
+        % Test recall
 	,(   call_with_inference_limit(recall_test(Ex,Out),L,Res_rec)
-	    ,Res_rec \= inference_limit_exceeded
-	->   Recall = total
+	 ->  (    Res_rec \= inference_limit_exceeded
+	     ->   Recall = total
+	     ;    Recall = partial
+	     )
 	 ;   Recall = partial
 	 )
 	,format(F,['Recall:',Recall,on,C,examples])
+	% If inference limit was exceeded when attempting to parse examples
+	% the grammar is probably left-recursive; report this.
+	,(   Res_pres == inference_limit_exceeded
+	 ->  writeln('The grammar is probably left-recursive on parsing.')
+	 ;   true
+	 )
 	% Test precision
 	,(   call_with_inference_limit(precision_test(Ex, Out),L,Res_pres)
-	    ,Res_pres \= inference_limit_exceeded
-	 ->  Precision = total
+	 ->  (	 Res_pres \= inference_limit_exceeded
+	     ->	 Precision = total
+	     ;	 Precision = partial
+	     )
 	 ;   Precision = partial
 	 )
 	,format(F,['Precision:',Precision,on,C,examples])
 	% If inference limit was exceeded when attempting to generate examples
 	% the grammar is probably left-recursive; report this.
 	,(   Res_pres == inference_limit_exceeded
-	 ->  writeln('The grammar is probably left-recursive')
+	 ->  writeln('The grammar is probably left-recursive on generation.')
 	 ;   true
 	 )
 	,! % Red cut- because I don't know what it's cutting :P
