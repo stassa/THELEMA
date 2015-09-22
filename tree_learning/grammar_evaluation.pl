@@ -16,15 +16,14 @@
 %	~w~t~10+   [distribute the first word evenly over 10 chars: the
 %		    legnth of the word "Precision" plus a colon; pad
 %		    difference with spaces]
-%	~w~t~8+    [distribute over 8 chars for "Partial" but pad with
-%		    spaces].
-%
+%	~w~t~13+   [distribute over 13 chars for "Undetermined" and pad
+%	            with spaces].
 %	~w~t~2+    [distribute over 2 chars for "on"]
 %	~`0t~d~6+  [distribute over 6 digits padding with 0's]
 %	~w~t~8|    [distribute over 8 chars for "examples" setting
 %		    absolute tab stop at the end]
 %
-precision_recall_bare_bones_format('~w~t~10+ ~w~t~8+ ~w~t~2+ ~`0t~d~6+ ~w~t~8|~n').
+precision_recall_bare_bones_format('~w~t~10+ ~w~t~13+ ~w~t~2+ ~`0t~d~6+ ~w~t~8|~n').
 
 %!	grammar_evaluation_inference_limit(?Limit) is det.
 %
@@ -55,38 +54,13 @@ grammar_evaluation(precision_recall_bare_bones):-
 	load_examples_module(Ex)
 	,examples_count(C)
 	,load_output_module(Out)
-	,grammar_evaluation_inference_limit(L)
 	,precision_recall_bare_bones_format(F)
-        % Test recall
-	,(   call_with_inference_limit(recall_test(Ex,Out),L,Res_rec)
-	 ->  (    Res_rec \= inference_limit_exceeded
-	     ->   Recall = total
-	     ;    Recall = partial
-	     )
-	 ;   Recall = partial
-	 )
+	% Test recall
+	,recall_test(Ex,Out,Recall)
 	,format(F,['Recall:',Recall,on,C,examples])
-	% If inference limit was exceeded when attempting to parse examples
-	% the grammar is probably left-recursive; report this.
-	,(   Res_pres == inference_limit_exceeded
-	 ->  writeln('The grammar is probably left-recursive on parsing.')
-	 ;   true
-	 )
 	% Test precision
-	,(   call_with_inference_limit(precision_test(Ex, Out),L,Res_pres)
-	 ->  (	 Res_pres \= inference_limit_exceeded
-	     ->	 Precision = total
-	     ;	 Precision = partial
-	     )
-	 ;   Precision = partial
-	 )
+	,precision_test(Ex, Out, Precision)
 	,format(F,['Precision:',Precision,on,C,examples])
-	% If inference limit was exceeded when attempting to generate examples
-	% the grammar is probably left-recursive; report this.
-	,(   Res_pres == inference_limit_exceeded
-	 ->  writeln('The grammar is probably left-recursive on generation.')
-	 ;   true
-	 )
 	,! % Red cut- because I don't know what it's cutting :P
 	.
 
@@ -122,28 +96,95 @@ load_output_module(Module_name):-
 
 
 
-%!	recall_test(+Examples_module,+Grammar_module) is det.
+%!	recall_test(+Examples_module,+Grammar_module,-Recall) is det.
 %
-%	True iff the given Grammar_module can parse each example in the
-%	corpus stored in example_string/1 clauses in Examples_module.
+%	Test the recall of the model.
 %
-recall_test(Ex, Out):-
+%	@TODO: document.
+%
+recall_test(Ex, Out, Res):-
+	configuration:testing_protocol(P)
+	,recall_test(P, Ex, Out, Res).
+
+
+%!	recall_test(+Testing_protocol,+Examples_module,+Grammar_module,-Recall) is det.
+%
+%	Business end of recall_test/2. Clauses are selected depending on
+%	Testing_protocol, the value of configuration setting
+%	testing_protocol/1.
+%
+%	Protocol is one of:
+%	* precision_recall_bare_bones.
+%
+%	With option precision_recall_bare_bones Recall is bound to the
+%	atom "total" iff the Grammar can parse each example in the
+%	training corpus. Otherwise, Recall is bound to "partial", or
+%	"undetermined" if parsing could not complete within N
+%	inferences, where N the value of
+%	grammar_evaluation_inference_limit/1
+%
+recall_test(precision_recall_bare_bones, Ex, Out, Recall):-
 	findall(S, Ex:example_string(S), Ss)
 	,phrase(configuration:start, [St])
-	,forall(member(S, Ss), phrase(Out:St, S)).
+	,grammar_evaluation_inference_limit(L)
+	,Goal = forall(member(S, Ss), phrase(Out:St, S))
+	,call_with_inference_limit(Goal,L,Result)
+	,(   Result \= inference_limit_exceeded % probably left-recursion.
+	 ->  Recall = total
+	 ;   Recall = undetermined
+	 ).
+recall_test(precision_recall_bare_bones, _Ex, _Out, partial).
 
+/*
+recall_test(precision_recall, Ex, Out):-
+	findall(S, Ex:example_string(S), Ss)
+	,phrase(configuration:start, [St])
+	,findall(S, (member(S, Ss), phrase(Out:St, S)), Ps)
+	,length(Ss, Ss_L)
+	,length(Ps, Ps_L)
+	,Parsed = Ss_L - Ps_L
+	,writeln(Parsed).
+*/
 
 
 %!	precision_test(+Examples_module,+Grammar_module) is det.
 %
-%	True iff the given grammar module can generate each example in
-%	the corpus stored as example_string/1 clauses in
-%	Examples_module.
+%	Test the precision of the model.
 %
-precision_test(Ex, Out):-
+%	@TODO: document.
+%
+precision_test(Ex, Out, Result):-
+	configuration:testing_protocol(P)
+	,precision_test(P, Ex, Out, Result).
+
+
+
+%!	precision_test(+Protocol,+Examples_module,+Grammar_module,-Recall) is det.
+%
+%	Business end of precision_test/2. Clauses are selected depending
+%	on the value of configuration setting testing_protocol/1.
+%
+%	Protocol is one of:
+%	* precision_recall_bare_bones
+%
+%	With precision_recall_bare_bones the atom "total" is bound to
+%	Recall iff the Grammar can generate each example in the training
+%	corpus. Otherwise Recall is bound to the atom "partial" or to
+%	the atom "undetermined" if generation fails to terminate within
+%	N inferences, where N the value of
+%	grammar_evaluation_inference_limit/1.
+%
+precision_test(precision_recall_bare_bones, Ex, Out, Precision):-
 	findall(S, Ex:example_string(S), Ss)
 	,phrase(configuration:start, [St])
-	,forall(phrase(Out:St, S), member(S, Ss)).
+	,grammar_evaluation_inference_limit(L)
+	,Goal = forall(phrase(Out:St, S), member(S, Ss))
+	,call_with_inference_limit(Goal, L, Result)
+	,(   Result \= inference_limit_exceeded
+	 ->  Precision = total
+	 ;   Precision = undetermined
+	 ).
+precision_test(precision_recall_bare_bones, _, _, partial).
 
 
 
@@ -162,10 +203,3 @@ examples_count(Count):-
 	% Only inspect examples from the currently configured examples module.
 	,findall(S, Ex:example_string(S), Ss)
 	,length(Ss, Count).
-
-
-
-
-
-
-

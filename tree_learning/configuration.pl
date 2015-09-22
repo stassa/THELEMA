@@ -15,8 +15,8 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-%examples_file_name(examples_mtg_hand_simulation).
-examples_file_name(examples_mtg_destroy_short).
+examples_file_name(examples_mtg_hand_simulation).
+%examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 %examples_file_name(santeria).
@@ -26,8 +26,8 @@ examples_file_name(examples_mtg_destroy_short).
 %
 %	Basename of the language file to use as background knowledge in
 %	an induction run.
-%language_file_name(language_mtg_hand_simulation).
-language_file_name(english).
+language_file_name(language_mtg_hand_simulation).
+%language_file_name(english).
 
 %!	lexicalisation_strategy(?Strategy:atom) is det.
 %
@@ -44,7 +44,7 @@ language_file_name(english).
 %	synonym token, ie the token that is the literal name of the
 %	production.
 %
-lexicalisation_strategy(branch).
+lexicalisation_strategy(none).
 
 
 %!	output_stream(?Name) is det.

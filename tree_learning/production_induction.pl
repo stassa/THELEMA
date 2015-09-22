@@ -45,6 +45,9 @@ derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
 	you_are_here(1),
 	augmented_node_head_production(Ph, [Hi], A_Ph).
 
+% Why are we adding the current node-head production here? Don't we
+% just need the augmented form? We just added a bunch of tokens for a
+% stem- should we be keeping the non-augmented versoin also?
 derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
 	you_are_here(2),
 	% A stem node (single example, single branch)
