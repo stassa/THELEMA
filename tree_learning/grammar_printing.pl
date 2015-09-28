@@ -77,6 +77,32 @@ print_grammar_file(chunks, Grammar_module_name, Stream, S, Ps):-
 		 )
 	       ).
 
+print_grammar_file(compression, Grammar_module_name, Stream, S, Ps):-
+	% The compression grammar only needs to export nonterminal//1
+	format(Stream, '~w~w~w~w~w~n'
+	       ,[':-module(',Grammar_module_name,',',[compression_grammar//1,nonterminal//1],').'])
+	,write(Stream, '\n')
+	% Print compression_grammar//1 term; easiest thing to do to
+	% resolve scope of nonterminal//1 is to print it in the same file
+	,print_compression_grammar_term(Stream)
+	,write(Stream, '\n')
+	% Print nonterminal//1 clauses
+	,forall(member(P-->B, Ps)
+	        ,(   \+ P == S
+		 ->  compression_nonterminal(P-->B, N)
+		    ,print_term(Stream, p, N)
+		 ;   true
+		 )
+	       )
+	,write(Stream, '\n')
+	% Print each production unless it's name is the start symbol.
+	,forall(member(P-->B, Ps)
+	        ,(   \+ P == S
+		 ->  print_term(Stream, p, P-->B)
+		 ;   true
+		 )
+	       ).
+
 
 %!	print_term(+Start,+Type,+Term) is det.
 %
@@ -110,3 +136,25 @@ grammar_module_exports([P-->_B|Ps], Temp, Acc):-
 	 ;   Rule_arity = 0
 	)
 	,grammar_module_exports(Ps,[F//Rule_arity|Temp], Acc).
+
+
+compression_nonterminal(P --> B, nonterminal(P) --> B).
+
+print_compression_grammar_term(Stream):-
+	write_term(Stream, compression_grammar([]) --> []
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)
+		    ]
+		   )
+	,write_term(Stream,
+		   (compression_grammar([A|As])-->nonterminal(A),!,compression_grammar(As))
+		   ,[fullstop(true)
+		    ,nl(true)
+		    ,spacing(next_argument)
+		    ,quoted(true)
+		    ,variable_names(['A'=A
+				    ,'As'=As])
+		    ]
+		   ).
