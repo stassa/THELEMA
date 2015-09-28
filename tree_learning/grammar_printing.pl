@@ -37,17 +37,33 @@ print_grammar:-
 	,!
 	,expand_file_search_path(O, P)
 	,open(P,write,Stream,[])
-	,stream_property(Stream, file_name(Path))
-	,file_base_name(Path, Filename)
-	,file_name_extension(Module_name, _Ext, Filename)
+        ,module_name(Stream, Module_name)
 	,once(print_grammar_file(Printing, Module_name, Stream, S, Ps))
 	,close(Stream)
 	,edit(P).
 
 
-%print_compressed_corpus:-
-%	findall(C, Es:example_string(C), Cs)
-%	.
+
+/*print_compressed_corpus:-
+	configuration:output_stream(corpus, C_O)
+	,configuration:output_stream(grammar, G_O)
+	,findall(C, Es:example_string(C), Cs)
+	,expand_file_search_path(O, P)
+
+	,open(P,write,Stream,[])
+	,close(Stream)
+	.
+*/
+
+%!	module_name(+Stream,-Module_name) is det.
+%
+%	Extract a module name from its Stream name. REDUCE MOAR
+%	BOILERPLATE MOAR.
+%
+module_name(Stream, Module_name):-
+	stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(Module_name, _Ext, Filename).
 
 
 %!	print_grammar_file(+Type,+Stream,+Start,-Productions) is det.
