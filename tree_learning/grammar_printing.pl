@@ -138,8 +138,19 @@ grammar_module_exports([P-->_B|Ps], Temp, Acc):-
 	,grammar_module_exports(Ps,[F//Rule_arity|Temp], Acc).
 
 
+%!	compression_nonterminal(+Production,-Nonterminal) is det.
+%
+%	Convert between a Production and a nonterminal//1 term that
+%	maps its input to the symbol of that Production. I guess.
+%
 compression_nonterminal(P --> B, nonterminal(P) --> B).
 
+
+%!	print_compression_grammar_term(+Stream) is det.
+%
+%	Print the compression predicate, used to replace tokens with the
+%	names of nonterminals that cover them.
+%
 print_compression_grammar_term(Stream):-
 	write_term(Stream, compression_grammar([]) --> []
 		   ,[fullstop(true)
