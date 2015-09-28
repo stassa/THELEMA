@@ -27,17 +27,8 @@ print_productions:-
 %	learned from the currently configured etc.
 %
 print_grammar:-
-	configuration:grammar_printing(P)
-	,print_grammar(P).
-
-
-%!	print_grammar(+Type) is det.
-%
-%	Business end of print_grammar/0. Clauses are selected according
-%	to the value of	configuration option grammar_printing/1.
-%
-print_grammar(tree):-
-	configuration:examples_module(Es)
+	configuration:grammar_printing(Printing)
+	,configuration:examples_module(Es)
 	,configuration:language_module(L)
 	,phrase(L:start, [S])
 	,findall(C, Es:example_string(C), Cs)
@@ -46,7 +37,7 @@ print_grammar(tree):-
 	,configuration:output_stream(O)
 	,expand_file_search_path(O, P)
 	,open(P,write,Stream,[])
-	,once(print_grammar_file(tree, Stream, S, Ps))
+	,once(print_grammar_file(Printing, Stream, S, Ps))
 	,close(Stream)
 	,edit(P).
 
@@ -55,9 +46,10 @@ print_grammar(tree):-
 %
 %	Print a Prolog file with derived productions in DCG notation.
 %	Start is the start symbol in the derived grammar; Type is the
-%	value of configuration option grammar_printing/1 in herited (!)
-%	from print_grammar/1. Something something closure Type
-%	something.
+%	value of configuration option grammar_printing/1 inherited (!)
+%	from print_grammar. Something something closure Type
+%	something. Made more sense when print_grammar had an argument
+%	(the Type one).
 %
 print_grammar_file(tree, Stream, S, Ps):-
 	stream_property(Stream, file_name(Path))
