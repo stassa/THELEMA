@@ -1,4 +1,5 @@
 :-module(configuration, [examples_file_name/1
+			,grammar_printing/1
 			,language_file_name/1
 			,lexicalisation_strategy/1
 			,output_stream/1
@@ -21,6 +22,20 @@ examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 %examples_file_name(santeria).
 %examples_file_name(santeria_full).
+
+%!	grammar_printing(?Type) is det.
+%
+%	What type of grammar to print. One of:
+%
+%	* tree; print a fully hierarchical grammar with every production
+%	connected to the start symbol or to a production connected to
+%	the start symbol.
+%	* chunks; print a set of productions that may be used to carve
+%	up a sentence into chunks, or indeed comrpess it.
+%	* compression; print a compression grammar, used to replace
+%	examples' tokens with the names of productions that cover them.
+%
+grammar_printing(tree).
 
 %!	language_file_name(?Name) is det.
 %

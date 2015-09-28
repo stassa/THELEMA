@@ -27,6 +27,16 @@ print_productions:-
 %	learned from the currently configured etc.
 %
 print_grammar:-
+	configuration:grammar_printing(P)
+	,print_grammar(P).
+
+
+%!	print_grammar(+Type) is det.
+%
+%	Business end of print_grammar/0. Clauses are selected according
+%	to the value of	configuration option grammar_printing/1.
+%
+print_grammar(tree):-
 	configuration:examples_module(Es)
 	,configuration:language_module(L)
 	,phrase(L:start, [S])
