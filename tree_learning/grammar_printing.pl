@@ -77,6 +77,11 @@ print_grammar_file(chunks, Grammar_module_name, Stream, S, Ps):-
 		 )
 	       ).
 
+/* Note: we could add the original grammar module as a reference
+but that's too much trouble at this point - the moment we change
+the config to print a compression grammar we lose the name of the
+previously derived grammar; so we'll need a separate config option
+for the compression grammar file name. Why go there? Pain. */
 print_grammar_file(compression, Grammar_module_name, Stream, S, Ps):-
 	% The compression grammar only needs to export nonterminal//1
 	format(Stream, '~w~w~w~w~w~n'
