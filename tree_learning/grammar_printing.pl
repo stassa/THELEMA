@@ -30,14 +30,17 @@ print_grammar:-
 	configuration:grammar_printing(Printing)
 	,configuration:examples_module(Es)
 	,configuration:language_module(L)
+	,configuration:output_stream(O)
 	,phrase(L:start, [S])
 	,findall(C, Es:example_string(C), Cs)
 	,corpus_productions(Cs, Ps)
 	,!
-	,configuration:output_stream(O)
 	,expand_file_search_path(O, P)
 	,open(P,write,Stream,[])
-	,once(print_grammar_file(Printing, Stream, S, Ps))
+	,stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(Module_name, _Ext, Filename)
+	,once(print_grammar_file(Printing, Module_name, Stream, S, Ps))
 	,close(Stream)
 	,edit(P).
 
@@ -51,21 +54,15 @@ print_grammar:-
 %	something. Made more sense when print_grammar had an argument
 %	(the Type one).
 %
-print_grammar_file(tree, Stream, S, Ps):-
-	stream_property(Stream, file_name(Path))
-	,file_base_name(Path, Filename)
-	,file_name_extension(Grammar_module_name, _Ext, Filename)
-	,format(Stream, '~w~w~w~w~w~n'
+print_grammar_file(tree, Grammar_module_name, Stream, S, Ps):-
+	% Print the module/2 statement at the start of the grammar module file.
+	format(Stream, '~w~w~w~w~w~n'
 	       ,[':-module(',Grammar_module_name,',',[S//0],').'])
 	,write(Stream, '\n')
 	,forall(member(P, Ps), print_term(Stream, p, P)).
 
-print_grammar_file(chunks, Stream, S, Ps):-
-	stream_property(Stream, file_name(Path))
-	,file_base_name(Path, Filename)
-	,file_name_extension(Grammar_module_name, _Ext, Filename)
-	% Print the module/2 statement at the start of the grammar module file.
-	,grammar_module_exports(Ps, [], Es)
+print_grammar_file(chunks, Grammar_module_name, Stream, S, Ps):-
+	grammar_module_exports(Ps, [], Es)
 	% We don't want to print the start symbol here.
 	,once(select(S//_A, Es, Es_))
 	,format(Stream, '~w~w~w' ,[':-module(',Grammar_module_name,','])
