@@ -35,7 +35,8 @@ examples_file_name(examples_mtg_destroy_short).
 %	* compression; print a compression grammar, used to replace
 %	examples' tokens with the names of productions that cover them.
 %
-grammar_printing(tree).
+grammar_printing(chunks).
+
 
 %!	language_file_name(?Name) is det.
 %

@@ -60,6 +60,26 @@ print_grammar_file(tree, Stream, S, Ps):-
 	,write(Stream, '\n')
 	,forall(member(P, Ps), print_term(Stream, p, P)).
 
+print_grammar_file(chunks, Stream, S, Ps):-
+	stream_property(Stream, file_name(Path))
+	,file_base_name(Path, Filename)
+	,file_name_extension(Grammar_module_name, _Ext, Filename)
+	% Print the module/2 statement at the start of the grammar module file.
+	,grammar_module_exports(Ps, [], Es)
+	% We don't want to print the start symbol here.
+	,once(select(S//_A, Es, Es_))
+	,format(Stream, '~w~w~w' ,[':-module(',Grammar_module_name,','])
+	,print_term(Stream,i,Es_)
+	,format(Stream, '~w~n', [').'])
+	,write(Stream, '\n')
+	% Print each production unless it's name is the start symbol.
+	,forall(member(P-->B, Ps)
+	        ,(   \+ P == S
+		 ->  print_term(Stream, p, P-->B)
+		 ;   true
+		 )
+	       ).
+
 
 %!	print_term(+Start,+Type,+Term) is det.
 %
@@ -67,12 +87,29 @@ print_grammar_file(tree, Stream, S, Ps):-
 %	when printing productions.
 %
 %	Start is the start symbol in the derived grammar; Type is one
-%	of: [s,p,t,n] (start, production, terminal, nonterminal) and
-%	determines the type of term to print; Term is the term to print.
+%	of: [s,p,t,n,i] (start, production, terminal, nonterminal,
+%	predicate-indicator) and determines the type of term to print;
+%	Term is the term to print.
 %
 print_term(S, p, T):-
 	write_term(S, T,[fullstop(true),nl(true),spacing(next_argument),quoted(true)]).
 
+print_term(S, i, T):-
+	write_term(S, T,[fullstop(false),spacing(next_argument),quoted(true)]).
 
 
-
+%!	grammar_module_exports(+Productions,+Temp,-Acc) is det.
+%
+%	Convert between a list of productions and a list of module
+%	exports as name//arity terms (for DCG rules).
+%
+grammar_module_exports([], Es, S_Es):-
+	% To remove duplicates
+	sort(Es, S_Es).
+grammar_module_exports([P-->_B|Ps], Temp, Acc):-
+	functor(P, F, A)
+	,(   A > 0
+	->  Rule_arity is A - 2 % The two extra vars added by the DCG compiler
+	 ;   Rule_arity = 0
+	)
+	,grammar_module_exports(Ps,[F//Rule_arity|Temp], Acc).
