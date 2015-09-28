@@ -44,7 +44,7 @@ language_file_name(language_mtg_hand_simulation).
 %	synonym token, ie the token that is the literal name of the
 %	production.
 %
-lexicalisation_strategy(none).
+lexicalisation_strategy(token).
 
 
 %!	output_stream(?Name) is det.
@@ -55,7 +55,12 @@ output_stream(output(Filename)):-
 	,language_file_name(L)
 	,output_type(T)
 	,output_format(T, Ext)
-	,atomic_list_concat([E,L],'_',Base_name)
+	,lexicalisation_strategy(S)
+	,(   S \= none
+	->  atom_concat('lexicalised_by_', S, S_)
+	;   S_ = 'not_lexicalised'
+	 )
+	,atomic_list_concat([E,L,S_],'_',Base_name)
 	,atom_concat(Base_name, Ext, Filename).
 
 
