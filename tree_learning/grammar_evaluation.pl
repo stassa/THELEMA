@@ -109,7 +109,7 @@ load_examples_module(Ex):-
 %	name.
 %
 load_output_module(Module_name):-
-	configuration:output_stream(Output_stream)
+	configuration:output_stream(grammar, Output_stream)
 	,phrase(configuration:start, [St])
 %	,Start_term =.. [/,St,2]
         % "St/2 as St" Reported as error in XPCE- but valid Prolog

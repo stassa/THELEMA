@@ -2,7 +2,7 @@
 			,grammar_printing/1
 			,language_file_name/1
 			,lexicalisation_strategy/1
-			,output_stream/1
+			,output_stream/2
 			,output_type/1
 			,output_format/2
 			,production_augmentation/1
@@ -63,10 +63,13 @@ language_file_name(language_mtg_hand_simulation).
 lexicalisation_strategy(token).
 
 
-%!	output_stream(?Name) is det.
+%!	output_stream(?Type,?Name) is det.
 %
-%	Name of the output file for a derived grammar.
-output_stream(output(Filename)):-
+%	Name of the output file for a derived grammar or a compressed
+%	corpus. Type selects clauses according to the type of file to
+%	print.
+%
+output_stream(grammar, output(Filename)):-
 	examples_file_name(E)
 	,language_file_name(L)
 	,output_type(T)
@@ -77,6 +80,14 @@ output_stream(output(Filename)):-
 	;   S_ = 'not_lexicalised'
 	 )
 	,atomic_list_concat([E,L,S_],'_',Base_name)
+	,atom_concat(Base_name, Ext, Filename).
+
+output_stream(corpus, output(Filename)):-
+	examples_file_name(E)
+	% Output type/format shared with grammar!
+	,output_type(T)
+	,output_format(T, Ext)
+	,atomic_list_concat([E,compressed],'_',Base_name)
 	,atom_concat(Base_name, Ext, Filename).
 
 

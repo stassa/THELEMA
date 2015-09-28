@@ -30,7 +30,7 @@ print_grammar:-
 	configuration:grammar_printing(Printing)
 	,configuration:examples_module(Es)
 	,configuration:language_module(L)
-	,configuration:output_stream(O)
+	,configuration:output_stream(grammar, O)
 	,phrase(L:start, [S])
 	,findall(C, Es:example_string(C), Cs)
 	,corpus_productions(Cs, Ps)
@@ -43,6 +43,11 @@ print_grammar:-
 	,once(print_grammar_file(Printing, Module_name, Stream, S, Ps))
 	,close(Stream)
 	,edit(P).
+
+
+%print_compressed_corpus:-
+%	findall(C, Es:example_string(C), Cs)
+%	.
 
 
 %!	print_grammar_file(+Type,+Stream,+Start,-Productions) is det.
