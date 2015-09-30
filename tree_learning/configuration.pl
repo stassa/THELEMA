@@ -16,8 +16,8 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-examples_file_name(examples_mtg_hand_simulation).
-%examples_file_name(examples_mtg_destroy_short).
+%examples_file_name(examples_mtg_hand_simulation).
+examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 %examples_file_name(santeria).
@@ -30,14 +30,19 @@ examples_file_name(examples_mtg_hand_simulation).
 %	* tree; print a fully hierarchical grammar with every production
 %	connected to the start symbol or to a production connected to
 %	the start symbol.
-%	* chunks; print a set of productions that may be used to carve
-%	up a sentence into chunks, or indeed comrpess it.
+%	* tags; print a set of productions that may be used to carve
+%	up a sentence into parts-of-speech, or indeed comrpess it.
 %	* compression; print a compression grammar, used to replace
-%	examples' tokens with the names of productions that cover them.
+%	examples' tokens with the names of productions that cover them;
+%	implies "tags" (and indeed includes the tags grammar).
 %
 %      @TODO: this is redundant; we got output_type.
+%      @KLUDGE: You don't actually need "tags" as a separate option.
+%      We print PsOS into the compression grammar anyway. I don't see
+%      why we need it as a separate file. Mneh, OK, maybe for other
+%      programs...
 %
-grammar_printing(compression).
+grammar_printing(tags).
 
 
 %!	language_file_name(?Name) is det.
@@ -62,7 +67,7 @@ language_file_name(language_mtg_hand_simulation).
 %	synonym token, ie the token that is the literal name of the
 %	production.
 %
-lexicalisation_strategy(token).
+lexicalisation_strategy(none).
 
 
 %!	output_stream(?Type,?Name) is det.

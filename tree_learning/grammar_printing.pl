@@ -111,7 +111,7 @@ print_grammar_file(tree, Grammar_module_name, Stream, S, Ps):-
 	,write(Stream, '\n')
 	,forall(member(P, Ps), print_term(Stream, p, P)).
 
-print_grammar_file(chunks, Grammar_module_name, Stream, S, Ps):-
+print_grammar_file(tags, Grammar_module_name, Stream, S, Ps):-
 	grammar_module_exports(Ps, [], Es)
 	% We don't want to print the start symbol here.
 	,once(select(S//_A, Es, Es_))
@@ -150,7 +150,7 @@ print_grammar_file(compression, Grammar_module_name, Stream, S, Ps):-
 		 )
 	       )
 	,write(Stream, '\n')
-	% Print each production unless it's name is the start symbol.
+	% Print each production unless its name is the start symbol.
 	,forall(member(P-->B, Ps)
 	        ,(   \+ P == S
 		 ->  print_term(Stream, p, P-->B)
