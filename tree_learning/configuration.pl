@@ -16,8 +16,8 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-%examples_file_name(examples_mtg_hand_simulation).
-examples_file_name(examples_mtg_destroy_short).
+examples_file_name(examples_mtg_hand_simulation).
+%examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 %examples_file_name(santeria).
@@ -34,6 +34,8 @@ examples_file_name(examples_mtg_destroy_short).
 %	up a sentence into chunks, or indeed comrpess it.
 %	* compression; print a compression grammar, used to replace
 %	examples' tokens with the names of productions that cover them.
+%
+%      @TODO: this is redundant; we got output_type.
 %
 grammar_printing(compression).
 
@@ -82,7 +84,7 @@ output_stream(grammar, output(Filename)):-
 	,atomic_list_concat([E,L,S_],'_',Base_name)
 	,atom_concat(Base_name, Ext, Filename).
 
-output_stream(corpus, output(Filename)):-
+output_stream(compressed_corpus, output(Filename)):-
 	examples_file_name(E)
 	% Output type/format shared with grammar!
 	,output_type(T)

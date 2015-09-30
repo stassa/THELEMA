@@ -1,5 +1,7 @@
 :-module(grammar_printing, [print_productions/0
-			   ,print_grammar/0]).
+			   ,print_grammar/0
+			   ,print_compressed_corpus/0
+			   ,corpus/1]).
 
 :-use_module(production_induction, [corpus_productions/2]).
 
@@ -44,22 +46,49 @@ print_grammar:-
 
 
 
-/*print_compressed_corpus:-
-	configuration:output_stream(corpus, C_O)
-	,configuration:output_stream(grammar, G_O)
-	,findall(C, Es:example_string(C), Cs)
-	,expand_file_search_path(O, P)
-
-	,open(P,write,Stream,[])
+%!	print_compressed_corpus
+%
+%	Replace example strings with the symbols of nonterminals that
+%	cover them in the derived grammar and print out this compressed
+%	corpus.
+%
+print_compressed_corpus:-
+	configuration:output_stream(compressed_corpus, Compressed_corpus_file_name)
+	,module_name(Compressed_corpus_file_name, Compressed_corpus_module_name)
+	,configuration:output_stream(grammar, Grammar_module_file_name)
+	,use_module(Grammar_module_file_name)
+	,module_name(Grammar_module_file_name, Grammar_module_name)
+	,corpus(Cs)
+	,expand_file_search_path(Compressed_corpus_file_name, Path)
+	,open(Path,write,Stream,[close_on_abort(true)])
+	% Write the module name & exports
+	,format(Stream, '~w~w~w~w~w~n'
+	       ,[':-module(',Compressed_corpus_module_name,','
+		,[example_string/1],').'])
+	,write(Stream, '\n')
+	,you_are_here
+	% Write compressed examples
+	,forall(member(C, Cs)
+		,(   phrase(Grammar_module_name:compression_grammar(Comp), C)
+		 ->  print_term(Stream, p, example_string(Comp))
+		 ;   true % example not covered; should we allow failures though?
+		 )
+	       )
 	,close(Stream)
-	.
-*/
+	,edit(Compressed_corpus_file_name).
+
+you_are_here.
 
 %!	module_name(+Stream,-Module_name) is det.
 %
-%	Extract a module name from its Stream name. REDUCE MOAR
-%	BOILERPLATE MOAR.
+%	Extract a module name from its Stream name or the value of the
+%	relevant configuration option. REDUCE MOAR BOILERPLATE MOAR.
 %
+module_name(output(Filename), Module_name):-
+	file_name_extension(Module_name, _Ext, Filename)
+	,! % Backtracking to second clause raises an error
+	   % since there is not stream output(Filename)
+	.
 module_name(Stream, Module_name):-
 	stream_property(Stream, file_name(Path))
 	,file_base_name(Path, Filename)
@@ -195,3 +224,14 @@ print_compression_grammar_term(Stream):-
 				    ,'As'=As])
 		    ]
 		   ).
+
+
+
+%!	corpus(?Corpus) is det.
+%
+%	The corpus stored in the currently configured examples file.
+%	Corpus is a list of token-lists.
+%
+corpus(Cs):-
+	configuration:examples_module(Es)
+	,findall(C, Es:example_string(C), Cs).
