@@ -66,7 +66,6 @@ print_compressed_corpus:-
 	       ,[':-module(',Compressed_corpus_module_name,','
 		,[example_string/1],').'])
 	,write(Stream, '\n')
-	,you_are_here
 	% Write compressed examples
 	,forall(member(C, Cs)
 		,(   phrase(Grammar_module_name:compression_grammar(Comp), C)
@@ -77,7 +76,7 @@ print_compressed_corpus:-
 	,close(Stream)
 	,edit(Compressed_corpus_file_name).
 
-you_are_here.
+
 
 %!	module_name(+Stream,-Module_name) is det.
 %
@@ -118,15 +117,24 @@ print_grammar_file(tree, Grammar_module_name, Stream, S, Ps):-
 print_grammar_file(tags, Grammar_module_name, Stream, S, Ps):-
 	grammar_module_exports(Ps, [], Es)
 	% We don't want to print the start symbol here.
+	% @BUG
+	% Hmmmrrright. But if we do it this way we miss stem-only rules like
+	% ability --> [exile,target,creature]. We print those to file with
+	% a new, made-up name, but they never get added to the exports.
 	,once(select(S//_A, Es, Es_))
 	,format(Stream, '~w~w~w' ,[':-module(',Grammar_module_name,','])
 	,print_term(Stream,i,Es_)
 	,format(Stream, '~w~n', [').'])
 	,write(Stream, '\n')
-	% Print each production unless it's name is the start symbol.
+	% Print each production unless its name is the start symbol.
 	,forall(member(P-->B, Ps)
 	        ,(   \+ P == S
 		 ->  print_term(Stream, p, P-->B)
+		 ;   B = [H|_]
+		    ,print_term(Stream, p, H --> B)
+		 ;   atomic(B)  % as in ability --> destroy.
+		    ,B\= []
+		    ,print_term(Stream, p, B --> [B])
 		 ;   true
 		 )
 	       ).
@@ -150,17 +158,32 @@ print_grammar_file(compression, Grammar_module_name, Stream, S, Ps):-
 	        ,(   \+ P == S
 		 ->  compression_nonterminal(P-->B, N)
 		    ,print_term(Stream, p, N)
+		 ;   B = [H|_]
+		 ->  compression_nonterminal(H --> B, N)
+		    ,print_term(Stream, p, N)
+		 ;   atomic(B)
+		    ,B \= []
+		 ->  compression_nonterminal(B--> [B], N)
+		    ,print_term(Stream, p, N)
 		 ;   true
 		 )
 	       )
 	,write(Stream, '\n')
 	% Print each production unless its name is the start symbol.
+	,you_are_here
 	,forall(member(P-->B, Ps)
 	        ,(   \+ P == S
 		 ->  print_term(Stream, p, P-->B)
-		 ;   true
+		 ;   B = [H|_]
+		    ,print_term(Stream, p, H --> B)
+		 ;   atomic(B)  % as in ability --> destroy.
+		    ,B\= []
+		    ,print_term(Stream, p, B --> [B])
+		 ;   true % probably ability --> []
 		 )
 	       ).
+
+you_are_here.
 
 
 %!	print_term(+Start,+Type,+Term) is det.
