@@ -89,6 +89,10 @@ module_name(output(Filename), Module_name):-
 	,! % Backtracking to second clause raises an error
 	   % since there is not stream output(Filename)
 	.
+% @KLUDGE
+module_name(corpus(Filename), Module_name):-
+	file_name_extension(Module_name, _Ext, Filename)
+	,!.
 module_name(Stream, Module_name):-
 	stream_property(Stream, file_name(Path))
 	,file_base_name(Path, Filename)

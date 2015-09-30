@@ -17,8 +17,9 @@
 %
 %	Basename of the examples file to use in induction.
 %examples_file_name(examples_mtg_hand_simulation).
-examples_file_name(examples_mtg_hand_simulation_compressed).
+%examples_file_name(examples_mtg_hand_simulation_compressed).
 %examples_file_name(examples_mtg_destroy_short).
+examples_file_name(examples_mtg_destroy_short_compressed).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 %examples_file_name(santeria).
@@ -90,7 +91,7 @@ output_stream(grammar, output(Filename)):-
 	,atomic_list_concat([E,L,S_],'_',Base_name)
 	,atom_concat(Base_name, Ext, Filename).
 
-output_stream(compressed_corpus, output(Filename)):-
+output_stream(compressed_corpus, corpus(Filename)):-
 	examples_file_name(E)
 	% Output type/format shared with grammar!
 	,output_type(T)
