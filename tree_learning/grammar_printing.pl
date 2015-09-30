@@ -215,7 +215,7 @@ print_compression_grammar_term(Stream):-
 		    ]
 		   )
 	,write_term(Stream,
-		   (compression_grammar([A|As])-->nonterminal(A),!,compression_grammar(As))
+		   (compression_grammar([A|As])-->nonterminal(A),compression_grammar(As))
 		   ,[fullstop(true)
 		    ,nl(true)
 		    ,spacing(next_argument)

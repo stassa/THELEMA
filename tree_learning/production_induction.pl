@@ -170,6 +170,18 @@ augmented_node_head_production(Ph, Hi, A_Ph):-
 %	value of configuration option production_augmentation/1 (which
 %	currently only supports a single option).
 %
+augmented_node_head_production(literals, Ph --> [] , H, (Ph --> H)).
+% Add a new terminal; we're probably at a leaf
+augmented_node_head_production(literals, Ph --> [B] , [H], (Ph --> [B|[H]])).
+% Add a list of terminals; we're probably at a stem
+augmented_node_head_production(literals, Ph --> B , H, (Ph --> B_)):-
+	is_list(H)
+	,append(B, H, B_).
+% Discard a nonterminal reference; we're probably at a branch.
+% And because we want to keep only fragments of whole productions
+% We don't want to point to the next element in a hierarchy.
+augmented_node_head_production(literals, Ph --> B , _, (Ph --> B)).
+
 augmented_node_head_production(tail, Ph --> [] , H, (Ph --> H)).
 augmented_node_head_production(tail, Ph --> [T] , [H], (Ph --> [T,H])).
 augmented_node_head_production(tail, Ph --> [T] , H, (Ph --> [T],H)):-

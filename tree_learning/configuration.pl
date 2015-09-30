@@ -17,7 +17,8 @@
 %
 %	Basename of the examples file to use in induction.
 %examples_file_name(examples_mtg_hand_simulation).
-examples_file_name(examples_mtg_destroy_short).
+examples_file_name(examples_mtg_hand_simulation_compressed).
+%examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 %examples_file_name(santeria).
@@ -42,7 +43,7 @@ examples_file_name(examples_mtg_destroy_short).
 %      why we need it as a separate file. Mneh, OK, maybe for other
 %      programs...
 %
-grammar_printing(tags).
+grammar_printing(tree).
 
 
 %!	language_file_name(?Name) is det.
@@ -126,6 +127,9 @@ output_format(grammar, '.pl').
 %
 %	* tail; new constituents are added to the end of the right-hand
 %	side of a production.
+%	* literals; ignore nonterninal references and only keep
+%	literals. Only makes sense if grammar_printing/1 is set to tag
+%	also.
 %
 production_augmentation(tail).
 
