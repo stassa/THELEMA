@@ -40,15 +40,16 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %
 derived_productions([],_,_,Ps,Ps).
 
-derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
+derived_productions([[_C]],[Hi],Ph,Ps,[Ph_i,A_Ph|Ps]):-
 	% A leaf node (single, single token example, single branch)
 	you_are_here(1),
-	augmented_node_head_production(Ph, [Hi], A_Ph).
+	node_head_production(Hi, Ph_i)
+	,augmented_node_head_production(Ph, [Hi], A_Ph).
 
 % Why are we adding the current node-head production here? Don't we
 % just need the augmented form? We just added a bunch of tokens for a
 % stem- should we be keeping the non-augmented versoin also?
-derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
+/*derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
 	you_are_here(2),
 	% A stem node (single example, single branch)
 	augmented_node_head_production(Ph, [C|Cs], A_Ph).
@@ -66,10 +67,12 @@ derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	you_are_here(4),
 	% Softcuts avoid unproductive backtracking
 	% when beheaded node-corpus is not []
-	once(augmented_node_head_production(Ph, [Hi], A_Ph))
+	node_head_production(Hi, Ph_i)
+	,once(augmented_node_head_production(Ph, [Hi], A_Ph))
 	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
 	,beheaded_node_corpus(Cs_hi,[])
-	,derived_productions(Cs_Rest,Bs,Ph,[A_Ph|Ps],Acc).
+	,derived_productions(Cs_Rest,Bs,Ph,[Ph_i,A_Ph|Ps],Acc).
+*/
 
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	you_are_here(5),
@@ -206,6 +209,27 @@ augmented_node_head_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	,list_tree(Bs_, Bs_t).
 
 
+%!	lexicalised_production(+Production,-Lexicalised) is det.
+%
+%	Parameterise Production with a lexical argument to produce its
+%	Lexicalised form, according to the lexicalisation_strategy
+%	option.
+%
+lexicalised_production(Production, Lexicalised):-
+	configuration:lexicalisation_strategy(S)
+	,lexicalised_production(S, Production, Lexicalised).
+
+
+%!	lexicalised_production(+Strategy,+Production,-Lexicalised) is semidet.
+%
+%	Business end of lexicalised_production/2. Clauses are selected
+%	depending on the value of configuration option
+%	lexicalisation_strategy/1.
+%
+lexicalised_production(none, P, P).
+
+
+
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
 %
 %	@TODO: document
@@ -236,3 +260,53 @@ node_heads(Cs, Bs):-
 %
 start_production(S --> []):-
 	phrase(configuration:start, [S]).
+
+
+/*
+derived_productions([],_,_,Ps,Ps).
+
+derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
+	% A leaf node (single, single token example, single branch)
+	you_are_here(1),
+	augmented_node_head_production(Ph, [Hi], A_Ph).
+
+% Why are we adding the current node-head production here? Don't we
+% just need the augmented form? We just added a bunch of tokens for a
+% stem- should we be keeping the non-augmented versoin also?
+derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
+	you_are_here(2),
+	% A stem node (single example, single branch)
+	augmented_node_head_production(Ph, [C|Cs], A_Ph).
+
+derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
+	% A branch node (multiple examples for a single branch)
+	you_are_here(3),
+	node_head_production(Hi, Ph_i)
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,beheaded_node_corpus([C|Cs],B_Cs)
+	,node_heads(B_Cs, Bs_Hs)
+	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
+
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	you_are_here(4),
+	% Softcuts avoid unproductive backtracking
+	% when beheaded node-corpus is not []
+	once(augmented_node_head_production(Ph, [Hi], A_Ph))
+	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
+	,beheaded_node_corpus(Cs_hi,[])
+	,derived_productions(Cs_Rest,Bs,Ph,[A_Ph|Ps],Acc).
+
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	you_are_here(5),
+	node_head_production(Hi, Ph_i)
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
+	,node_heads(B_Cs_hi,Bs_hi)
+	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
+	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
+
+you_are_here(_).
+
+
+	*/

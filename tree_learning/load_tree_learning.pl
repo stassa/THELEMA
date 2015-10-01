@@ -25,7 +25,7 @@ edit_source:-
 	edit(tree_learning(load_tree_learning))
 	,edit(tree_learning(production_induction))
 	%,edit(tree_learning(production_induction_v1))
-	,edit(tree_learning(grammar_evaluation))
+%	,edit(tree_learning(grammar_evaluation))
 	,edit(tree_learning(grammar_printing))
 	%,edit(tree_learning(grammar_printing_v1))
 %	,edit(tree_learning(load_configuration))
