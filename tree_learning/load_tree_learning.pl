@@ -40,5 +40,6 @@ edit_source:-
 set_spy_points:-
 	spy([you_are_here
 	    ,derived_productions/5
+	    ,node_head_production/2
 	    ,augmented_node_head_production/3
 	    ]).

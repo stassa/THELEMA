@@ -39,54 +39,34 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %
 %
 derived_productions([],[],Ph_i,Ps,[Ph_i|Ps]).
-% Add Ph_i to Ps to get rid of dangling pointers.
 
 derived_productions([[_C]],[Hi],Ph,Ps,[Ph_i,A_Ph|Ps]):-
 	% A leaf node (single, single token example, single branch)
 	you_are_here(1),
-	% Leave Ph_i out of Ps to get rid of orphans.
 	node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, [Hi], A_Ph).
 
-% Why are we adding the current node-head production here? Don't we
-% just need the augmented form? We just added a bunch of tokens for a
-% stem- should we be keeping the non-augmented versoin also?
-/*derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
-	you_are_here(2),
-	% A stem node (single example, single branch)
-	augmented_node_head_production(Ph, [C|Cs], A_Ph).
-
-derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
-	% A branch node (multiple examples for a single branch)
-	you_are_here(3),
-	node_head_production(Hi, Ph_i)
+derived_productions(Cs_hi, [Hi], Ph, Ps, Acc):-
+	% Single branch and its node-corpus.
+	% We derive productions and go on with new branches
+	you_are_here(4)
+	,node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,beheaded_node_corpus([C|Cs],B_Cs)
-	,node_heads(B_Cs, Bs_Hs)
-	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
+	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
+	,node_heads(B_Cs_hi, Bs_hi)
+	,derived_productions(B_Cs_hi, Bs_hi, Ph_i, [A_Ph|Ps], Acc).
 
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	you_are_here(4),
-	% Softcuts avoid unproductive backtracking
-	% when beheaded node-corpus is not []
-	node_head_production(Hi, Ph_i)
-	,once(augmented_node_head_production(Ph, [Hi], A_Ph))
-	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
-	,beheaded_node_corpus(Cs_hi,[])
-	,derived_productions(Cs_Rest,Bs,Ph,[Ph_i,A_Ph|Ps],Acc).
-*/
-
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	% Multiple branches and an unsplit corpus
+	% Split the corpus and follow each branch separately
 	you_are_here(5),
-	node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
-	,node_heads(B_Cs_hi,Bs_hi)
-	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
+	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	,derived_productions(Cs_hi,[Hi],Ph,Ps,Ps_hi)
+	,you_are_here(51)
 	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
 
 you_are_here(_).
+
 
 
 %!	node_corpus(+Node_head,+Corpus,-Node_corpus) is semidet.
@@ -283,6 +263,39 @@ node_heads(Cs, Bs):-
 %
 start_production(S --> []):-
 	phrase(configuration:start, [S]).
+
+
+/*
+
+With edits:
+
+% Why are we adding the current node-head production here? Don't we
+% just need the augmented form? We just added a bunch of tokens for a
+% stem- should we be keeping the non-augmented versoin also?
+derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
+	you_are_here(2),
+	% A stem node (single example, single branch)
+	augmented_node_head_production(Ph, [C|Cs], A_Ph).
+
+derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
+	% A branch node (multiple examples for a single branch)
+	you_are_here(3),
+	node_head_production(Hi, Ph_i)
+	,augmented_node_head_production(Ph, Hi, A_Ph)
+	,beheaded_node_corpus([C|Cs],B_Cs)
+	,node_heads(B_Cs, Bs_Hs)
+	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
+
+derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+	you_are_here(4),
+	% Softcuts avoid unproductive backtracking
+	% when beheaded node-corpus is not []
+	node_head_production(Hi, Ph_i)
+	,once(augmented_node_head_production(Ph, [Hi], A_Ph))
+	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
+	,beheaded_node_corpus(Cs_hi,[])
+	,derived_productions(Cs_Rest,Bs,Ph,[Ph_i,A_Ph|Ps],Acc).
+*/
 
 
 /*
