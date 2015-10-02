@@ -38,11 +38,13 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %	Business end of derived_productions/4.
 %
 %
-derived_productions([],_,_,Ps,Ps).
+derived_productions([],[],Ph_i,Ps,[Ph_i|Ps]).
+% Add Ph_i to Ps to get rid of dangling pointers.
 
 derived_productions([[_C]],[Hi],Ph,Ps,[Ph_i,A_Ph|Ps]):-
 	% A leaf node (single, single token example, single branch)
 	you_are_here(1),
+	% Leave Ph_i out of Ps to get rid of orphans.
 	node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, [Hi], A_Ph).
 
@@ -207,6 +209,27 @@ augmented_node_head_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
+
+/* Produce rules in Greibach Normal Form, ie:
+  P --> [P], N.
+
+Where P a single atom that matches the name of the production and
+N a nonterminal reference or the empty atom [].
+
+The exception is the set of productions that link the
+grammar's start-symbol to each of the top-level nonterminals in the
+grammar. In that case, we don't create the production as:
+
+S --> [S], N.
+
+And that's because we don't want the Start symbol in the stream when
+parsing or generating.
+
+*/
+augmented_node_head_production(greibach, Ph --> [] , H, (Ph --> H)).
+augmented_node_head_production(greibach, Ph --> [P] , [H], (Ph --> [P],H)).
+augmented_node_head_production(greibach, Ph --> [P] , H, (Ph --> [P],H)).
+
 
 
 %!	lexicalised_production(+Production,-Lexicalised) is det.

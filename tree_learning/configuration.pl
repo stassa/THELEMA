@@ -131,17 +131,24 @@ output_format(grammar, '.pl').
 %	* literals; ignore nonterninal references and only keep
 %	literals. Only makes sense if grammar_printing/1 is set to tag
 %	also.
+%	* greibach; always follow a single terminal with a single
+%	nonterminal or the empty string, technically leaving the
+%	production in Greibach Normal Form (though GNF allows more than
+%	one nonterminals).
 %
-production_augmentation(tail).
+production_augmentation(greibach).
 
 
 %!	production_composition(?Type:atom) is det.
 %
 %	How to create new node-head productions. Type is one of:
 %
-%	* basic; node-head productions are created as a new production
-%	  named after the current node-head Hi and expanding to a
-%	  literal Hi as a terminal.
+%	* synonym; node-head productions are created as a new
+%	production named after the current node-head Hi and expanding to
+%	a literal Hi as a terminal; in other words, the production is a
+%	synonym of its constituents.
+%
+%	@TODO: change "basic" to "synonym"
 %
 production_composition(basic).
 
