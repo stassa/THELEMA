@@ -7,6 +7,7 @@
 			,output_format/2
 			,production_augmentation/1
 			,production_composition/1
+			,rename_built_ins/1
 			,testing_protocol/1]).
 
 /** <module> Configuration settings for THELEMA
@@ -151,6 +152,31 @@ production_augmentation(greibach).
 %	@TODO: change "basic" to "synonym"
 %
 production_composition(basic).
+
+
+%!	rename_built_ins(?Bool_or_prefix) is det.
+%
+%	Whether to rename nonterminals that will compile to built-ins at
+%	the DCG compiler.
+%
+%	Bool_or_prefix is either the atom "false", in which case
+%	built-ins are not renamed or an atom to be used as the prefix of
+%	renamed productions.
+%
+%	Note: if you want the prefix to end in an underscore you have to
+%	specify it here, for example:
+%	rename_built_ins(n_)
+%
+%	Will result in productions like:
+%	n_is --> [is]...
+%
+%	Wheras:
+%	rename_built_ins(n)
+%
+%	Will only give you:
+%	nis --> [is] ...
+%
+rename_built_ins(n_).
 
 
 %!	testing_protocol(?Protocol) is det.

@@ -118,9 +118,10 @@ split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 %
 %	Construct the node-head Production for the given Node_head.
 %
-node_head_production(Hi, Ph_i):-
+node_head_production(Hi, Ph_i_):-
 	configuration:production_composition(S)
-	,node_head_production(S, Hi, Ph_i).
+	,node_head_production(S, Hi, Ph_i)
+	,rename_built_in_a_like(Ph_i, Ph_i_).
 
 
 %!	node_head_production(+Strategy, +Node_head, -Production) is semidet.
@@ -144,9 +145,10 @@ node_head_production(basic, Hi, (Hi --> [Hi])).
 %	node-head production, to be added as a nonterminal to the rhs of
 %	Node_head_production.
 %
-augmented_node_head_production(Ph, Hi, A_Ph):-
+augmented_node_head_production(Ph, Hi, A_Ph_):-
 	configuration:production_augmentation(Pa)
-	,augmented_node_head_production(Pa,Ph,Hi,A_Ph).
+	,augmented_node_head_production(Pa,Ph,Hi,A_Ph)
+	,rename_built_in_a_like(A_Ph, A_Ph_).
 
 
 %!	augmented_node_head_production(+Strategy,+Node_head_production,+Token,-Augmented_branch_production) is det.
@@ -238,6 +240,43 @@ lexicalised_production(none, P, P).
 
 
 
+%!	rename_built_in_a_like(+Production,-Renamed) is det.
+%
+%	Rename a production's head if it would compile into a built-in
+%	at the DCG compiler.
+%
+rename_built_in_a_like(P, P_):-
+	configuration:rename_built_ins(B)
+	,rename_built_in_a_like(B,P,P_).
+
+
+%!	rename_built_in_a_like(+Bool,+Production,-Renamed) is det.
+%
+%	Business end of rename_built_in_a_like/2; clauses are selected
+%	depending on the value of configuration
+%	option rename_built_ins/1.
+%
+rename_built_in_a_like(false, Ph, Ph):-
+	!. % Makes det.
+rename_built_in_a_like(Pf, (Ph --> [T], N), (Ph --> [T], N_)):-
+	dcg_translate_rule(N --> [], H:-_)
+	,(   predicate_property(H, built_in)
+	    ,N =.. [F|As]
+	 ->  atom_concat(Pf, F, N_F)
+	    ,N_ =.. [N_F|As]
+	 ;   N_ = N
+	 ).
+rename_built_in_a_like(Pf, Ph--> B, Ph_ --> B):-
+	dcg_translate_rule(Ph --> B, H:-_)
+	,(   predicate_property(H, built_in)
+	    ,Ph =.. [F|As]
+	 ->  atom_concat(Pf, F, N_F)
+	    ,Ph_ =.. [N_F|As]
+	 ;   Ph_ = Ph
+	 ).
+
+
+
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
 %
 %	@TODO: document
@@ -251,6 +290,7 @@ beheaded_node_corpus(Cs, Cs_):-
 	       ,Cs_).
 
 
+
 %!	node_heads(+Corpus,-Node_heads) is det.
 %
 %	@TODO: document.
@@ -260,6 +300,8 @@ node_heads(Cs, Bs):-
 	setof(H
 	       ,T^member([H|T], Cs)
 	       ,Bs).
+
+
 
 %!	start_production(?Start_production) is det.
 %
