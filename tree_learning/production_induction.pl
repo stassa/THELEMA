@@ -104,7 +104,7 @@ split_corpus(H, Cs, Cs_H, Cs_Rest):-
 
 %!	split_corpus(+Branch_head,+Corpus,+Temp,-Acc) is nondet.
 %
-%	Business end of split_corpus/3.
+%	Business end of split_corpus/4.
 split_corpus(_, [], Cs_H, Cs_H, Cs_Rest, Cs_Rest).
 split_corpus(H, [[H|C]|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 	!, % Avoid backtracking into third clause head.
@@ -155,6 +155,28 @@ augmented_node_head_production(Ph, Hi, A_Ph):-
 %	value of configuration option production_augmentation/1 (which
 %	currently only supports a single option).
 %
+
+/* Produce rules in Greibach Normal Form, ie:
+  P --> [P], N.
+
+Where P a single atom that matches the name of the production and
+N a nonterminal reference or the empty atom [].
+
+The exception is the set of productions that link the
+grammar's start-symbol to each of the top-level nonterminals in the
+grammar. In that case, we don't create the production as:
+
+S --> [S], N.
+
+And that's because we don't want the Start symbol in the stream when
+parsing or generating.
+
+*/
+augmented_node_head_production(greibach, Ph --> [] , H, (Ph --> H)).
+augmented_node_head_production(greibach, Ph --> [P] , [H], (Ph --> [P],H)).
+augmented_node_head_production(greibach, Ph --> [P] , H, (Ph --> [P],H)).
+
+/* Produce a non-hierarchical set of rules covering sentence chunks- ie, a chunker. */
 augmented_node_head_production(literals, Ph --> [] , H, (Ph --> H)).
 % Add a new terminal; we're probably at a leaf
 augmented_node_head_production(literals, Ph --> [B] , [H], (Ph --> [B|[H]])).
@@ -167,6 +189,9 @@ augmented_node_head_production(literals, Ph --> B , H, (Ph --> B_)):-
 % We don't want to point to the next element in a hierarchy.
 augmented_node_head_production(literals, Ph --> B , _, (Ph --> B)).
 
+/*  Produce a hierarchical grammar in loose (though GNF-like) form
+ *  Original version - kind of broken after implementing GNF.
+*/
 augmented_node_head_production(tail, Ph --> [] , H, (Ph --> H)).
 augmented_node_head_production(tail, Ph --> [T] , [H], (Ph --> [T,H])).
 augmented_node_head_production(tail, Ph --> [T] , H, (Ph --> [T],H)):-
@@ -189,26 +214,6 @@ augmented_node_head_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
-
-/* Produce rules in Greibach Normal Form, ie:
-  P --> [P], N.
-
-Where P a single atom that matches the name of the production and
-N a nonterminal reference or the empty atom [].
-
-The exception is the set of productions that link the
-grammar's start-symbol to each of the top-level nonterminals in the
-grammar. In that case, we don't create the production as:
-
-S --> [S], N.
-
-And that's because we don't want the Start symbol in the stream when
-parsing or generating.
-
-*/
-augmented_node_head_production(greibach, Ph --> [] , H, (Ph --> H)).
-augmented_node_head_production(greibach, Ph --> [P] , [H], (Ph --> [P],H)).
-augmented_node_head_production(greibach, Ph --> [P] , H, (Ph --> [P],H)).
 
 
 
@@ -263,86 +268,3 @@ node_heads(Cs, Bs):-
 %
 start_production(S --> []):-
 	phrase(configuration:start, [S]).
-
-
-/*
-
-With edits:
-
-% Why are we adding the current node-head production here? Don't we
-% just need the augmented form? We just added a bunch of tokens for a
-% stem- should we be keeping the non-augmented versoin also?
-derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
-	you_are_here(2),
-	% A stem node (single example, single branch)
-	augmented_node_head_production(Ph, [C|Cs], A_Ph).
-
-derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
-	% A branch node (multiple examples for a single branch)
-	you_are_here(3),
-	node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,beheaded_node_corpus([C|Cs],B_Cs)
-	,node_heads(B_Cs, Bs_Hs)
-	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
-
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	you_are_here(4),
-	% Softcuts avoid unproductive backtracking
-	% when beheaded node-corpus is not []
-	node_head_production(Hi, Ph_i)
-	,once(augmented_node_head_production(Ph, [Hi], A_Ph))
-	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
-	,beheaded_node_corpus(Cs_hi,[])
-	,derived_productions(Cs_Rest,Bs,Ph,[Ph_i,A_Ph|Ps],Acc).
-*/
-
-
-/*
-derived_productions([],_,_,Ps,Ps).
-
-derived_productions([[_C]],[Hi],Ph,Ps,[A_Ph|Ps]):-
-	% A leaf node (single, single token example, single branch)
-	you_are_here(1),
-	augmented_node_head_production(Ph, [Hi], A_Ph).
-
-% Why are we adding the current node-head production here? Don't we
-% just need the augmented form? We just added a bunch of tokens for a
-% stem- should we be keeping the non-augmented versoin also?
-derived_productions([[C|Cs]],[_Hi],Ph,Ps,[Ph,A_Ph|Ps]):-
-	you_are_here(2),
-	% A stem node (single example, single branch)
-	augmented_node_head_production(Ph, [C|Cs], A_Ph).
-
-derived_productions([C|Cs],[Hi],Ph,Ps,Acc):-
-	% A branch node (multiple examples for a single branch)
-	you_are_here(3),
-	node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,beheaded_node_corpus([C|Cs],B_Cs)
-	,node_heads(B_Cs, Bs_Hs)
-	,derived_productions(B_Cs, Bs_Hs, Ph_i, [A_Ph|Ps], Acc).
-
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	you_are_here(4),
-	% Softcuts avoid unproductive backtracking
-	% when beheaded node-corpus is not []
-	once(augmented_node_head_production(Ph, [Hi], A_Ph))
-	,once(split_corpus(Hi,Cs,Cs_hi,Cs_Rest))
-	,beheaded_node_corpus(Cs_hi,[])
-	,derived_productions(Cs_Rest,Bs,Ph,[A_Ph|Ps],Acc).
-
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
-	you_are_here(5),
-	node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
-	,split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,beheaded_node_corpus(Cs_hi,B_Cs_hi)
-	,node_heads(B_Cs_hi,Bs_hi)
-	,derived_productions(B_Cs_hi,Bs_hi,Ph_i,[A_Ph|Ps],Ps_hi)
-	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
-
-you_are_here(_).
-
-
-	*/
