@@ -258,23 +258,26 @@ rename_built_in_a_like(P, P_):-
 %
 rename_built_in_a_like(false, Ph, Ph):-
 	!. % Makes det.
-rename_built_in_a_like(Pf, (Ph --> [T], N), (Ph --> [T], N_)):-
-	dcg_translate_rule(N --> [], H:-_)
-	,(   predicate_property(H, built_in)
-	    ,N =.. [F|As]
-	 ->  atom_concat(Pf, F, N_F)
-	    ,N_ =.. [N_F|As]
-	 ;   N_ = N
-	 ).
 rename_built_in_a_like(Pf, Ph--> B, Ph_ --> B):-
-	dcg_translate_rule(Ph --> B, H:-_)
-	,(   predicate_property(H, built_in)
-	    ,Ph =.. [F|As]
-	 ->  atom_concat(Pf, F, N_F)
-	    ,Ph_ =.. [N_F|As]
-	 ;   Ph_ = Ph
-	 ).
+	rename_built_in_a_like_component(Pf, Ph, Ph_).
+rename_built_in_a_like(Pf, (Ph --> [T], N), (Ph --> [T], N_)):-
+	rename_built_in_a_like_component(Pf, N, N_).
 
+%!	rename_built_in_a_like_component(+Bool_or_prefix,+Term,-Renamed) is det.
+%
+%	Rename a constituent of a production that would otherwise be
+%	mistaken for a built-in after translating its production to a
+%	DCG. Convenience predicate to reduce boilerplate in clauses of
+%	rename_built_in_a_like/3.
+%
+rename_built_in_a_like_component(Pf, T, T_):-
+	dcg_translate_rule(T --> [], H:-_)
+	,(   predicate_property(H, built_in)
+	    ,T =.. [F|As]
+	 ->  atom_concat(Pf, F, N_F)
+	    ,T_ =.. [N_F|As]
+	 ;   T_ = T
+	 ).
 
 
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
