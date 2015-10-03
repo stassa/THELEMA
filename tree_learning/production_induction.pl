@@ -121,7 +121,7 @@ split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 node_head_production(Hi, Ph_i_):-
 	configuration:production_composition(S)
 	,node_head_production(S, Hi, Ph_i)
-	,rename_built_in_a_like(Ph_i, Ph_i_).
+	,sanitise_names(Ph_i, Ph_i_).
 
 
 %!	node_head_production(+Strategy, +Node_head, -Production) is semidet.
@@ -148,7 +148,7 @@ node_head_production(basic, Hi, (Hi --> [Hi])).
 augmented_node_head_production(Ph, Hi, A_Ph_):-
 	configuration:production_augmentation(Pa)
 	,augmented_node_head_production(Pa,Ph,Hi,A_Ph)
-	,rename_built_in_a_like(A_Ph, A_Ph_).
+	,sanitise_names(A_Ph, A_Ph_).
 
 
 %!	augmented_node_head_production(+Strategy,+Node_head_production,+Token,-Augmented_branch_production) is det.
@@ -240,46 +240,6 @@ lexicalised_production(none, P, P).
 
 
 
-%!	rename_built_in_a_like(+Production,-Renamed) is det.
-%
-%	Rename a production's head if it would compile into a built-in
-%	at the DCG compiler.
-%
-rename_built_in_a_like(P, P_):-
-	configuration:rename_built_ins(B)
-	,rename_built_in_a_like(B,P,P_).
-
-
-%!	rename_built_in_a_like(+Bool,+Production,-Renamed) is det.
-%
-%	Business end of rename_built_in_a_like/2; clauses are selected
-%	depending on the value of configuration
-%	option rename_built_ins/1.
-%
-rename_built_in_a_like(false, Ph, Ph):-
-	!. % Makes det.
-rename_built_in_a_like(Pf, Ph--> B, Ph_ --> B):-
-	rename_built_in_a_like_component(Pf, Ph, Ph_).
-rename_built_in_a_like(Pf, (Ph --> [T], N), (Ph --> [T], N_)):-
-	rename_built_in_a_like_component(Pf, N, N_).
-
-%!	rename_built_in_a_like_component(+Bool_or_prefix,+Term,-Renamed) is det.
-%
-%	Rename a constituent of a production that would otherwise be
-%	mistaken for a built-in after translating its production to a
-%	DCG. Convenience predicate to reduce boilerplate in clauses of
-%	rename_built_in_a_like/3.
-%
-rename_built_in_a_like_component(Pf, T, T_):-
-	dcg_translate_rule(T --> [], H:-_)
-	,(   predicate_property(H, built_in)
-	    ,T =.. [F|As]
-	 ->  atom_concat(Pf, F, N_F)
-	    ,T_ =.. [N_F|As]
-	 ;   T_ = T
-	 ).
-
-
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
 %
 %	@TODO: document
@@ -313,3 +273,85 @@ node_heads(Cs, Bs):-
 %
 start_production(S --> []):-
 	phrase(configuration:start, [S]).
+
+
+
+%!	sanitise_names(+Production,-Renamed) is det.
+%
+%	Ensure new productions (and nonterminals referring to them) are
+%	valid identifiers. Rename a production's head if it would
+%	compile into a built-in at the DCG compiler; ensure that
+%	production names are valid Prolog identifiers; and so on.
+%
+sanitise_names(P, P_):-
+	configuration:rename_built_ins(B)
+	,sanitise_names(B,P,P_).
+
+
+%!	sanitise_names(+Bool,+Production,-Renamed) is det.
+%
+%	Business end of sanitise_names/2; clauses are selected
+%	depending on the value of configuration
+%	option rename_built_ins/1.
+%
+sanitise_names(false, Ph, Ph):-
+	!. % Makes det.
+sanitise_names(Pf, (Ph --> [T], N), (Ph --> [T], N_)):-
+	% Sanitise a production's body
+	sanitise_constituent(Pf, N, N_)
+	,! % Also make det.
+	.
+sanitise_names(Pf, Ph --> B, Ph_ --> B):-
+	% Sanitise a production's head
+	sanitise_constituent(Pf, Ph, Ph_).
+
+
+%!	sanitise_constituent(+Bool_or_prefix,+Term,-Renamed) is det.
+%
+%	Rename a constituent of a production that would otherwise be
+%	mistaken for a built-in after translating its production to a
+%	DCG. Convenience predicate to reduce boilerplate in clauses of
+%	sanitise_names/3.
+%
+sanitise_constituent(Pf, T, T_):-
+	T =.. [F|As]
+	,safe_identifier(F, F_)
+	,A =.. [F_|As]
+	,dcg_translate_rule(A --> [], H:-_)
+	,(   predicate_property(H, built_in)
+	 ->  atom_concat(Pf, F_, N_F)
+	    ,T_ =.. [N_F|As]
+	 ;   T_ = A
+	 ).
+
+
+%!	safe_identifier(+Identifier, -Safe) is det.
+%
+%	Ensure Identifier is safe to use as a nonterminal symbol. If
+%	true, Safe is bound to Identifier. Otherwise it is bound to a
+%	a configured safe term.
+%
+safe_identifier(I, S):-
+	atomic_identifier(I, A)
+	,valid_nonterminal(A, S).
+
+atomic_identifier(I, A):-
+        % Ensure production head is an atom
+	(   \+ atom(I)
+	->  term_to_atom(I, A)
+	;   A = I
+	).
+
+
+%!	valid_nonterminal(+Nonterminal, -Valid) is det.
+%
+%	Ensure Nonterminal is a valid DCG rule left-hand side. If true,
+%	Valid is bound to Nonterminal, otherwise it's bound to the term
+%	mapped to Nonterminal in the configuration option
+%	valid_nonterminal//1.
+%
+valid_nonterminal(N, N_):-
+	phrase(configuration:valid_nonterminal(N_), [N])
+	,! % No more results needed at this point.
+	.
+valid_nonterminal(N, N).
