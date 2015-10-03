@@ -38,8 +38,9 @@ edit_source:-
 :-edit_source.
 
 set_spy_points:-
-	spy([you_are_here
+	spy([you_are_here/1
 	    ,derived_productions/5
-	    ,node_head_production/2
+	    ,derived_production/2
 	    ,augmented_node_head_production/3
+	    ,lexicalised_production/3
 	    ]).

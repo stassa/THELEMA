@@ -7,7 +7,6 @@ example_string([return,target,land,to,'it''s','owner''s',hand]).
 example_string(['Lightning','Bolt',deals,3,damage,to,target,creature,or,player]).
 example_string([target,creature,gains,flying,until,end,of,turn]).
 example_string([enchanted,wall,can,attack,as,though,it,'didn''t',have,defender]).
-example_string([enchanted,wall,can,attack,as,though,it,'didn''t',have,defender]).
 example_string([basalt,monolith,'doesn''t',untap,during,your,untap,step]).
 example_string(['{t}',:,add,'{3}',to,your,mana,pool]).
 example_string(['{3}',:,untap,basalt,monolith]).

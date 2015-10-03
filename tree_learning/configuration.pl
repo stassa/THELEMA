@@ -71,6 +71,9 @@ language_file_name(language_mtg_hand_simulation).
 %       * token; always add the next token as a lexical parameter.
 %	* tokens; always add all of the next tokens as lexical
 %	  parameters.
+%	* greibach; as token/s but the next token is always a
+%	nonterminal. This is just to clarify that lexicalisation will
+%	follow GNF conventions.
 %
 %	Above, "next token" means the first token after the production's
 %	synonym token, ie the token that is the literal name of the

@@ -30,41 +30,57 @@ corpus_productions(Cs, Ps_):-
 %	the current node.
 %
 derived_productions(Cs, Bs, Ph, Ps):-
-	derived_productions(Cs, Bs, Ph, [], Ps).
+	derived_productions(Cs, Bs, [Ph], [], Ps).
 
 
 %!	derived_productions(+Corpus,+Node_heads,+Node_production,+Temp,-Acc) is det.
 %
 %	Business end of derived_productions/4.
 %
-%
-derived_productions([],[],Ph_i,Ps,[Ph_i|Ps]).
+derived_productions([],[],[Ph_i|_],Ps,[Ph_i_l|Ps]):-
+	lexicalised_production(Ph_i, [], Ph_i_l).
 
-derived_productions([[_C]|Cs],[Hi],Ph,Ps,Acc):-
+%derived_productions([[_C]|Cs],[Hi],[Ph,Ph_g|Phs],Ps,Acc):-
+derived_productions([[_C]|Cs],[Hi],Phs,Ps,Acc):-
 	% A leaf node? (at least one single token example, single branch)
 	you_are_here(1),
-	node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, [Hi], A_Ph)
-	,derived_productions(Cs, [Hi], Ph, [Ph_i,A_Ph|Ps], Acc).
+	(    Phs = [Ph] % Single element in the production ancestry stack.
+	 ->  Ph_g = Ph  % Ancestor is current production.
+	;    Phs = [Ph|[Ph_g|Phs_r]] % Else, there's a line of ancestors.
+	 )
+	,derived_production(Hi, Ph_i)
+	,augmented_production(Ph, Hi, A_Ph)
+	,lexicalised_production(A_Ph, Ph_i, A_Ph_l)
+	,lexicalised_production(Ph_g, A_Ph_l, Ph_g_l)
+	,derived_productions(Cs,[Hi],[Ph,A_Ph_l|Phs_r]
+			    ,[Ph_i, A_Ph_l, Ph_g_l|Ps],Acc).
 
-derived_productions(Cs_hi, [Hi], Ph, Ps, Acc):-
+%derived_productions(Cs_hi, [Hi], [Ph,Ph_g|Phs], Ps, Acc):-
+derived_productions(Cs_hi, [Hi], Phs, Ps, Acc):-
 	% Single branch and its node-corpus.
 	% We derive productions and go on with new branches
-	you_are_here(2)
-	,node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, Hi, A_Ph)
+	you_are_here(2),
+	(    Phs = [Ph] % Single element in the production ancestry stack.
+	 ->  Ph_g = Ph  % Ancestor is current production.
+	;    Phs = [Ph|[Ph_g|Phs_r]] % Else, there's a line of ancestors.
+	 )
+	,derived_production(Hi, Ph_i)
+	,augmented_production(Ph, Hi, A_Ph)
+	,lexicalised_production(A_Ph, Ph_i, A_Ph_l)
+	,lexicalised_production(Ph_g, A_Ph_l, Ph_g_l)
 	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
 	,node_heads(B_Cs_hi, Bs_hi)
-	,derived_productions(B_Cs_hi, Bs_hi, Ph_i, [A_Ph|Ps], Acc).
+	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph_l|Phs_r]
+			    ,[Ph_g_l|Ps],Acc).
 
-derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
+derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
 	% Multiple branches and an unsplit corpus
 	% Split the corpus and follow each branch separately
 	you_are_here(3),
 	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,derived_productions(Cs_hi,[Hi],Ph,Ps,Ps_hi)
+	,derived_productions(Cs_hi,[Hi],Phs,Ps,Ps_hi)
 	,you_are_here(51)
-	,derived_productions(Cs_Rest,Bs,Ph,Ps_hi,Acc).
+	,derived_productions(Cs_Rest,Bs,Phs,Ps_hi,Acc).
 
 you_are_here(_).
 
@@ -115,25 +131,25 @@ split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 	split_corpus(H, Cs, Cs_H, Cs_H_Acc, [C|Cs_Rest], Cs_Rest_Acc).
 
 
-%!	node_head_productions(+Node_head, -Production) is semidet.
+%!	derived_productions(+Node_head, -Production) is semidet.
 %
 %	Construct the node-head Production for the given Node_head.
 %
-node_head_production(Hi, Ph_i_):-
+derived_production(Hi, Ph_i_):-
 	configuration:production_composition(S)
-	,node_head_production(S, Hi, Ph_i)
+	,derived_production(S, Hi, Ph_i)
 	,sanitise_names(Ph_i, Ph_i_).
 
 
-%!	node_head_production(+Strategy, +Node_head, -Production) is semidet.
+%!	derived_production(+Strategy, +Node_head, -Production) is semidet.
 %
-%	Business end of node_head_production/2. Strategy is the value of
+%	Business end of derived_production/2. Strategy is the value of
 %	configuration option production_composition/1.
 %
-node_head_production(basic, Hi, (Hi --> [Hi])).
+derived_production(basic, Hi, (Hi --> [Hi])).
 
 
-%!	augmented_node_head_production(+Node_head_production,+Token,-Augmented_branch_production) is det.
+%!	augmented_production(+Node_head_production,+Token,-Augmented_branch_production) is det.
 %
 %	Augment Branch_production with Token.
 %
@@ -146,13 +162,13 @@ node_head_production(basic, Hi, (Hi --> [Hi])).
 %	node-head production, to be added as a nonterminal to the rhs of
 %	Node_head_production.
 %
-augmented_node_head_production(Ph, Hi, A_Ph_):-
+augmented_production(Ph, Hi, A_Ph_):-
 	configuration:production_augmentation(Pa)
-	,augmented_node_head_production(Pa,Ph,Hi,A_Ph)
+	,augmented_production(Pa,Ph,Hi,A_Ph)
 	,sanitise_names(A_Ph, A_Ph_).
 
 
-%!	augmented_node_head_production(+Strategy,+Node_head_production,+Token,-Augmented_branch_production) is det.
+%!	augmented_production(+Strategy,+Node_head_production,+Token,-Augmented_branch_production) is det.
 %
 %	Business end of augmented_branch_production/3; Strategy is the
 %	value of configuration option production_augmentation/1 (which
@@ -175,43 +191,43 @@ And that's because we don't want the Start symbol in the stream when
 parsing or generating.
 
 */
-augmented_node_head_production(greibach, Ph --> [] , H, (Ph --> H)).
-augmented_node_head_production(greibach, Ph --> [P] , [H], (Ph --> [P],H)).
-augmented_node_head_production(greibach, Ph --> [P] , H, (Ph --> [P],H)).
+augmented_production(greibach, Ph --> [] , H, (Ph --> H)).
+augmented_production(greibach, Ph --> [P] , [H], (Ph --> [P],H)).
+augmented_production(greibach, Ph --> [P] , H, (Ph --> [P],H)).
 
 /* Produce a non-hierarchical set of rules covering sentence chunks- ie, a chunker. */
-augmented_node_head_production(literals, Ph --> [] , H, (Ph --> H)).
+augmented_production(literals, Ph --> [] , H, (Ph --> H)).
 % Add a new terminal; we're probably at a leaf
-augmented_node_head_production(literals, Ph --> [B] , [H], (Ph --> [B|[H]])).
+augmented_production(literals, Ph --> [B] , [H], (Ph --> [B|[H]])).
 % Add a list of terminals; we're probably at a stem
-augmented_node_head_production(literals, Ph --> B , H, (Ph --> B_)):-
+augmented_production(literals, Ph --> B , H, (Ph --> B_)):-
 	is_list(H)
 	,append(B, H, B_).
 % Discard a nonterminal reference; we're probably at a branch.
 % And because we want to keep only fragments of whole productions
 % We don't want to point to the next element in a hierarchy.
-augmented_node_head_production(literals, Ph --> B , _, (Ph --> B)).
+augmented_production(literals, Ph --> B , _, (Ph --> B)).
 
 /*  Produce a hierarchical grammar in loose (though GNF-like) form
  *  Original version - kind of broken after implementing GNF.
 */
-augmented_node_head_production(tail, Ph --> [] , H, (Ph --> H)).
-augmented_node_head_production(tail, Ph --> [T] , [H], (Ph --> [T,H])).
-augmented_node_head_production(tail, Ph --> [T] , H, (Ph --> [T],H)):-
+augmented_production(tail, Ph --> [] , H, (Ph --> H)).
+augmented_production(tail, Ph --> [T] , [H], (Ph --> [T,H])).
+augmented_production(tail, Ph --> [T] , H, (Ph --> [T],H)):-
 	% not a terminal; not checking with atomic/1
 	% because of tokens like 'and/or' etc that are not (atomic).
 	\+ is_list(H).
-augmented_node_head_production(tail, Ph --> B , [H], (Ph --> Bs_t)):-
+augmented_production(tail, Ph --> B , [H], (Ph --> Bs_t)):-
 	tree_list(B, Bs)
 	,append(Bs, [[H]], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
+augmented_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	% not a terminal
 	\+ is_list(H)
 	,tree_list(B, Bs)
 	,append(Bs, [H], Bs_)
 	,list_tree(Bs_, Bs_t).
-augmented_node_head_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
+augmented_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	% a string of terminals
 	is_list(H)
 	,tree_list(B, Bs)
@@ -220,25 +236,72 @@ augmented_node_head_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 
 
 
-%!	lexicalised_production(+Production,-Lexicalised) is det.
+%!	lexicalised_production(+Production,+Parameter,-Lexicalised) is det.
 %
 %	Parameterise Production with a lexical argument to produce its
 %	Lexicalised form, according to the lexicalisation_strategy
 %	option.
 %
-lexicalised_production(Production, Lexicalised):-
+lexicalised_production(Production, Parameter, Lexicalised):-
 	configuration:lexicalisation_strategy(S)
-	,lexicalised_production(S, Production, Lexicalised).
+	,once(lexicalised_production(S,Production,Parameter,Lexicalised)).
 
 
-%!	lexicalised_production(+Strategy,+Production,-Lexicalised) is semidet.
+%!	lexicalised_production(+Strategy,+Production,+Parameter,-Lexicalised) is semidet.
 %
 %	Business end of lexicalised_production/2. Clauses are selected
 %	depending on the value of configuration option
 %	lexicalisation_strategy/1.
 %
-lexicalised_production(none, P, P).
+lexicalised_production(none, P, _, P).
 
+lexicalised_production(greibach, S --> [], _, S --> []).
+lexicalised_production(greibach, S --> N, P --> _B, S --> P):-
+% S is the start symbol expanding to a nonterminal N, P is a compound
+% with at least one argument, ie it's lexicalised and N is the functor
+% name of the lexicalised P, ie in the body of S//0 N is a reference to
+% P.
+	phrase(configuration:start, [S])
+	,\+ lexicalised(N, _, _)
+	,lexicalised(P, N, _).
+lexicalised_production(greibach, S --> N, P --> _, S --> N):-
+	phrase(configuration:start, [S])
+	,\+ lexicalised(N,_,_)
+	,\+ lexicalised(P, _, _).
+lexicalised_production(greibach,(P --> [T], N), N --> _, (P_ --> [T], N)):-
+	\+ lexicalised(P, _, _)
+	,\+ lexicalised(N, _, _)
+	,P_ =.. [P,N].
+lexicalised_production(greibach,(P --> [T], N), Ph_i --> _, (P --> [T], Ph_i)):-
+	\+ lexicalised(N, _, _)
+	,lexicalised(Ph_i, N, _).
+lexicalised_production(greibach, P --> [P], [], P_ --> [P]):-
+	P_ =.. [P,epsilon].
+
+lexicalised_production(greibach, (P --> [T], N) ,(P --> [T], N)
+		      ,(P --> [T], N_)):-
+	you_are_here(1)
+	,lexicalised(P, _, [N|_])
+	,\+lexicalised(N, _, _)
+	,N_ =.. [N,epsilon].
+
+%lexicalised_production(greibach, P, P, P):-
+%	writeln(not_lexicalising:P).
+
+
+%!	lexicalised(+Term,-Symbol,-Parameters) is nondet.
+%
+%	True when Term either the left-hand side symbol or a right-hand
+%	side constituent of a DCG rule and it has at least one lexical
+%	parameter. Symbol is the functor name of the lexicalised
+%	constituent and Parameters the list of its arguments.
+%
+%	Just a thin shell around uneef (=../2) to make explicit the
+%	semantics of its use in this context (to determine whether a
+%	term is lexicalised or not).
+%
+lexicalised(T, F, [Args|Rest]):-
+	T =.. [F|[Args|Rest]].
 
 
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
@@ -356,3 +419,61 @@ valid_nonterminal(N, N_):-
 	,! % No more results needed at this point.
 	.
 valid_nonterminal(N, N).
+
+
+/*
+lexicalised_production(greibach, S --> [], _, S --> []).
+lexicalised_production(greibach, S --> N, P_hi --> _Hi, S --> P_hi):-
+% If N is atomic, S is the start symbol and it's not yet lexicalised
+	phrase(language:start, [S])
+	,atomic(N).
+lexicalised_production(greibach, P --> [T], P --> [T], P_ --> [T]):-
+% P -->[T] is a leaf; it is followed by the empty string.
+	P_ =.. [P|[epsilon]].
+lexicalised_production(greibach, (P --> [T],N), (P --> [T],N) ,(P --> [T],N_)):-
+	N_ =.. [N,epsilon]
+	,!.
+lexicalised_production(greibach, (P -->[T], N), N --> _B, ( P_ --> [T], N)):-
+% If P is atomic it has not been lexicalised yet. If N is a constituent
+% of P, it is probably lexicalised in which case update its reference in
+% the head of P.
+	atomic(P)
+	,atomic(N)
+	,P_ =.. [P|[N]].
+lexicalised_production(greibach, (P -->[T], N), P_hi --> _B,( P --> [T], P_hi)):-
+% If P is atomic it has not been lexicalised yet. If N is a constituent
+% of P, it is probably lexicalised in which case update its reference in
+% the head of P.
+	compound(P)
+	,atomic(N)
+	,compound(P_hi)
+	,P \= P_hi.
+
+lexicalised_production(greibach, P, Ph, P):-
+	writeln(not_lexicalising:P-with:Ph).
+*/
+
+
+
+/*
+lexicalised_production(greibach, S --> N, Hi, S --> N_):-
+% Only the S(tart symbol) expands to a single nonterminal.
+% In that case we only want to lexicalise its single constituent.
+% But only if it's not the empty string.
+	atomic(N)
+	,(   N \= []
+	->  N_ =.. [N|[Hi]]
+	;   N_ = N
+	).
+lexicalised_production(greibach, P --> ([T],N), Hi, P_ --> ([T],N)):-
+	atomic(P)
+	,P_ =.. [T|[Hi]].
+lexicalised_production(_, P, _, P).
+
+lexicalised_production(greibach, P --> ([T],N), Hi, P_ --> ([T],N)):-
+	P =.. [T|As]
+	,append(As, [Hi], As_)
+	,P_ =.. [T|As_].
+
+	*/
+
