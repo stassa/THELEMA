@@ -40,16 +40,17 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %
 derived_productions([],[],Ph_i,Ps,[Ph_i|Ps]).
 
-derived_productions([[_C]],[Hi],Ph,Ps,[Ph_i,A_Ph|Ps]):-
-	% A leaf node (single, single token example, single branch)
+derived_productions([[_C]|Cs],[Hi],Ph,Ps,Acc):-
+	% A leaf node? (at least one single token example, single branch)
 	you_are_here(1),
 	node_head_production(Hi, Ph_i)
-	,augmented_node_head_production(Ph, [Hi], A_Ph).
+	,augmented_node_head_production(Ph, [Hi], A_Ph)
+	,derived_productions(Cs, [Hi], Ph, [Ph_i,A_Ph|Ps], Acc).
 
 derived_productions(Cs_hi, [Hi], Ph, Ps, Acc):-
 	% Single branch and its node-corpus.
 	% We derive productions and go on with new branches
-	you_are_here(4)
+	you_are_here(2)
 	,node_head_production(Hi, Ph_i)
 	,augmented_node_head_production(Ph, Hi, A_Ph)
 	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
@@ -59,7 +60,7 @@ derived_productions(Cs_hi, [Hi], Ph, Ps, Acc):-
 derived_productions(Cs,[Hi|Bs],Ph,Ps,Acc):-
 	% Multiple branches and an unsplit corpus
 	% Split the corpus and follow each branch separately
-	you_are_here(5),
+	you_are_here(3),
 	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
 	,derived_productions(Cs_hi,[Hi],Ph,Ps,Ps_hi)
 	,you_are_here(51)
