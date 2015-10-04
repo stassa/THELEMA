@@ -384,48 +384,19 @@ sanitise_names(Pf, Ph --> B, Ph_ --> B):-
 %	DCG. Convenience predicate to reduce boilerplate in clauses of
 %	sanitise_names/3.
 %
+sanitise_constituent(_, T, A):-
+% Ensure the Term is atomic and not say, a number, punctuation character
+% or a compound like and/or, +1/+* etc etc.
+	\+atom(T)
+	,term_to_atom(T, A).
 sanitise_constituent(Pf, T, T_):-
 	T =.. [F|As]
-	,safe_identifier(F, F_)
-	,A =.. [F_|As]
-	,dcg_translate_rule(A --> [], H:-_)
+	,dcg_translate_rule(T --> [], H:-_)
 	,(   predicate_property(H, built_in)
-	 ->  atom_concat(Pf, F_, N_F)
+	 ->  atom_concat(Pf, F, N_F)
 	    ,T_ =.. [N_F|As]
-	 ;   T_ = A
+	 ;   T_ = T
 	 ).
-
-
-%!	safe_identifier(+Identifier, -Safe) is det.
-%
-%	Ensure Identifier is safe to use as a nonterminal symbol. If
-%	true, Safe is bound to Identifier. Otherwise it is bound to a
-%	a configured safe term.
-%
-safe_identifier(I, S):-
-	atomic_identifier(I, A)
-	,valid_nonterminal(A, S).
-
-atomic_identifier(I, A):-
-        % Ensure production head is an atom
-	(   \+ atom(I)
-	->  term_to_atom(I, A)
-	;   A = I
-	).
-
-
-%!	valid_nonterminal(+Nonterminal, -Valid) is det.
-%
-%	Ensure Nonterminal is a valid DCG rule left-hand side. If true,
-%	Valid is bound to Nonterminal, otherwise it's bound to the term
-%	mapped to Nonterminal in the configuration option
-%	valid_nonterminal//1.
-%
-valid_nonterminal(N, N_):-
-	phrase(configuration:valid_nonterminal(N_), [N])
-	,! % No more results needed at this point.
-	.
-valid_nonterminal(N, N).
 
 
 /*

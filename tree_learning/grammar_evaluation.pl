@@ -38,7 +38,7 @@ precision_recall_format('~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~w~t~7+ ~`0t~d~7+ ~w~t~8|~n
 %	before giving up and reporting that the grammar is probably
 %	left-recursive.
 %
-grammar_evaluation_inference_limit(100_000).
+grammar_evaluation_inference_limit(10_000_000).
 
 
 

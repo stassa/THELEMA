@@ -10,7 +10,6 @@
 			,rename_built_ins/1
 			,remember_previous_results/1
 			,testing_protocol/1
-			,valid_nonterminal//1
 			]).
 
 /** <module> Configuration settings for THELEMA
@@ -22,11 +21,13 @@
 %	Basename of the examples file to use in induction.
 %examples_file_name(examples_mtg_hand_simulation).
 %examples_file_name(mtg_pot_puri).
-examples_file_name(examples_mtg_destroy_short).
+%examples_file_name(examples_mtg_destroy_short).
+examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
+%examples_file_name(examples_mtg_all_destroy_cleaned).
+
 %examples_file_name(examples_mtg_hand_simulation_compressed).
 %examples_file_name(examples_mtg_destroy_short_compressed).
-%examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
-%examples_file_name(examples_mtg_all_destroy_cleaned).
+
 %examples_file_name(santeria).
 %examples_file_name(santeria_full).
 
@@ -209,41 +210,6 @@ rename_built_ins(n_).
 %
 %
 testing_protocol(precision_recall).
-
-
-%!	valid_nonterminal// is semidet.
-%
-%	Map between a nonterminal symbol and a valid DCG rule left-hand
-%	side. Use this to sanitise production names.
-%
-%	For example, if a corpus produces productions with '(:)' as the
-%	left-hand side (in other words, rules which are not valid
-%	Prolog), you can declare a mapping from ':' to the atom 'colon'
-%	and replace the ':' in the left-hand side of the derived rules
-%	with 'colon'.
-%
-%	In other words, declaring:
-%	==
-%	valid_nonterminal(colon) --> [:].
-%	==
-%
-%	Will replace invalid rules like this:
-%	==
-%	(:) --> [:], ..., .
-%	==
-%
-%	With valid rules like this:
-%	==
-%	colon-->[:], ..., .
-%	==
-%
-%	Obviously you don't _have_ to map from invalid terms only. It's
-%	perfectly possible to replace a valid term with another valid
-%	term that you prefer. Generally however this should be left to
-%	the background data machinery (not yet implemented).
-%
-valid_nonterminal(n_colon) --> [:].
-valid_nonterminal(n_forward_slash) --> [/].
 
 
 /*
