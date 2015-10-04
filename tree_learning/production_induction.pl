@@ -38,7 +38,6 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %	Business end of derived_productions/4.
 %
 derived_productions([],[_],[_Ph|Phs],Ps,Ps_):-
-%derived_productions([],[_],Phs,Ps,Ps_):-
 	lexicalised_productions(Phs, Phs_l)
 	,append(Phs_l, Ps, Ps_).
 
@@ -59,15 +58,14 @@ derived_productions(Cs_hi, [Hi], [Ph|Phs], Ps, Acc):-
 	,node_heads(B_Cs_hi, Bs_hi)
 	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],Ps,Acc).
 
-derived_productions(Cs,[Hi|Bs],[Ph|Phs],Ps,Acc):-
+derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
 	% Multiple branches and an unsplit corpus
 	% Split the corpus and follow each branch separately
 	you_are_here(split),
 	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,derived_productions(Cs_hi,[Hi],[Ph|Phs],Ps,Ps_hi)
+	,derived_productions(Cs_hi,[Hi],Phs,Ps,Ps_hi)
 	,you_are_here(split_2)
-%	,derived_productions(Cs_Rest,Bs,[Ph],Ps_hi,Acc).
-	,derived_productions(Cs_Rest,Bs,[Ph|Phs],Ps_hi,Acc).
+	,derived_productions(Cs_Rest,Bs,Phs,Ps_hi,Acc).
 
 you_are_here(_).
 
@@ -86,7 +84,7 @@ lexicalised_productions(greibach, [P_ref,P|Ps], Temp, Acc):-
 	lexicalised_production(P, P_ref, P_lex)
 	,lexicalised_productions(greibach, [P_lex|Ps], [P_lex|Temp], Acc).
 
-lexicalised_production(P --> [T], epsilon, P_ --> [T]):-
+lexicalised_production(P --> [T], _, P_ --> [T]):-
 	P_ =.. [P|[epsilon]].
 lexicalised_production((P --> [T], N), Pi --> _, (P_-->[T],Pi)):-
 	P_ =.. [P|[N]].

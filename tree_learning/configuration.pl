@@ -79,7 +79,7 @@ language_file_name(language_mtg_hand_simulation).
 %	synonym token, ie the token that is the literal name of the
 %	production.
 %
-lexicalisation_strategy(none).
+lexicalisation_strategy(greibach).
 
 
 %!	output_stream(?Type,?Name) is det.
