@@ -37,7 +37,10 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %
 %	Business end of derived_productions/4.
 %
-derived_productions([],[],[Ph_i|_],Ps,[Ph_i|Ps]).
+%derived_productions([],[],[Ph_i|_],Ps,[Ph_i|Ps]):-
+derived_productions([],[],Phs,Ps,Ps_):-
+	lexicalised_productions(Phs, Phs_l)
+	,append(Phs_l, Ps, Ps_).
 
 derived_productions([[_C]|Cs],[Hi],[Ph|Phs],Ps,Acc):-
 	% A leaf node? (at least one single token example, single branch)
@@ -68,6 +71,23 @@ derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
 you_are_here(_).
 
 
+lexicalised_productions(Ps, Ps_l):-
+	lexicalised_productions([epsilon|Ps], [], Ps_l).
+
+lexicalised_productions([_P], Ps, Ps).
+lexicalised_productions([P_lex,P,P|Ps], Temp, Acc):-
+	% Skip one of two identical productions.
+	lexicalised_productions([P_lex,P|Ps], Temp, Acc).
+lexicalised_productions([P_ref,P|Ps], Temp, Acc):-
+	lexicalised_production(P, P_ref, P_lex)
+	,lexicalised_productions([P_lex|Ps], [P_lex|Temp], Acc).
+
+lexicalised_production(P --> [T], epsilon, P_ --> [T]):-
+	P_ =.. [P|[epsilon]].
+lexicalised_production((P --> [T], N), Pi --> _, (P_-->[T],Pi)):-
+	P_ =.. [P|[N]].
+lexicalised_production(S --> _P, P_lex --> _, S --> P_lex):-
+	phrase(configuration:start, [S]).
 
 %!	node_corpus(+Node_head,+Corpus,-Node_corpus) is semidet.
 %
@@ -218,7 +238,7 @@ augmented_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	,list_tree(Bs_, Bs_t).
 
 
-
+/*
 %!	lexicalised_production(+Production,+Parameter,-Lexicalised) is det.
 %
 %	Parameterise Production with a lexical argument to produce its
@@ -285,7 +305,7 @@ lexicalised_production(greibach, (P --> [T], N) ,(P --> [T], N)
 %
 lexicalised(T, F, [Args|Rest]):-
 	T =.. [F|[Args|Rest]].
-
+*/
 
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
 %
