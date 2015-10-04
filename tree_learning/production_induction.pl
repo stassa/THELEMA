@@ -37,49 +37,32 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %
 %	Business end of derived_productions/4.
 %
-derived_productions([],[],[Ph_i|_],Ps,[Ph_i_l|Ps]):-
-	lexicalised_production(Ph_i, [], Ph_i_l).
+derived_productions([],[],[Ph_i|_],Ps,[Ph_i|Ps]).
 
-%derived_productions([[_C]|Cs],[Hi],[Ph,Ph_g|Phs],Ps,Acc):-
-derived_productions([[_C]|Cs],[Hi],Phs,Ps,Acc):-
+derived_productions([[_C]|Cs],[Hi],[Ph|Phs],Ps,Acc):-
 	% A leaf node? (at least one single token example, single branch)
-	you_are_here(1),
-	(    Phs = [Ph] % Single element in the production ancestry stack.
-	 ->  Ph_g = Ph  % Ancestor is current production.
-	;    Phs = [Ph|[Ph_g|Phs_r]] % Else, there's a line of ancestors.
-	 )
+	you_are_here(leaf)
 	,derived_production(Hi, Ph_i)
 	,augmented_production(Ph, Hi, A_Ph)
-	,lexicalised_production(A_Ph, Ph_i, A_Ph_l)
-	,lexicalised_production(Ph_g, A_Ph_l, Ph_g_l)
-	,derived_productions(Cs,[Hi],[Ph,A_Ph_l|Phs_r]
-			    ,[Ph_i, A_Ph_l, Ph_g_l|Ps],Acc).
+	,derived_productions(Cs,[Hi],[Ph,A_Ph|Phs],[Ph_i, A_Ph|Ps],Acc).
 
-%derived_productions(Cs_hi, [Hi], [Ph,Ph_g|Phs], Ps, Acc):-
-derived_productions(Cs_hi, [Hi], Phs, Ps, Acc):-
+derived_productions(Cs_hi, [Hi], [Ph|Phs], Ps, Acc):-
 	% Single branch and its node-corpus.
 	% We derive productions and go on with new branches
-	you_are_here(2),
-	(    Phs = [Ph] % Single element in the production ancestry stack.
-	 ->  Ph_g = Ph  % Ancestor is current production.
-	;    Phs = [Ph|[Ph_g|Phs_r]] % Else, there's a line of ancestors.
-	 )
+	you_are_here(branch )
 	,derived_production(Hi, Ph_i)
 	,augmented_production(Ph, Hi, A_Ph)
-	,lexicalised_production(A_Ph, Ph_i, A_Ph_l)
-	,lexicalised_production(Ph_g, A_Ph_l, Ph_g_l)
 	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
 	,node_heads(B_Cs_hi, Bs_hi)
-	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph_l|Phs_r]
-			    ,[Ph_g_l|Ps],Acc).
+	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],[A_Ph|Ps],Acc).
 
 derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
 	% Multiple branches and an unsplit corpus
 	% Split the corpus and follow each branch separately
-	you_are_here(3),
+	you_are_here(split),
 	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
 	,derived_productions(Cs_hi,[Hi],Phs,Ps,Ps_hi)
-	,you_are_here(51)
+	,you_are_here(split_2)
 	,derived_productions(Cs_Rest,Bs,Phs,Ps_hi,Acc).
 
 you_are_here(_).
@@ -420,6 +403,54 @@ valid_nonterminal(N, N_):-
 	.
 valid_nonterminal(N, N).
 
+
+
+/*
+%derived_productions([[_C]|Cs],[Hi],[Ph,Ph_g|Phs],Ps,Acc):-
+derived_productions([[_C]|Cs],[Hi],Phs,Ps,Acc):-
+	% A leaf node? (at least one single token example, single branch)
+	you_are_here(leaf),
+	(    Phs = [Ph] % Single element in the production ancestry stack.
+	 ->  Ph_g = Ph  % Ancestor is current production.
+	;    Phs = [Ph|[Ph_g|Phs_r]] % Else, there's a line of ancestors.
+	 )
+	,derived_production(Hi, Ph_i)
+	,augmented_production(Ph, Hi, A_Ph)
+	,lexicalised_production(A_Ph, Ph_i, A_Ph_l)
+	,lexicalised_production(Ph_g, A_Ph_l, Ph_g_l)
+	,derived_productions(Cs,[Hi],[Ph,A_Ph_l|Phs_r]
+			    ,[Ph_i, A_Ph_l, Ph_g_l|Ps],Acc).
+
+%derived_productions(Cs_hi, [Hi], [Ph,Ph_g|Phs], Ps, Acc):-
+derived_productions(Cs_hi, [Hi], Phs, Ps, Acc):-
+	% Single branch and its node-corpus.
+	% We derive productions and go on with new branches
+	you_are_here(branch ),
+	(    Phs = [Ph]
+	 ->  Ph_g = Ph
+	;    Phs = [Ph|[Ph_g|Phs_r]]
+	 )
+	,derived_production(Hi, Ph_i)
+	,augmented_production(Ph, Hi, A_Ph)
+	,lexicalised_production(A_Ph, Ph_i, A_Ph_l)
+	,lexicalised_production(Ph_g, A_Ph_l, Ph_g_l)
+	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
+	,node_heads(B_Cs_hi, Bs_hi)
+	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph_l|Phs_r]
+			    ,[Ph_g_l|Ps],Acc).
+
+derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
+	% Multiple branches and an unsplit corpus
+	% Split the corpus and follow each branch separately
+	you_are_here(split),
+	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	,derived_productions(Cs_hi,[Hi],Phs,Ps,Ps_hi)
+	,you_are_here(split_2)
+	,derived_productions(Cs_Rest,Bs,Phs,Ps_hi,Acc).
+
+you_are_here(_).
+
+*/
 
 /*
 lexicalised_production(greibach, S --> [], _, S --> []).
