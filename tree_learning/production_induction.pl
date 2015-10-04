@@ -37,8 +37,7 @@ derived_productions(Cs, Bs, Ph, Ps):-
 %
 %	Business end of derived_productions/4.
 %
-%derived_productions([],[],[Ph_i|_],Ps,[Ph_i|Ps]):-
-derived_productions([],[],Phs,Ps,Ps_):-
+derived_productions([],[_],[_Ph|Phs],Ps,Ps_):-
 	lexicalised_productions(Phs, Phs_l)
 	,append(Phs_l, Ps, Ps_).
 
@@ -47,7 +46,6 @@ derived_productions([[_C]|Cs],[Hi],[Ph|Phs],Ps,Acc):-
 	you_are_here(leaf)
 	,derived_production(Hi, Ph_i)
 	,augmented_production(Ph, Hi, A_Ph)
-%	,derived_productions(Cs,[Hi],[Ph,A_Ph|Phs],[Ph_i, A_Ph|Ps],Acc).
 	,derived_productions(Cs,[Hi],[Ph,Ph_i,A_Ph|Phs],Ps,Acc).
 
 derived_productions(Cs_hi, [Hi], [Ph|Phs], Ps, Acc):-
@@ -58,17 +56,16 @@ derived_productions(Cs_hi, [Hi], [Ph|Phs], Ps, Acc):-
 	,augmented_production(Ph, Hi, A_Ph)
 	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
 	,node_heads(B_Cs_hi, Bs_hi)
-%	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],[A_Ph|Ps],Acc).
 	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],Ps,Acc).
 
-derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
+derived_productions(Cs,[Hi|Bs],[Ph|Phs],Ps,Acc):-
 	% Multiple branches and an unsplit corpus
 	% Split the corpus and follow each branch separately
 	you_are_here(split),
 	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,derived_productions(Cs_hi,[Hi],Phs,Ps,Ps_hi)
+	,derived_productions(Cs_hi,[Hi],[Ph|Phs],Ps,Ps_hi)
 	,you_are_here(split_2)
-	,derived_productions(Cs_Rest,Bs,Phs,Ps_hi,Acc).
+	,derived_productions(Cs_Rest,Bs,[Ph],Ps_hi,Acc).
 
 you_are_here(_).
 
@@ -93,6 +90,8 @@ lexicalised_production((P --> [T], N), Pi --> _, (P_-->[T],Pi)):-
 	P_ =.. [P|[N]].
 lexicalised_production(S --> _P, P_lex --> _, S --> P_lex):-
 	phrase(configuration:start, [S]).
+
+
 
 %!	node_corpus(+Node_head,+Corpus,-Node_corpus) is semidet.
 %
@@ -429,6 +428,50 @@ valid_nonterminal(N, N_):-
 valid_nonterminal(N, N).
 
 
+/*
+In the process of removing duplicates; hope.
+
+%derived_productions([],[],[Ph_i|_],Ps,[Ph_i|Ps]):-
+%derived_productions([],[_],Phs,Ps,Ps_):-
+	%lexicalised_productions(Phs, Phs_l)
+	%,append(Phs_l, Ps, Ps_).
+derived_productions([],[_],[_Ph|Phs],Ps,Ps_):-
+	lexicalised_productions(Phs, Phs_l)
+	,append(Phs_l, Ps, Ps_).
+
+derived_productions([[_C]|Cs],[Hi],[Ph|Phs],Ps,Acc):-
+	% A leaf node? (at least one single token example, single branch)
+	you_are_here(leaf)
+	,derived_production(Hi, Ph_i)
+	,augmented_production(Ph, Hi, A_Ph)
+%	,derived_productions(Cs,[Hi],[Ph,A_Ph|Phs],[Ph_i, A_Ph|Ps],Acc).
+	,derived_productions(Cs,[Hi],[Ph,Ph_i,A_Ph|Phs],Ps,Acc).
+
+derived_productions(Cs_hi, [Hi], [Ph|Phs], Ps, Acc):-
+	% Single branch and its node-corpus.
+	% We derive productions and go on with new branches
+	you_are_here(branch )
+	,derived_production(Hi, Ph_i)
+	,augmented_production(Ph, Hi, A_Ph)
+	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
+	,node_heads(B_Cs_hi, Bs_hi)
+%	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],[A_Ph|Ps],Acc).
+	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],Ps,Acc).
+
+%derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
+derived_productions(Cs,[Hi|Bs],[Ph|Phs],Ps,Acc):-
+	% Multiple branches and an unsplit corpus
+	% Split the corpus and follow each branch separately
+	you_are_here(split),
+	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
+	,derived_productions(Cs_hi,[Hi],[Ph|Phs],Ps,Ps_hi)
+	,you_are_here(split_2)
+%	,derived_productions(Cs_Rest,Bs,Phs,Ps_hi,Acc).
+	,derived_productions(Cs_Rest,Bs,[Ph],Ps_hi,Acc).
+
+you_are_here(_).
+
+*/
 
 /*
 %derived_productions([[_C]|Cs],[Hi],[Ph,Ph_g|Phs],Ps,Acc):-

@@ -42,5 +42,5 @@ set_spy_points:-
 	    ,derived_productions/5
 	    ,derived_production/2
 	    ,augmented_production/3
-	    ,lexicalised_production/3
+	    %,lexicalised_production/3
 	    ]).
