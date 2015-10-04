@@ -47,7 +47,8 @@ derived_productions([[_C]|Cs],[Hi],[Ph|Phs],Ps,Acc):-
 	you_are_here(leaf)
 	,derived_production(Hi, Ph_i)
 	,augmented_production(Ph, Hi, A_Ph)
-	,derived_productions(Cs,[Hi],[Ph,A_Ph|Phs],[Ph_i, A_Ph|Ps],Acc).
+%	,derived_productions(Cs,[Hi],[Ph,A_Ph|Phs],[Ph_i, A_Ph|Ps],Acc).
+	,derived_productions(Cs,[Hi],[Ph,Ph_i,A_Ph|Phs],Ps,Acc).
 
 derived_productions(Cs_hi, [Hi], [Ph|Phs], Ps, Acc):-
 	% Single branch and its node-corpus.
@@ -57,7 +58,8 @@ derived_productions(Cs_hi, [Hi], [Ph|Phs], Ps, Acc):-
 	,augmented_production(Ph, Hi, A_Ph)
 	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
 	,node_heads(B_Cs_hi, Bs_hi)
-	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],[A_Ph|Ps],Acc).
+%	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],[A_Ph|Ps],Acc).
+	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],Ps,Acc).
 
 derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
 	% Multiple branches and an unsplit corpus
@@ -72,15 +74,18 @@ you_are_here(_).
 
 
 lexicalised_productions(Ps, Ps_l):-
-	lexicalised_productions([epsilon|Ps], [], Ps_l).
+	configuration:lexicalisation_strategy(S)
+	,lexicalised_productions(S, [epsilon|Ps], [], Ps_l).
 
-lexicalised_productions([_P], Ps, Ps).
-lexicalised_productions([P_lex,P,P|Ps], Temp, Acc):-
-	% Skip one of two identical productions.
-	lexicalised_productions([P_lex,P|Ps], Temp, Acc).
-lexicalised_productions([P_ref,P|Ps], Temp, Acc):-
+lexicalised_productions(none, [epsilon|Ps], [], Ps).
+
+lexicalised_productions(greibach, [_P], Ps, Ps).
+lexicalised_productions(greibach, [P_lex,P,P|Ps], Temp, Acc):-
+	% Skip identical productions.
+	lexicalised_productions(greibach, [P_lex,P|Ps], Temp, Acc).
+lexicalised_productions(greibach, [P_ref,P|Ps], Temp, Acc):-
 	lexicalised_production(P, P_ref, P_lex)
-	,lexicalised_productions([P_lex|Ps], [P_lex|Temp], Acc).
+	,lexicalised_productions(greibach, [P_lex|Ps], [P_lex|Temp], Acc).
 
 lexicalised_production(P --> [T], epsilon, P_ --> [T]):-
 	P_ =.. [P|[epsilon]].
