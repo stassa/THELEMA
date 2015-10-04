@@ -70,28 +70,6 @@ derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
 you_are_here(_).
 
 
-lexicalised_productions(Ps, Ps_l):-
-	configuration:lexicalisation_strategy(S)
-	,lexicalised_productions(S, [epsilon|Ps], [], Ps_l).
-
-lexicalised_productions(none, [epsilon|Ps], [], Ps).
-
-lexicalised_productions(greibach, [_P], Ps, Ps).
-%lexicalised_productions(greibach, [P_lex,P,P|Ps], Temp, Acc):-
-%	% Skip identical productions.
-%	lexicalised_productions(greibach, [P_lex,P|Ps], Temp, Acc).
-lexicalised_productions(greibach, [P_ref,P|Ps], Temp, Acc):-
-	lexicalised_production(P, P_ref, P_lex)
-	,lexicalised_productions(greibach, [P_lex|Ps], [P_lex|Temp], Acc).
-
-lexicalised_production(P --> [T], _, P_ --> [T]):-
-	P_ =.. [P|[epsilon]].
-lexicalised_production((P --> [T], N), Pi --> _, (P_-->[T],Pi)):-
-	P_ =.. [P|[N]].
-lexicalised_production(S --> _P, P_lex --> _, S --> P_lex):-
-	phrase(configuration:start, [S]).
-
-
 
 %!	node_corpus(+Node_head,+Corpus,-Node_corpus) is semidet.
 %
@@ -242,74 +220,52 @@ augmented_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 	,list_tree(Bs_, Bs_t).
 
 
-/*
-%!	lexicalised_production(+Production,+Parameter,-Lexicalised) is det.
+
+%!	lexicalised_productions(+Productions,-Lexicalised) is det.
 %
-%	Parameterise Production with a lexical argument to produce its
-%	Lexicalised form, according to the lexicalisation_strategy
-%	option.
+%	Parameterise each term in Productions with a lexical argument to
+%	produce its Lexicalised form according to the
+%	lexicalisation_strategy option.
 %
-lexicalised_production(Production, Parameter, Lexicalised):-
+%	@TODO: this takes a bit of documenting. Basically, what we do is
+%	look up the stack and update each reference to a production with
+%	its correct arity- if the referred production has arity n,
+%	ensure that references to it also have arity n. But need to
+%	explain the how.
+%
+lexicalised_productions(Ps, Ps_l):-
 	configuration:lexicalisation_strategy(S)
-	,once(lexicalised_production(S,Production,Parameter,Lexicalised)).
+	,lexicalised_productions(S, [epsilon|Ps], [], Ps_l).
 
 
-%!	lexicalised_production(+Strategy,+Production,+Parameter,-Lexicalised) is semidet.
+%!	lexicalised_productions(+Strategy,+Productions,+Temp,-Acc) is det.
 %
-%	Business end of lexicalised_production/2. Clauses are selected
-%	depending on the value of configuration option
-%	lexicalisation_strategy/1.
+%	Business end of lexicalised_productions/2. Clauses are selected
+%	depending on the value of configuratoin
+%	option lexicalisation_strategy/1.
 %
-lexicalised_production(none, P, _, P).
-
-lexicalised_production(greibach, S --> [], _, S --> []).
-lexicalised_production(greibach, S --> N, P --> _B, S --> P):-
-% S is the start symbol expanding to a nonterminal N, P is a compound
-% with at least one argument, ie it's lexicalised and N is the functor
-% name of the lexicalised P, ie in the body of S//0 N is a reference to
-% P.
-	phrase(configuration:start, [S])
-	,\+ lexicalised(N, _, _)
-	,lexicalised(P, N, _).
-lexicalised_production(greibach, S --> N, P --> _, S --> N):-
-	phrase(configuration:start, [S])
-	,\+ lexicalised(N,_,_)
-	,\+ lexicalised(P, _, _).
-lexicalised_production(greibach,(P --> [T], N), N --> _, (P_ --> [T], N)):-
-	\+ lexicalised(P, _, _)
-	,\+ lexicalised(N, _, _)
-	,P_ =.. [P,N].
-lexicalised_production(greibach,(P --> [T], N), Ph_i --> _, (P --> [T], Ph_i)):-
-	\+ lexicalised(N, _, _)
-	,lexicalised(Ph_i, N, _).
-lexicalised_production(greibach, P --> [P], [], P_ --> [P]):-
-	P_ =.. [P,epsilon].
-
-lexicalised_production(greibach, (P --> [T], N) ,(P --> [T], N)
-		      ,(P --> [T], N_)):-
-	you_are_here(1)
-	,lexicalised(P, _, [N|_])
-	,\+lexicalised(N, _, _)
-	,N_ =.. [N,epsilon].
-
-%lexicalised_production(greibach, P, P, P):-
-%	writeln(not_lexicalising:P).
+lexicalised_productions(none, [epsilon|Ps], [], Ps).
+lexicalised_productions(greibach, [_P], Ps, Ps).
+lexicalised_productions(greibach, [P_ref,P|Ps], Temp, Acc):-
+	lexicalised_production(P, P_ref, P_lex)
+	,lexicalised_productions(greibach, [P_lex|Ps], [P_lex|Temp], Acc).
 
 
-%!	lexicalised(+Term,-Symbol,-Parameters) is nondet.
+%!	lexicalised_production(+Production,+Reference_production,-Lexicalised) is det.
 %
-%	True when Term either the left-hand side symbol or a right-hand
-%	side constituent of a DCG rule and it has at least one lexical
-%	parameter. Symbol is the functor name of the lexicalised
-%	constituent and Parameters the list of its arguments.
+%	Update all references to the Reference_production in the body
+%	and the head of Production so that they have the correct arity.
 %
-%	Just a thin shell around uneef (=../2) to make explicit the
-%	semantics of its use in this context (to determine whether a
-%	term is lexicalised or not).
+%	@TODO: yeah, takes a bit more documenting.
 %
-lexicalised(T, F, [Args|Rest]):-
-	T =.. [F|[Args|Rest]].
-*/
+lexicalised_production(P --> [T], _, P_ --> [T]):-
+	P_ =.. [P|[epsilon]].
+lexicalised_production((P --> [T], N), Pi --> _, (P_-->[T],Pi)):-
+	P_ =.. [P|[N]].
+lexicalised_production(S --> _P, P_lex --> _, S --> P_lex):-
+	phrase(configuration:start, [S]).
+
+
 
 %!	beheaded_node_corpus(+Corpus,-Beheaded_corpus) is det.
 %
@@ -397,153 +353,4 @@ sanitise_constituent(Pf, T, T_):-
 	    ,T_ =.. [N_F|As]
 	 ;   T_ = T
 	 ).
-
-
-/*
-In the process of removing duplicates; hope.
-
-%derived_productions([],[],[Ph_i|_],Ps,[Ph_i|Ps]):-
-%derived_productions([],[_],Phs,Ps,Ps_):-
-	%lexicalised_productions(Phs, Phs_l)
-	%,append(Phs_l, Ps, Ps_).
-derived_productions([],[_],[_Ph|Phs],Ps,Ps_):-
-	lexicalised_productions(Phs, Phs_l)
-	,append(Phs_l, Ps, Ps_).
-
-derived_productions([[_C]|Cs],[Hi],[Ph|Phs],Ps,Acc):-
-	% A leaf node? (at least one single token example, single branch)
-	you_are_here(leaf)
-	,derived_production(Hi, Ph_i)
-	,augmented_production(Ph, Hi, A_Ph)
-%	,derived_productions(Cs,[Hi],[Ph,A_Ph|Phs],[Ph_i, A_Ph|Ps],Acc).
-	,derived_productions(Cs,[Hi],[Ph,Ph_i,A_Ph|Phs],Ps,Acc).
-
-derived_productions(Cs_hi, [Hi], [Ph|Phs], Ps, Acc):-
-	% Single branch and its node-corpus.
-	% We derive productions and go on with new branches
-	you_are_here(branch )
-	,derived_production(Hi, Ph_i)
-	,augmented_production(Ph, Hi, A_Ph)
-	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
-	,node_heads(B_Cs_hi, Bs_hi)
-%	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],[A_Ph|Ps],Acc).
-	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph|Phs],Ps,Acc).
-
-%derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
-derived_productions(Cs,[Hi|Bs],[Ph|Phs],Ps,Acc):-
-	% Multiple branches and an unsplit corpus
-	% Split the corpus and follow each branch separately
-	you_are_here(split),
-	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,derived_productions(Cs_hi,[Hi],[Ph|Phs],Ps,Ps_hi)
-	,you_are_here(split_2)
-%	,derived_productions(Cs_Rest,Bs,Phs,Ps_hi,Acc).
-	,derived_productions(Cs_Rest,Bs,[Ph],Ps_hi,Acc).
-
-you_are_here(_).
-
-*/
-
-/*
-%derived_productions([[_C]|Cs],[Hi],[Ph,Ph_g|Phs],Ps,Acc):-
-derived_productions([[_C]|Cs],[Hi],Phs,Ps,Acc):-
-	% A leaf node? (at least one single token example, single branch)
-	you_are_here(leaf),
-	(    Phs = [Ph] % Single element in the production ancestry stack.
-	 ->  Ph_g = Ph  % Ancestor is current production.
-	;    Phs = [Ph|[Ph_g|Phs_r]] % Else, there's a line of ancestors.
-	 )
-	,derived_production(Hi, Ph_i)
-	,augmented_production(Ph, Hi, A_Ph)
-	,lexicalised_production(A_Ph, Ph_i, A_Ph_l)
-	,lexicalised_production(Ph_g, A_Ph_l, Ph_g_l)
-	,derived_productions(Cs,[Hi],[Ph,A_Ph_l|Phs_r]
-			    ,[Ph_i, A_Ph_l, Ph_g_l|Ps],Acc).
-
-%derived_productions(Cs_hi, [Hi], [Ph,Ph_g|Phs], Ps, Acc):-
-derived_productions(Cs_hi, [Hi], Phs, Ps, Acc):-
-	% Single branch and its node-corpus.
-	% We derive productions and go on with new branches
-	you_are_here(branch ),
-	(    Phs = [Ph]
-	 ->  Ph_g = Ph
-	;    Phs = [Ph|[Ph_g|Phs_r]]
-	 )
-	,derived_production(Hi, Ph_i)
-	,augmented_production(Ph, Hi, A_Ph)
-	,lexicalised_production(A_Ph, Ph_i, A_Ph_l)
-	,lexicalised_production(Ph_g, A_Ph_l, Ph_g_l)
-	,beheaded_node_corpus(Cs_hi, B_Cs_hi)
-	,node_heads(B_Cs_hi, Bs_hi)
-	,derived_productions(B_Cs_hi,Bs_hi,[Ph_i,A_Ph_l|Phs_r]
-			    ,[Ph_g_l|Ps],Acc).
-
-derived_productions(Cs,[Hi|Bs],Phs,Ps,Acc):-
-	% Multiple branches and an unsplit corpus
-	% Split the corpus and follow each branch separately
-	you_are_here(split),
-	split_corpus(Hi,Cs,Cs_hi,Cs_Rest)
-	,derived_productions(Cs_hi,[Hi],Phs,Ps,Ps_hi)
-	,you_are_here(split_2)
-	,derived_productions(Cs_Rest,Bs,Phs,Ps_hi,Acc).
-
-you_are_here(_).
-
-*/
-
-/*
-lexicalised_production(greibach, S --> [], _, S --> []).
-lexicalised_production(greibach, S --> N, P_hi --> _Hi, S --> P_hi):-
-% If N is atomic, S is the start symbol and it's not yet lexicalised
-	phrase(language:start, [S])
-	,atomic(N).
-lexicalised_production(greibach, P --> [T], P --> [T], P_ --> [T]):-
-% P -->[T] is a leaf; it is followed by the empty string.
-	P_ =.. [P|[epsilon]].
-lexicalised_production(greibach, (P --> [T],N), (P --> [T],N) ,(P --> [T],N_)):-
-	N_ =.. [N,epsilon]
-	,!.
-lexicalised_production(greibach, (P -->[T], N), N --> _B, ( P_ --> [T], N)):-
-% If P is atomic it has not been lexicalised yet. If N is a constituent
-% of P, it is probably lexicalised in which case update its reference in
-% the head of P.
-	atomic(P)
-	,atomic(N)
-	,P_ =.. [P|[N]].
-lexicalised_production(greibach, (P -->[T], N), P_hi --> _B,( P --> [T], P_hi)):-
-% If P is atomic it has not been lexicalised yet. If N is a constituent
-% of P, it is probably lexicalised in which case update its reference in
-% the head of P.
-	compound(P)
-	,atomic(N)
-	,compound(P_hi)
-	,P \= P_hi.
-
-lexicalised_production(greibach, P, Ph, P):-
-	writeln(not_lexicalising:P-with:Ph).
-*/
-
-
-
-/*
-lexicalised_production(greibach, S --> N, Hi, S --> N_):-
-% Only the S(tart symbol) expands to a single nonterminal.
-% In that case we only want to lexicalise its single constituent.
-% But only if it's not the empty string.
-	atomic(N)
-	,(   N \= []
-	->  N_ =.. [N|[Hi]]
-	;   N_ = N
-	).
-lexicalised_production(greibach, P --> ([T],N), Hi, P_ --> ([T],N)):-
-	atomic(P)
-	,P_ =.. [T|[Hi]].
-lexicalised_production(_, P, _, P).
-
-lexicalised_production(greibach, P --> ([T],N), Hi, P_ --> ([T],N)):-
-	P =.. [T|As]
-	,append(As, [Hi], As_)
-	,P_ =.. [T|As_].
-
-	*/
 
