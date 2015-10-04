@@ -40,7 +40,8 @@ edit_source:-
 set_spy_points:-
 	spy([you_are_here/1
 	    ,derived_productions/5
-	    ,derived_production/2
-	    ,augmented_production/3
+	    %,derived_production/2
+	    %,augmented_production/3
+	    ,lexicalised_productions/2
 	    %,lexicalised_production/3
 	    ]).
