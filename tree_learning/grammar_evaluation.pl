@@ -52,22 +52,22 @@ grammar_evaluation_inference_limit(10_000_000).
 %
 grammar_evaluation:-
 	configuration:testing_protocol(P)
-	,grammar_evaluation(P).
+	,load_examples_module(Ex)
+	,load_output_module(Out)
+	,metrics_format(P, F)
+	,grammar_evaluation(P, Ex, Out, F).
 
 %!	grammar_evaluation(+Testing_protocol) is det.
 %
 %	Business end of grammar_evaluation/0. Clauses are selected
 %	depending on the currently configured testing_protocol/1 option.
 %
-grammar_evaluation(precision_recall_bare_bones):-
+grammar_evaluation(precision_recall_bare_bones, Ex, Out, F):-
 	% TODO: Maybe refactor this, dunno. Could push the format/2 calls to
 	%  precision_test or recall_test, or bind its second argument to their
 	% "return" variable.
-	load_examples_module(Ex)
-	,examples_count(C)
-	,load_output_module(Out)
-	,metrics_format(precision_recall_bare_bones, F)
 	% Test recall
+	examples_count(C)
 	,recall_test(Ex,Out,Recall)
 	,format(F,['Recall:',Recall,on,C,examples])
 	% Test precision
@@ -76,11 +76,8 @@ grammar_evaluation(precision_recall_bare_bones):-
 	,! % Red cut- because I don't know what it's cutting :P
 	.
 
-grammar_evaluation(precision_recall):-
-	load_examples_module(Ex)
-	,examples_count(C)
-	,load_output_module(Out)
-	,metrics_format(precision_recall,F)
+grammar_evaluation(precision_recall, Ex, Out, F):-
+	examples_count(C)
 	% Test recall
 	,recall_test(Ex,Out,Parsed)
 	,format(F,['Recall:',Parsed,parsed,'out of',C,examples])
