@@ -19,10 +19,10 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-%examples_file_name(examples_mtg_hand_simulation).
+examples_file_name(examples_mtg_hand_simulation).
 %examples_file_name(mtg_pot_puri).
 %examples_file_name(examples_mtg_destroy_short).
-examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
+%examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 
 %examples_file_name(examples_mtg_hand_simulation_compressed).
@@ -207,6 +207,9 @@ rename_built_ins(n_).
 %	* precision_recall_bare_bones; only report whether a) all
 %	examples where parsed correctly and b) all parses are
 %	also examples.
+%	* precision_recall; report the number of parsed strings over
+%	total number of examples and the number of generated strings
+%	over total number of examples.
 %
 %
 testing_protocol(precision_recall).

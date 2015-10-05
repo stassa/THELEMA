@@ -6,13 +6,17 @@
 
 */
 
-%!	precision_recall_bare_bones_format(?Format) is det.
+%!	metrics_format(?Protocol,?Format) is det.
 %
 %	The format atom to be passed to format/2 when reporting
-%	precision and recall with precision_recall_bare_bones option
-%	configured.
+%	precision and recall when the value of testing_protocol/1
+%	is equal to Protocol.
 %
-%	Current format bits:
+%	Current Formats by Protocol
+%	===========================
+%
+%	precision_recall_bare_bones:
+%
 %	~w~t~10+   [distribute the first word evenly over 10 chars: the
 %		    legnth of the word "Precision" plus a colon; pad
 %		    difference with spaces]
@@ -23,13 +27,12 @@
 %	~w~t~8|    [distribute over 8 chars for "examples" setting
 %		    absolute tab stop at the end]
 %
-precision_recall_bare_bones_format('~w~t~10+ ~w~t~13+ ~w~t~2+ ~`0t~d~6+ ~w~t~8|~n').
-
-%!	precision_recall_format(?Format) is det.
+%	precision_recall:
 %
-%	The format atom for option precision_recall.
+%	@TODO: You know what to do.
 %
-precision_recall_format('~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~w~t~7+ ~`0t~d~7+ ~w~t~8|~n').
+metrics_format(precision_recall_bare_bones, '~w~t~10+ ~w~t~13+ ~w~t~2+ ~`0t~d~6+ ~w~t~8|~n').
+metrics_format(precision_recall, '~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~w~t~7+ ~`0t~d~7+ ~w~t~8|~n').
 
 %!	grammar_evaluation_inference_limit(?Limit) is det.
 %
@@ -63,7 +66,7 @@ grammar_evaluation(precision_recall_bare_bones):-
 	load_examples_module(Ex)
 	,examples_count(C)
 	,load_output_module(Out)
-	,precision_recall_bare_bones_format(F)
+	,metrics_format(precision_recall_bare_bones, F)
 	% Test recall
 	,recall_test(Ex,Out,Recall)
 	,format(F,['Recall:',Recall,on,C,examples])
@@ -77,7 +80,7 @@ grammar_evaluation(precision_recall):-
 	load_examples_module(Ex)
 	,examples_count(C)
 	,load_output_module(Out)
-	,precision_recall_format(F)
+	,metrics_format(precision_recall,F)
 	% Test recall
 	,recall_test(Ex,Out,Parsed)
 	,format(F,['Recall:',Parsed,parsed,'out of',C,examples])
