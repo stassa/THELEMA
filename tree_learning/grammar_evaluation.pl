@@ -39,7 +39,7 @@ metrics_format(precision_recall, '~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~w~t~7+ ~`0t~d~7+ 
 %	The number of inferences for each solution of each separate
 %	grammar_evaluation/1 step (eg, for precision_test/2) to attempt
 %	before giving up and reporting that the grammar is probably
-%	left-recursive.
+%	recursive.
 %
 grammar_evaluation_inference_limit(10_000_000).
 
@@ -57,6 +57,7 @@ grammar_evaluation:-
 	,metrics_format(P, F)
 	,grammar_evaluation(P, Ex, Out, F).
 
+
 %!	grammar_evaluation(+Testing_protocol) is det.
 %
 %	Business end of grammar_evaluation/0. Clauses are selected
@@ -68,10 +69,10 @@ grammar_evaluation(precision_recall_bare_bones, Ex, Out, F):-
 	% "return" variable.
 	% Test recall
 	examples_count(C)
-	,recall_test(Ex,Out,Recall)
+	,recall_test(precision_recall_bare_bones, Ex,Out,Recall)
 	,format(F,['Recall:',Recall,on,C,examples])
 	% Test precision
-	,precision_test(Ex, Out, Precision)
+	,precision_test(precision_recall_bare_bones, Ex, Out, Precision)
 	,format(F,['Precision:',Precision,on,C,examples])
 	,! % Red cut- because I don't know what it's cutting :P
 	.
@@ -79,10 +80,10 @@ grammar_evaluation(precision_recall_bare_bones, Ex, Out, F):-
 grammar_evaluation(precision_recall, Ex, Out, F):-
 	examples_count(C)
 	% Test recall
-	,recall_test(Ex,Out,Parsed)
+	,recall_test(precision_recall, Ex,Out,Parsed)
 	,format(F,['Recall:',Parsed,parsed,'out of',C,examples])
 	% Test precision
-	,precision_test(Ex, Out, Generated)
+	,precision_test(precision_recall, Ex, Out, Generated)
 	% KLUDGE: If Generated is bound to -1, it will still be padded with 0's
 	,format(F,['Precision:',Generated,generated,from,C,examples])
 	,! % Red cut- because I still don't know what it's cutting
@@ -120,22 +121,12 @@ load_output_module(Module_name):-
 
 
 
-%!	recall_test(+Examples_module,+Grammar_module,-Recall) is det.
+%!	recall_test(+Testing_protocol,+Examples_module,+Grammar_module,-Recall) is det.
 %
 %	Test the recall of the model.
 %
-%	@TODO: document.
-%
-recall_test(Ex, Out, Res):-
-	configuration:testing_protocol(P)
-	,recall_test(P, Ex, Out, Res).
-
-
-%!	recall_test(+Testing_protocol,+Examples_module,+Grammar_module,-Recall) is det.
-%
-%	Business end of recall_test/2. Clauses are selected depending on
-%	Testing_protocol, the value of configuration setting
-%	testing_protocol/1.
+%	Clauses are selected depending on Testing_protocol, the value of
+%	configuration setting testing_protocol/1.
 %
 %	Protocol is one of:
 %	* precision_recall_bare_bones.
@@ -172,22 +163,13 @@ recall_test(precision_recall, Ex, Out, Ps_L):-
 	,length(Ps, Ps_L).
 
 
-%!	precision_test(+Examples_module,+Grammar_module) is det.
-%
-%	Test the precision of the model.
-%
-%	@TODO: document.
-%
-precision_test(Ex, Out, Result):-
-	configuration:testing_protocol(P)
-	,precision_test(P, Ex, Out, Result).
-
-
 
 %!	precision_test(+Protocol,+Examples_module,+Grammar_module,-Recall) is det.
 %
-%	Business end of precision_test/2. Clauses are selected depending
-%	on the value of configuration setting testing_protocol/1.
+%	Test the precision of the model.
+%
+%	Clauses are selected depending on the value of configuration
+%	setting testing_protocol/1.
 %
 %	Protocol is one of:
 %	* precision_recall_bare_bones
