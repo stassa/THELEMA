@@ -21,9 +21,9 @@
 %	Basename of the examples file to use in induction.
 %examples_file_name(examples_mtg_hand_simulation).
 %examples_file_name(mtg_pot_puri).
-%examples_file_name(examples_mtg_destroy_short).
+examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
-examples_file_name(examples_mtg_all_destroy_cleaned).
+%examples_file_name(examples_mtg_all_destroy_cleaned).
 
 %examples_file_name(examples_mtg_hand_simulation_compressed).
 %examples_file_name(examples_mtg_destroy_short_compressed).
@@ -210,9 +210,11 @@ rename_built_ins(n_).
 %	* precision_recall; report the number of parsed strings over
 %	total number of examples and the number of generated strings
 %	over total number of examples.
+%	* precision_recall_with_reporting; print out the parsed and
+%	unparsed examples as well as the generated strings that were in
+%	and not in the corpus.
 %
-%
-testing_protocol(precision_recall).
+testing_protocol(precision_recall_with_reporting).
 
 
 /*
