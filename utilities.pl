@@ -1,4 +1,5 @@
 ﻿:-module(utilities, [examples_corpus/1
+		    ,examples_count/1
 		    ,productions_compressed_strings/3
 		    ,sum_of/3
 		    ,timestamp/1
@@ -26,10 +27,25 @@
 
 %!	examples_corpus(+Examples) is det.
 %
-%	All examples in the examples corpus.
+%	All unique examples in the examples corpus.
+%
 examples_corpus(Examples):-
-	findall(Example,configuration:example_string(Example),Examples).
+	setof(Example,configuration:example_string(Example),Examples).
 
+
+
+%!	examples_count(?Count) is det.
+%
+%	The number of all unique examples in the examples corpus.
+%
+%	@TODO: this currently only counts examples in the first
+%	configured module. Implement the "(s)" (though you'll have to
+%	do that application-wide, nothing else can handle mulitple
+%	examples modules right now).
+%
+examples_count(Count):-
+	examples_corpus(Examples)
+	,length(Examples, Count).
 
 
 %!	productions_compressed_strings(+Productions,+Strings,-Compressed) is det.

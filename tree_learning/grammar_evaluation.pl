@@ -1,6 +1,7 @@
 :-module(grammar_evaluation, [grammar_evaluation/0]).
 
 :-use_module(configuration).
+:-use_module(project_root(utilities), [examples_corpus/1, examples_count/1]).
 
 /** <module> Predicates for evaluating the performance of induced grammars.
 
@@ -51,7 +52,7 @@ format_character(strings_separator, =).
 %	before giving up and reporting that the grammar is probably
 %	recursive.
 %
-grammar_evaluation_inference_limit(10_000_000).
+grammar_evaluation_inference_limit(100_000).
 
 
 
@@ -112,11 +113,12 @@ grammar_evaluation(counts, Ex, Out, F, S):-
 
 grammar_evaluation(strings, Ex, G, F, S):-
 	metrics_format(strings_separator_recall, Sep_rec)
-	,metrics_format(strings_separator_precision, Sep_prec)
+%	,metrics_format(strings_separator_precision, Sep_prec)
 	,format_character(strings_separator, Sep_char)
 	,examples_count(C)
 	% Test recall
-	,recall_test(strings, Ex, G, Parsed-Unparsed)
+	% Soft-cut: if precision_test fails later, don't go over this again.
+	,once(recall_test(strings, Ex, G, Parsed-Unparsed))
 	,length(Parsed, Ps)
 	,length(Unparsed, Us)
 	,format(S, F,['Recall:',Ps,parsed,Us,unparsed,'out of',C,'total examples.'])
@@ -125,15 +127,18 @@ grammar_evaluation(strings, Ex, G, F, S):-
 	,forall(member(P, Parsed), writeln(S, parsed:P))
 	,forall(member(U, Unparsed), writeln(S, unparsed:U))
 	% Test precision
-	,writeln(S, '')
-	,precision_test(strings, Ex, G, In_corpus-Not_in_corpus)
+	/*,writeln(S, '')
+	,!
+	,once(precision_test(strings, Ex, G, In_corpus-Not_in_corpus))
 	,length(In_corpus, Ins)
 	,length(Not_in_corpus, Nots)
 	,Ds is Ins + Nots
 	,format(S, F,['Precision:',Ins,'in corpus',Nots,'not in corpus','out of',Ds,'total derivations.'])
 	,format(S, Sep_prec, [Sep_char,Sep_code])
 	,forall(member(In, In_corpus), writeln(S, 'in corpus':In))
-	,forall(member(Not, Not_in_corpus), writeln(S, 'not in corpus':Not)).
+	,forall(member(Not, Not_in_corpus), writeln(S, 'not in corpus':Not))
+	*/
+	.
 
 
 %!	load_examples_module(-Module_name) is det.
@@ -207,9 +212,9 @@ recall_test(counts, Ex, Out, Ps_L):-
 %	,length(Ss, Ss_L)
 	,length(Ps, Ps_L).
 
-recall_test(strings, Ex, Out, Parsed-Unparsed):-
+recall_test(strings, _Ex, Out, Parsed-Unparsed):-
 	phrase(configuration:start, [St])
-	,findall(S, Ex:example_string(S), Ss)
+        ,examples_corpus(Ss)
 	,once(parsed_unparsed(Out, St, Ss, Parsed, Unparsed)).
 
 
@@ -279,11 +284,11 @@ precision_test(strings, Ex, Out, In_corpus-Not_in_corpus):-
 %	do that application-wide, nothing else can handle mulitple
 %	examples modules right now.
 %
-examples_count(Count):-
-	configuration:examples_module(Ex)
-	% Only inspect examples from the currently configured examples module.
-	,findall(S, Ex:example_string(S), Ss)
-	,length(Ss, Count).
+%examples_count(Count):-
+%	configuration:examples_module(Ex)
+%	% Only inspect examples from the currently configured examples module.
+%	,findall(S, Ex:example_string(S), Ss)
+%	,length(Ss, Count).
 
 
 
