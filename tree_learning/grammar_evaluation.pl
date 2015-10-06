@@ -189,8 +189,8 @@ load_output_module(Module_name):-
 %	inferences, where N the value of
 %	grammar_evaluation_inference_limit/1
 %
-recall_test(basic, Ex, Out, Recall):-
-	findall(S, Ex:example_string(S), Ss)
+recall_test(basic, _Ex, Out, Recall):-
+	examples_corpus(Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
 	,Goal = forall(member(S, Ss), phrase(Out:St, S))
@@ -201,8 +201,8 @@ recall_test(basic, Ex, Out, Recall):-
 	 ).
 recall_test(basic, _Ex, _Out, partial).
 
-recall_test(counts, Ex, Out, Ps_L):-
-	findall(S, Ex:example_string(S), Ss)
+recall_test(counts, _Ex, Out, Ps_L):-
+	examples_corpus(Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
 	% Seems phrase/2 can backtrack over bindings of S and find duplicate parses.
@@ -243,8 +243,8 @@ recall_test(strings, _Ex, Out, Parsed-Unparsed):-
 %	specified gammar_evaluation_inference_limit) Recall is bound to
 %	-1.
 %
-precision_test(basic, Ex, Out, Precision):-
-	findall(S, Ex:example_string(S), Ss)
+precision_test(basic, _Ex, Out, Precision):-
+	examples_corpus(Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
 	,Goal = forall(phrase(Out:St, S), member(S, Ss))
@@ -255,8 +255,8 @@ precision_test(basic, Ex, Out, Precision):-
 	 ).
 precision_test(basic, _, _, partial).
 
-precision_test(counts, Ex, Out, Ps_L):-
-	findall(S, Ex:example_string(S), Ss)
+precision_test(counts, _Ex, Out, Ps_L):-
+	examples_corpus(Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
 	,Goal = findall(S, (phrase(Out:St, S), member(S, Ss)), Ps)
