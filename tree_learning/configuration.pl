@@ -19,12 +19,12 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-%examples_file_name(examples_mtg_hand_simulation).
+examples_file_name(examples_mtg_hand_simulation).
 %examples_file_name(mtg_pot_puri).
 %examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
-examples_file_name(mtg_all_destroy).
+%examples_file_name(mtg_all_destroy).
 
 %examples_file_name(examples_mtg_hand_simulation_compressed).
 %examples_file_name(examples_mtg_destroy_short_compressed).
@@ -169,9 +169,7 @@ production_augmentation(greibach).
 %	a literal Hi as a terminal; in other words, the production is a
 %	synonym of its constituents.
 %
-%	@TODO: change "basic" to "synonym"
-%
-production_composition(basic).
+production_composition(synonym).
 
 
 %!	remember_previous_results(?Bool) is det.
@@ -180,6 +178,8 @@ production_composition(basic).
 %	previously derived productions covering that token, or not.
 %
 %	Bool is one of 'true' or 'false' where duh.
+%
+%	@NOTE: not used yet.
 %
 remember_previous_results(true).
 

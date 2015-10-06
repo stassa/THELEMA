@@ -131,7 +131,12 @@ derived_production(Hi, Ph_i_):-
 %	Business end of derived_production/2. Strategy is the value of
 %	configuration option production_composition/1.
 %
-derived_production(basic, Hi, (Hi --> [Hi])).
+derived_production(synonym, Hi, (Hi --> [Hi])).
+
+derived_production(S, _, _):-
+	% If we get here it's _probably_ because the configuration
+	% does not match what we expect.
+	throw('Unknown production_composition/1 option':S).
 
 
 %!	augmented_production(+Node_head_production,+Token,-Augmented_branch_production) is det.
