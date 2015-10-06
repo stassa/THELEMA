@@ -212,17 +212,15 @@ rename_built_ins(n_).
 %	The steps to follow to test and evaluate the derived grammar.
 %	Protocol is one of:
 %
-%	* precision_recall_bare_bones; only report whether a) all
-%	examples where parsed correctly and b) all parses are
-%	also examples.
-%	* precision_recall; report the number of parsed strings over
-%	total number of examples and the number of generated strings
-%	over total number of examples.
-%	* precision_recall_with_reporting; print out the parsed and
-%	unparsed examples as well as the generated strings that were in
-%	and not in the corpus.
+%	* basic; only report whether a) allexamples where parsed
+%	correctly and b) all parses are also examples.
+%	* counts; report the number of parsed strings over total number
+%	of examples and the number of generated strings over total
+%	number of examples.
+%	* strings; print out the parsed and unparsed examples as well as
+%	the generated strings that were in and not in the corpus.
 %
-testing_protocol(precision_recall_with_reporting).
+testing_protocol(strings).
 
 
 /*

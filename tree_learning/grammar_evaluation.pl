@@ -15,7 +15,7 @@
 %	Current Formats by Protocol
 %	===========================
 %
-%	precision_recall_bare_bones:
+%	basic:
 %
 %	~w~t~10+   [distribute the first word evenly over 10 chars: the
 %		    legnth of the word "Precision" plus a colon; pad
@@ -27,23 +27,22 @@
 %	~w~t~8|    [distribute over 8 chars for "examples" setting
 %		    absolute tab stop at the end]
 %
-%	precision_recall:
+%	counts:
 %
 %	@TODO: You know what to do.
 %
-metrics_format(precision_recall_bare_bones, '~w~t~10+ ~w~t~13+ ~w~t~2+ ~`0t~d~6+ ~w~t~8|~n').
-metrics_format(precision_recall, '~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~w~t~7+ ~`0t~d~7+ ~w~t~8|~n').
-metrics_format(precision_recall_with_reporting, '~w~`.t~15+ ~`0t~d~7+ ~w~t~9+ ~`0t~d~7+ ~w~t~13+ ~w~t~6+  ~`0t~d~7+ ~w~t~18|~n').
-metrics_format(precision_recall_with_reporting_separator_recall, '~w~*t~81|~n').
-metrics_format(precision_recall_with_reporting_separator_precision, '~w~*t~86|~n').
-%	,format(F,['Recall:',Ps,parsed,Us,unparsed,'out of',C,'total examples.'])
+metrics_format(basic, '~w~t~10+ ~w~t~13+ ~w~t~2+ ~`0t~d~6+ ~w~t~8|~n').
+metrics_format(counts, '~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~w~t~7+ ~`0t~d~7+ ~w~t~8|~n').
+metrics_format(strings, '~w~`.t~15+ ~`0t~d~7+ ~w~t~9+ ~`0t~d~7+ ~w~t~13+ ~w~t~6+  ~`0t~d~7+ ~w~t~18|~n').
+metrics_format(strings_separator_recall, '~w~*t~81|~n').
+metrics_format(strings_separator_precision, '~w~*t~86|~n').
 
 %!	format_character(?Format, ?Character) is det.
 %
 %	Character to use as padding or separator with the given
 %	metrics Format.
 %
-format_character(precision_recall_with_reporting_separator, =).
+format_character(strings_separator, =).
 
 %!	grammar_evaluation_inference_limit(?Limit) is det.
 %
@@ -66,7 +65,8 @@ grammar_evaluation:-
 	,load_examples_module(Ex)
 	,load_output_module(Out)
 	,metrics_format(P, F)
-	,grammar_evaluation(P, Ex, Out, F).
+	,configuration:output_file_name(grammar_evaluation, S)
+	,grammar_evaluation(P, Ex, Out, F, S).
 
 
 %!	grammar_evaluation(+Testing_protocol) is det.
@@ -74,40 +74,40 @@ grammar_evaluation:-
 %	Business end of grammar_evaluation/0. Clauses are selected
 %	depending on the currently configured testing_protocol/1 option.
 %
-grammar_evaluation(precision_recall_bare_bones, Ex, Out, F):-
+grammar_evaluation(basic, Ex, Out, F, _S):-
 	% TODO: Maybe refactor this, dunno. Could push the format/2 calls to
 	%  precision_test or recall_test, or bind its second argument to their
 	% "return" variable.
 	% Test recall
 	examples_count(C)
-	,recall_test(precision_recall_bare_bones, Ex,Out,Recall)
+	,recall_test(basic, Ex,Out,Recall)
 	,format(F,['Recall:',Recall,on,C,examples])
 	% Test precision
-	,precision_test(precision_recall_bare_bones, Ex, Out, Precision)
+	,precision_test(basic, Ex, Out, Precision)
 	,format(F,['Precision:',Precision,on,C,examples])
 	,! % Red cut- because I don't know what it's cutting :P
 	.
 
-grammar_evaluation(precision_recall, Ex, Out, F):-
+grammar_evaluation(counts, Ex, Out, F, _S):-
 	examples_count(C)
 	% Test recall
-	,recall_test(precision_recall, Ex,Out,Parsed)
+	,recall_test(counts, Ex,Out,Parsed)
 	,format(F,['Recall:',Parsed,parsed,'out of',C,examples])
 	% Test precision
-	,precision_test(precision_recall, Ex, Out, Generated)
+	,precision_test(counts, Ex, Out, Generated)
 	% KLUDGE: If Generated is bound to -1, it will still be padded with 0's
 	,format(F,['Precision:',Generated,generated,from,C,examples])
 	,! % Red cut- because I still don't know what it's cutting
 	.
 
-grammar_evaluation(precision_recall_with_reporting, Ex, Out, F):-
-	configuration:output_file_name(grammar_evaluation, S)
-	,metrics_format(precision_recall_with_reporting_separator_recall, Sep_rec)
-	,metrics_format(precision_recall_with_reporting_separator_precision, Sep_prec)
-	,format_character(precision_recall_with_reporting_separator, Sep_char)
+grammar_evaluation(strings, Ex, G, F, S):-
+%	configuration:output_file_name(grammar_evaluation, S)
+	metrics_format(strings_separator_recall, Sep_rec)
+	,metrics_format(strings_separator_precision, Sep_prec)
+	,format_character(strings_separator, Sep_char)
 	,examples_count(C)
 	% Test recall
-	,recall_test(precision_recall_with_reporting, Ex,Out, Parsed-Unparsed)
+	,recall_test(strings, Ex, G, Parsed-Unparsed)
 	,length(Parsed, Ps)
 	,length(Unparsed, Us)
 	,format(S, F,['Recall:',Ps,parsed,Us,unparsed,'out of',C,'total examples.'])
@@ -117,7 +117,7 @@ grammar_evaluation(precision_recall_with_reporting, Ex, Out, F):-
 	,forall(member(U, Unparsed), writeln(S, unparsed:U))
 	% Test precision
 	,writeln(S, '')
-	,precision_test(precision_recall_with_reporting, Ex, Out, In_corpus-Not_in_corpus)
+	,precision_test(strings, Ex, G, In_corpus-Not_in_corpus)
 	,length(In_corpus, Ins)
 	,length(Not_in_corpus, Nots)
 	,Ds is Ins + Nots
@@ -165,17 +165,17 @@ load_output_module(Module_name):-
 %	configuration setting testing_protocol/1.
 %
 %	Protocol is one of:
-%	* precision_recall_bare_bones.
-%	* precision_recall
+%	* basic.
+%	* counts
 %
-%	With option precision_recall_bare_bones Recall is bound to the
+%	With option basic Recall is bound to the
 %	atom "total" iff the Grammar can parse each example in the
 %	training corpus. Otherwise, Recall is bound to "partial", or
 %	"undetermined" if parsing could not complete within N
 %	inferences, where N the value of
 %	grammar_evaluation_inference_limit/1
 %
-recall_test(precision_recall_bare_bones, Ex, Out, Recall):-
+recall_test(basic, Ex, Out, Recall):-
 	findall(S, Ex:example_string(S), Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
@@ -185,9 +185,9 @@ recall_test(precision_recall_bare_bones, Ex, Out, Recall):-
 	 ->  Recall = total
 	 ;   Recall = undetermined
 	 ).
-recall_test(precision_recall_bare_bones, _Ex, _Out, partial).
+recall_test(basic, _Ex, _Out, partial).
 
-recall_test(precision_recall, Ex, Out, Ps_L):-
+recall_test(counts, Ex, Out, Ps_L):-
 	findall(S, Ex:example_string(S), Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
@@ -198,7 +198,7 @@ recall_test(precision_recall, Ex, Out, Ps_L):-
 %	,length(Ss, Ss_L)
 	,length(Ps, Ps_L).
 
-recall_test(precision_recall_with_reporting, Ex, Out, Parsed-Unparsed):-
+recall_test(strings, Ex, Out, Parsed-Unparsed):-
 	phrase(configuration:start, [St])
 	,findall(S, Ex:example_string(S), Ss)
 	,once(parsed_unparsed(Out, St, Ss, Parsed, Unparsed)).
@@ -213,23 +213,23 @@ recall_test(precision_recall_with_reporting, Ex, Out, Parsed-Unparsed):-
 %	setting testing_protocol/1.
 %
 %	Protocol is one of:
-%	* precision_recall_bare_bones
-%	* precision_recall
+%	* basic
+%	* counts
 %
-%	With precision_recall_bare_bones the atom "total" is bound to
+%	With basic the atom "total" is bound to
 %	Recall iff the Grammar can generate each example in the training
 %	corpus. Otherwise Recall is bound to the atom "partial" or to
 %	the atom "undetermined" if generation fails to terminate within
 %	N inferences, where N the value of
 %	grammar_evaluation_inference_limit/1.
 %
-%	With precision_recall, Recall is bound to the number of strings
+%	With counts, Recall is bound to the number of strings
 %	generated. If generation fails completely, Recall is bound to 0.
 %	If the generation goes infinite (or in any case exceeds the
 %	specified gammar_evaluation_inference_limit) Recall is bound to
 %	-1.
 %
-precision_test(precision_recall_bare_bones, Ex, Out, Precision):-
+precision_test(basic, Ex, Out, Precision):-
 	findall(S, Ex:example_string(S), Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
@@ -239,9 +239,9 @@ precision_test(precision_recall_bare_bones, Ex, Out, Precision):-
 	 ->  Precision = total
 	 ;   Precision = undetermined
 	 ).
-precision_test(precision_recall_bare_bones, _, _, partial).
+precision_test(basic, _, _, partial).
 
-precision_test(precision_recall, Ex, Out, Ps_L):-
+precision_test(counts, Ex, Out, Ps_L):-
 	findall(S, Ex:example_string(S), Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
@@ -252,9 +252,9 @@ precision_test(precision_recall, Ex, Out, Ps_L):-
 	->   Ps_L = -1
 	 ;   length(Ps, Ps_L)
 	 ).
-precision_test(precision_recall, _, _, 0).
+precision_test(counts, _, _, 0).
 
-precision_test(precision_recall_with_reporting, Ex, Out, In_corpus-Not_in_corpus):-
+precision_test(strings, Ex, Out, In_corpus-Not_in_corpus):-
 	phrase(configuration:start, [St])
 	,in_corpus_not_in_corpus(Out, St, Ex, In_corpus, Not_in_corpus).
 
@@ -335,7 +335,7 @@ in_corpus_not_in_corpus(E, [D|Ds], Ins, Ins_acc, Outs, Outs_acc):-
 /*
 % Nice but no cigar. We only ever get a single result back, inference limit or not.
 %
-precision_test(precision_recall, Ex, Out, Ps_L):-
+precision_test(counts, Ex, Out, Ps_L):-
 	findall(S, Ex:example_string(S), Ss)
 	,phrase(configuration:start, [St])
 	,grammar_evaluation_inference_limit(L)
