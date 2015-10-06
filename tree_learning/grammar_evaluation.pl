@@ -65,8 +65,18 @@ grammar_evaluation:-
 	,load_examples_module(Ex)
 	,load_output_module(Out)
 	,metrics_format(P, F)
-	,configuration:output_file_name(grammar_evaluation, S)
-	,grammar_evaluation(P, Ex, Out, F, S).
+	,configuration:output_file_name(grammar_evaluation, File_name)
+	,(   File_name = output(_)
+	 ->  expand_file_search_path(File_name, Path)
+	    ,open(Path,write,Stream,[])
+	 ;   atomic(File_name) % e.g. File_name = user_output
+	     ,Stream = File_name
+	)
+	,grammar_evaluation(P, Ex, Out, F, Stream)
+	,(   is_stream(Stream)
+	 ->  close(Stream)
+	 ;   true
+	).
 
 
 %!	grammar_evaluation(+Testing_protocol) is det.
@@ -74,34 +84,33 @@ grammar_evaluation:-
 %	Business end of grammar_evaluation/0. Clauses are selected
 %	depending on the currently configured testing_protocol/1 option.
 %
-grammar_evaluation(basic, Ex, Out, F, _S):-
+grammar_evaluation(basic, Ex, Out, F, S):-
 	% TODO: Maybe refactor this, dunno. Could push the format/2 calls to
 	%  precision_test or recall_test, or bind its second argument to their
 	% "return" variable.
 	% Test recall
 	examples_count(C)
 	,recall_test(basic, Ex,Out,Recall)
-	,format(F,['Recall:',Recall,on,C,examples])
+	,format(S, F,['Recall:',Recall,on,C,examples])
 	% Test precision
 	,precision_test(basic, Ex, Out, Precision)
-	,format(F,['Precision:',Precision,on,C,examples])
+	,format(S, F,['Precision:',Precision,on,C,examples])
 	,! % Red cut- because I don't know what it's cutting :P
 	.
 
-grammar_evaluation(counts, Ex, Out, F, _S):-
+grammar_evaluation(counts, Ex, Out, F, S):-
 	examples_count(C)
 	% Test recall
 	,recall_test(counts, Ex,Out,Parsed)
-	,format(F,['Recall:',Parsed,parsed,'out of',C,examples])
+	,format(S, F,['Recall:',Parsed,parsed,'out of',C,examples])
 	% Test precision
 	,precision_test(counts, Ex, Out, Generated)
 	% KLUDGE: If Generated is bound to -1, it will still be padded with 0's
-	,format(F,['Precision:',Generated,generated,from,C,examples])
+	,format(S, F,['Precision:',Generated,generated,from,C,examples])
 	,! % Red cut- because I still don't know what it's cutting
 	.
 
 grammar_evaluation(strings, Ex, G, F, S):-
-%	configuration:output_file_name(grammar_evaluation, S)
 	metrics_format(strings_separator_recall, Sep_rec)
 	,metrics_format(strings_separator_precision, Sep_prec)
 	,format_character(strings_separator, Sep_char)

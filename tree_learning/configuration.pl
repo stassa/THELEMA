@@ -21,8 +21,8 @@
 %	Basename of the examples file to use in induction.
 %examples_file_name(examples_mtg_hand_simulation).
 %examples_file_name(mtg_pot_puri).
-examples_file_name(examples_mtg_destroy_short).
-%examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
+%examples_file_name(examples_mtg_destroy_short).
+examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
 
 %examples_file_name(examples_mtg_hand_simulation_compressed).
@@ -110,12 +110,13 @@ output_file_name(compressed_corpus, corpus(Filename)):-
 	,atomic_list_concat([E,compressed],'_',Base_name)
 	,atom_concat(Base_name, Ext, Filename).
 
-output_file_name(grammar_evaluation, user_output).
-/*output_file_name(grammar_evaluation, output(Filename)):-
-	output_stream(grammar, output(Grammar))
+% Use to print to Prolog top-level
+%output_file_name(grammar_evaluation, user_output).
+output_file_name(grammar_evaluation, output(Filename)):-
+	output_file_name(grammar, output(Grammar))
 	,output_format(evaluation, Ext)
 	,atom_concat(Grammar, Ext, Filename).
-*/
+
 
 
 %!	output_type(?Type) is det.
