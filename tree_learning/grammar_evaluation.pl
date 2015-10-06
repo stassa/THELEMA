@@ -101,7 +101,7 @@ grammar_evaluation(precision_recall, Ex, Out, F):-
 	.
 
 grammar_evaluation(precision_recall_with_reporting, Ex, Out, F):-
-	output_stream(grammar_evaluation, S)
+	configuration:output_file_name(grammar_evaluation, S)
 	,metrics_format(precision_recall_with_reporting_separator_recall, Sep_rec)
 	,metrics_format(precision_recall_with_reporting_separator_precision, Sep_prec)
 	,format_character(precision_recall_with_reporting_separator, Sep_char)
@@ -146,7 +146,7 @@ load_examples_module(Ex):-
 %	name.
 %
 load_output_module(Module_name):-
-	configuration:output_stream(grammar, Output_stream)
+	configuration:output_file_name(grammar, Output_stream)
 	,phrase(configuration:start, [St])
 %	,Start_term =.. [/,St,2]
         % "St/2 as St" Reported as error in XPCE- but valid Prolog

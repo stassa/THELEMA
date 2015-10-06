@@ -2,7 +2,7 @@
 			,grammar_printing/1
 			,language_file_name/1
 			,lexicalisation_strategy/1
-			,output_stream/2
+			,output_file_name/2
 			,output_type/1
 			,output_format/2
 			,production_augmentation/1
@@ -89,7 +89,7 @@ lexicalisation_strategy(greibach).
 %	corpus. Type selects clauses according to the type of file to
 %	print.
 %
-output_stream(grammar, output(Filename)):-
+output_file_name(grammar, output(Filename)):-
 	examples_file_name(E)
 	,language_file_name(L)
 	,output_type(T)
@@ -102,7 +102,7 @@ output_stream(grammar, output(Filename)):-
 	,atomic_list_concat([E,L,S_],'_',Base_name)
 	,atom_concat(Base_name, Ext, Filename).
 
-output_stream(compressed_corpus, corpus(Filename)):-
+output_file_name(compressed_corpus, corpus(Filename)):-
 	examples_file_name(E)
 	% Output type/format shared with grammar!
 	,output_type(T)
@@ -110,8 +110,8 @@ output_stream(compressed_corpus, corpus(Filename)):-
 	,atomic_list_concat([E,compressed],'_',Base_name)
 	,atom_concat(Base_name, Ext, Filename).
 
-output_stream(grammar_evaluation, user_output).
-/*output_stream(grammar_evaluation, output(Filename)):-
+output_file_name(grammar_evaluation, user_output).
+/*output_file_name(grammar_evaluation, output(Filename)):-
 	output_stream(grammar, output(Grammar))
 	,output_format(evaluation, Ext)
 	,atom_concat(Grammar, Ext, Filename).

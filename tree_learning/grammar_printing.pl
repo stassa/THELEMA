@@ -32,7 +32,7 @@ print_grammar:-
 	configuration:grammar_printing(Printing)
 	,configuration:examples_module(Es)
 	,configuration:language_module(L)
-	,configuration:output_stream(grammar, O)
+	,configuration:output_file_name(grammar, O)
 	,phrase(L:start, [S])
 	,findall(C, Es:example_string(C), Cs)
 	,corpus_productions(Cs, Ps)
@@ -53,9 +53,9 @@ print_grammar:-
 %	corpus.
 %
 print_compressed_corpus:-
-	configuration:output_stream(compressed_corpus, Compressed_corpus_file_name)
+	configuration:output_file_name(compressed_corpus, Compressed_corpus_file_name)
 	,module_name(Compressed_corpus_file_name, Compressed_corpus_module_name)
-	,configuration:output_stream(grammar, Grammar_module_file_name)
+	,configuration:output_file_name(grammar, Grammar_module_file_name)
 	,use_module(Grammar_module_file_name)
 	,module_name(Grammar_module_file_name, Grammar_module_name)
 	,corpus(Cs)
