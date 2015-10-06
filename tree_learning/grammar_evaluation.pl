@@ -33,8 +33,9 @@
 %
 metrics_format(precision_recall_bare_bones, '~w~t~10+ ~w~t~13+ ~w~t~2+ ~`0t~d~6+ ~w~t~8|~n').
 metrics_format(precision_recall, '~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~w~t~7+ ~`0t~d~7+ ~w~t~8|~n').
-metrics_format(precision_recall_with_reporting, '~w~t~10+ ~`0t~d~7+ ~w~t~10+ ~`0t~d~7+ ~w~t~8+ ~w~t~7+  ~`0t~d~7+ ~w~t~14|~n').
-metrics_format(precision_recall_with_reporting_separator, '~w~*t~73|~n').
+metrics_format(precision_recall_with_reporting, '~w~`.t~15+ ~`0t~d~7+ ~w~t~9+ ~`0t~d~7+ ~w~t~13+ ~w~t~6+  ~`0t~d~7+ ~w~t~18|~n').
+metrics_format(precision_recall_with_reporting_separator_recall, '~w~*t~81|~n').
+metrics_format(precision_recall_with_reporting_separator_precision, '~w~*t~86|~n').
 %	,format(F,['Recall:',Ps,parsed,Us,unparsed,'out of',C,'total examples.'])
 
 %!	format_character(?Format, ?Character) is det.
@@ -100,27 +101,30 @@ grammar_evaluation(precision_recall, Ex, Out, F):-
 	.
 
 grammar_evaluation(precision_recall_with_reporting, Ex, Out, F):-
-	metrics_format(precision_recall_with_reporting_separator, Sep)
+	output_stream(grammar_evaluation, S)
+	,metrics_format(precision_recall_with_reporting_separator_recall, Sep_rec)
+	,metrics_format(precision_recall_with_reporting_separator_precision, Sep_prec)
 	,format_character(precision_recall_with_reporting_separator, Sep_char)
 	,examples_count(C)
 	% Test recall
 	,recall_test(precision_recall_with_reporting, Ex,Out, Parsed-Unparsed)
 	,length(Parsed, Ps)
 	,length(Unparsed, Us)
-	,format(F,['Recall:',Ps,parsed,Us,unparsed,'out of',C,'total examples.'])
+	,format(S, F,['Recall:',Ps,parsed,Us,unparsed,'out of',C,'total examples.'])
 	,atom_codes(Sep_char, [Sep_code])
-	,format(Sep, [Sep_char,Sep_code])
-	,forall(member(P, Parsed), writeln(parsed:P))
-	,forall(member(U, Unparsed), writeln(unparsed:U))
+	,format(S, Sep_rec, [Sep_char,Sep_code])
+	,forall(member(P, Parsed), writeln(S, parsed:P))
+	,forall(member(U, Unparsed), writeln(S, unparsed:U))
 	% Test precision
+	,writeln(S, '')
 	,precision_test(precision_recall_with_reporting, Ex, Out, In_corpus-Not_in_corpus)
-	,forall(member(In, In_corpus), writeln('in corpus':In))
-	,forall(member(Not, Not_in_corpus), writeln('not in corpus':Not))
-%	,precision_test(precision_recall, Ex, Out, Generated)
-	% KLUDGE: If Generated is bound to -1, it will still be padded with 0's
-%	,format(F,['Precision:',Generated,generated,from,C,examples])
-%	,! % Red cut- because I still don't know what it's cutting
-	.
+	,length(In_corpus, Ins)
+	,length(Not_in_corpus, Nots)
+	,Ds is Ins + Nots
+	,format(S, F,['Precision:',Ins,'in corpus',Nots,'not in corpus','out of',Ds,'total derivations.'])
+	,format(S, Sep_prec, [Sep_char,Sep_code])
+	,forall(member(In, In_corpus), writeln(S, 'in corpus':In))
+	,forall(member(Not, Not_in_corpus), writeln(S, 'not in corpus':Not)).
 
 
 %!	load_examples_module(-Module_name) is det.

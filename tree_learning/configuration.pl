@@ -110,6 +110,13 @@ output_stream(compressed_corpus, corpus(Filename)):-
 	,atomic_list_concat([E,compressed],'_',Base_name)
 	,atom_concat(Base_name, Ext, Filename).
 
+output_stream(grammar_evaluation, user_output).
+/*output_stream(grammar_evaluation, output(Filename)):-
+	output_stream(grammar, output(Grammar))
+	,output_format(evaluation, Ext)
+	,atom_concat(Grammar, Ext, Filename).
+*/
+
 
 %!	output_type(?Type) is det.
 %
@@ -130,6 +137,7 @@ output_type(grammar).
 %	configured.
 %
 output_format(grammar, '.pl').
+output_format(evaluation, '.log').
 
 
 %!	production_augmentation(?Type:atom) is det.
