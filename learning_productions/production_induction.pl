@@ -6,7 +6,6 @@
 			       ,compress_corpus/1
 			       ,complete_grammar/0
 			       ,complete_grammar/1
-			       ,examples_corpus/1
 			       ,pruned_corpus/3
 			       ,derivation/3
 			       ,grammar/4
@@ -903,13 +902,6 @@ tokens_atomic([N|Ns], Temp, Acc):-
 tokens_atomic([N|Ns], Temp, Acc):-
 	tokens_atomic(Ns, [N|Temp],Acc).
 
-
-
-%!	examples_corpus(+Examples) is det.
-%
-%	All examples in the examples corpus.
-examples_corpus(Examples):-
-	findall(Example,configuration:example_string(Example),Examples).
 
 
 %!	pruned_corpus(+Corpus,+Grammar,-Pruned_corpus) is det.

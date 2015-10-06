@@ -1,4 +1,5 @@
-﻿:-module(utilities, [productions_compressed_strings/3
+﻿:-module(utilities, [examples_corpus/1
+		    ,productions_compressed_strings/3
 		    ,sum_of/3
 		    ,timestamp/1
 		    ,prolog_dcg/2
@@ -22,6 +23,14 @@
 */
 
 :- meta_predicate utilities:productions_compressed_strings(//,*,*).
+
+%!	examples_corpus(+Examples) is det.
+%
+%	All examples in the examples corpus.
+examples_corpus(Examples):-
+	findall(Example,configuration:example_string(Example),Examples).
+
+
 
 %!	productions_compressed_strings(+Productions,+Strings,-Compressed) is det.
 %
