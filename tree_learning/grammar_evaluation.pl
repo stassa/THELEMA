@@ -52,7 +52,7 @@ format_character(strings_separator, =).
 %	before giving up and reporting that the grammar is probably
 %	recursive.
 %
-grammar_evaluation_inference_limit(100_000).
+grammar_evaluation_inference_limit(1_000).
 
 
 
@@ -113,7 +113,7 @@ grammar_evaluation(counts, Ex, Out, F, S):-
 
 grammar_evaluation(strings, Ex, G, F, S):-
 	metrics_format(strings_separator_recall, Sep_rec)
-%	,metrics_format(strings_separator_precision, Sep_prec)
+	,metrics_format(strings_separator_precision, Sep_prec)
 	,format_character(strings_separator, Sep_char)
 	,examples_count(C)
 	% Test recall
@@ -127,18 +127,22 @@ grammar_evaluation(strings, Ex, G, F, S):-
 	,forall(member(P, Parsed), writeln(S, parsed:P))
 	,forall(member(U, Unparsed), writeln(S, unparsed:U))
 	% Test precision
-	/*,writeln(S, '')
-	,!
+	% If In_corpus-Not_in_corpus are "unknown" then we're probably going infinite.
+	,writeln(S, '')
 	,once(precision_test(strings, Ex, G, In_corpus-Not_in_corpus))
-	,length(In_corpus, Ins)
-	,length(Not_in_corpus, Nots)
+	,(   In_corpus = [unknown]
+	->  Ins = 0
+	;   length(In_corpus, Ins)
+	)
+	,(   Not_in_corpus = [unknown]
+	 ->  Nots = 0
+	;    length(Not_in_corpus, Nots)
+	 )
 	,Ds is Ins + Nots
 	,format(S, F,['Precision:',Ins,'in corpus',Nots,'not in corpus','out of',Ds,'total derivations.'])
 	,format(S, Sep_prec, [Sep_char,Sep_code])
 	,forall(member(In, In_corpus), writeln(S, 'in corpus':In))
-	,forall(member(Not, Not_in_corpus), writeln(S, 'not in corpus':Not))
-	*/
-	.
+	,forall(member(Not, Not_in_corpus), writeln(S, 'not in corpus':Not)).
 
 
 %!	load_examples_module(-Module_name) is det.
@@ -274,24 +278,6 @@ precision_test(strings, Ex, Out, In_corpus-Not_in_corpus):-
 
 
 
-%!	examples_count(-Count) is det.
-%
-%	Count the number of examples in the currently configured
-%	examples module(s).
-%
-%	@TODO: this currently only counts examples in the first
-%	configured module. Implement the "(s)" (thought you'll have to
-%	do that application-wide, nothing else can handle mulitple
-%	examples modules right now.
-%
-%examples_count(Count):-
-%	configuration:examples_module(Ex)
-%	% Only inspect examples from the currently configured examples module.
-%	,findall(S, Ex:example_string(S), Ss)
-%	,length(Ss, Count).
-
-
-
 %!	parsed_unparsed(+Grammar,+Production,+Examples,-Parsed,-Unparsed) is det.
 %
 %	Collect Examples that were Parsed and also the ones that were
@@ -329,8 +315,8 @@ in_corpus_not_in_corpus(G, P, E, Ins, Outs):-
 	,Goal = setof(D, phrase(G:P, D), Ds)
 	,call_with_inference_limit(Goal, L, Result)
 	,(   Result = inference_limit_exceeded
-	 ->  Ins = unknown
-	    ,Outs = unknown
+	 ->  Ins = [unknown]
+	    ,Outs = [unknown]
 	 ;   once(in_corpus_not_in_corpus(E, Ds, [], Ins_, [], Outs_))
 	 )
 	,reverse(Ins_, Ins)
