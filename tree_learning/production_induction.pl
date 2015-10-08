@@ -2,6 +2,7 @@
 
 :-use_module(configuration).
 :-use_module(project_root(utilities)).
+:-use_module(database).
 
 /** <module> Induce the structure of a grammar from examples given as flat strings of tokens.
 
@@ -16,7 +17,8 @@
 %	productions in DCG notation.
 %
 corpus_productions(Cs, Ps_):-
-	node_heads(Cs, Bs)
+	clear_records(covered_by, [_,_])
+	,node_heads(Cs, Bs)
 	,start_production(Ph)
 	,derived_productions(Cs,Bs,Ph,Ps)
 	,sort(Ps, Ps_).
@@ -120,10 +122,20 @@ split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 %
 %	Construct the node-head Production for the given Node_head.
 %
+derived_production(Hi, Ph_i):-
+	configuration:remember_previous_results(true)
+	,record_query(covered_by, [Hi,Ph_i])
+	,! % Don't try to derive the same production again
+	.
+
 derived_production(Hi, Ph_i_):-
 	configuration:production_composition(S)
 	,derived_production(S, Hi, Ph_i)
-	,sanitise_names(Ph_i, Ph_i_).
+	,sanitise_names(Ph_i, Ph_i_)
+	,(   configuration:remember_previous_results(true)
+	->   add_record(covered_by, [Hi,Ph_i_])
+	 ;   true
+	 ).
 
 
 %!	derived_production(+Strategy, +Node_head, -Production) is semidet.

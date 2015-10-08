@@ -81,7 +81,7 @@ language_file_name(language_mtg_hand_simulation).
 %	synonym token, ie the token that is the literal name of the
 %	production.
 %
-lexicalisation_strategy(greibach).
+lexicalisation_strategy(none).
 
 
 %!	output_stream(?Type,?Name) is det.
@@ -177,9 +177,10 @@ production_composition(synonym).
 %	Whether, when encountering a new branch-head token, to look for
 %	previously derived productions covering that token, or not.
 %
-%	Bool is one of 'true' or 'false' where duh.
+%	Option "true" will also turn on the use of the dynamic database
+%	to record such previously obtained results for reuse.
 %
-%	@NOTE: not used yet.
+%	Bool is one of 'true' or 'false' where duh.
 %
 remember_previous_results(true).
 
