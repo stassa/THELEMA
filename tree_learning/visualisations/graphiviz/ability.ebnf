@@ -1,0 +1,13 @@
+ability ::= destroy
+ability ::= exile
+artifact ::= 'artifact'
+black ::= 'black'
+creature ::= 'creature' if
+creature ::= 'creature'
+destroy ::= 'destroy' target
+exile ::= 'exile' target
+if ::= 'if' it
+it ::= 'it' n_is
+n_is ::= 'is' black
+target ::= 'target' artifact
+target ::= 'target' creature

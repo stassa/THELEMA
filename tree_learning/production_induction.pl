@@ -122,7 +122,12 @@ split_corpus(H, [C|Cs], Cs_H, Cs_H_Acc, Cs_Rest, Cs_Rest_Acc):-
 %
 %	Construct the node-head Production for the given Node_head.
 %
-derived_production(Hi, Ph_i):-
+derived_production(Hi, Ph_i_):-
+	configuration:production_composition(S)
+	,derived_production(S, Hi, Ph_i)
+	,sanitise_names(Ph_i, Ph_i_).
+
+/*derived_production(Hi, Ph_i):-
 	configuration:remember_previous_results(true)
 	,record_query(covered_by, [Hi,Ph_i])
 	,! % Don't try to derive the same production again
@@ -136,7 +141,7 @@ derived_production(Hi, Ph_i_):-
 	->   add_record(covered_by, [Hi,Ph_i_])
 	 ;   true
 	 ).
-
+*/
 
 %!	derived_production(+Strategy, +Node_head, -Production) is semidet.
 %
@@ -168,6 +173,19 @@ augmented_production(Ph, Hi, A_Ph_):-
 	configuration:production_augmentation(Pa)
 	,augmented_production(Pa,Ph,Hi,A_Ph)
 	,sanitise_names(A_Ph, A_Ph_).
+
+/*
+augmented_production(Ph-->B, Hi, A_Ph_):-
+	configuration:production_augmentation(Pa)
+	,augmented_production(Pa,Ph-->B,Hi,A_Ph)
+	,sanitise_names(A_Ph, A_Ph_)
+	,Ph  =.. [Hi_F|_]
+	,(   configuration:remember_previous_results(true)
+	    ,\+ record_query(covered_by, [Hi_F,A_Ph_])
+	->   add_record(covered_by, [Hi_F,A_Ph_])
+	 ;   true
+	 ).
+*/
 
 
 %!	augmented_production(+Strategy,+Node_head_production,+Token,-Augmented_branch_production) is det.
@@ -250,9 +268,39 @@ augmented_production(tail, Ph --> B , H, (Ph --> Bs_t)):-
 %	ensure that references to it also have arity n. But need to
 %	explain the how.
 %
-lexicalised_productions(Ps, Ps_l):-
+/*lexicalised_productions(Ps, Ps_l):-
 	configuration:lexicalisation_strategy(S)
 	,lexicalised_productions(S, [epsilon|Ps], [], Ps_l).
+*/
+
+lexicalised_productions(Ps, Ps_l):-
+	configuration:lexicalisation_strategy(S)
+	,S \= none
+	,findall(P --> B
+		,(member(P --> B, Ps)
+		 ,\+ record_query(covered_by, [_, P --> B])
+		 )
+		,Ps_new)
+	,lexicalised_productions(S, [epsilon|Ps_new], [], Ps_new_l)
+	,forall(member(P --> B, Ps_new_l), add_record(covered_by, [aaarg]))
+	,findall(P --> B
+		,(member(P-->B, Ps)
+		 ,record_query(covered_by, [_, P --> B])
+		 )
+		,Ps_known)
+	,append(Ps_new_l, Ps_known, Ps_l).
+
+
+lexicalised_productions(Ps, Ps_l):-
+	configuration:lexicalisation_strategy(S)
+	,lexicalised_productions(S, [epsilon|Ps], [], Ps_l)
+	,forall(member(P --> B, Ps_l)
+		,(   P =.. [F|_As]
+		    ,\+ record_query(covered_by, [F, P --> B])
+		 ->  add_record(covered_by, [F, P --> B])
+		 ;   true
+		)
+	       ).
 
 
 %!	lexicalised_productions(+Strategy,+Productions,+Temp,-Acc) is det.

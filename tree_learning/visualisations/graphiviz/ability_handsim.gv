@@ -1,0 +1,20 @@
+digraph ability {
+//rankdir=LR;
+node [shape = doublecircle]; ability;
+node [shape = diamond]; destroy exile target;
+node [shape = box];
+
+ability->destroy;
+ability->exile;
+artifact->epsilon;
+black->epsilon;
+creature->if;
+creature->epsilon;
+destroy->target;
+exile->target;
+if->it;
+it->n_is;
+n_is->black;
+target->artifact;
+target->creature;
+}

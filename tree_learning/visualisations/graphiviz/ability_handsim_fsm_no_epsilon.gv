@@ -1,0 +1,22 @@
+digraph ability {
+rankdir=LR;
+node [shape = point]; point;
+node [shape = doublecircle]; artifact creature black;
+//node [shape = circle]; ability destroy exile target;
+node [shape = circle];
+
+point -> ability;
+ability->destroy [label = "destroy"];
+ability->exile [label = "exile"];
+//artifact->epsilon [label = "epsilon"];
+//black->epsilon [label = "epsilon"];
+creature->if [label = "if"];
+//creature->epsilon  [label = "epsilon"];
+destroy->target  [label = "target"];
+exile->target  [label = "target"];
+if->it  [label = "it"];
+it->n_is  [label = "is"];
+n_is->black  [label = "black"];
+target->artifact  [label = "artifact"];
+target->creature  [label = "creature"];
+}
