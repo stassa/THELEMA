@@ -1,0 +1,32 @@
+
+strict digraph ability {
+ordering="out"; 
+
+node [shape = "circle"]; ability;
+node [shape = "diamond"]; destroy target branch;
+node [shape="ellipse"]; artifact, creature;
+node [shape = "box"];
+
+target [label = "target"];
+ branch [label=""];
+
+t_artifact [label = "aritfact"];
+t_creature [label = "creature"];
+t_destroy [label = "destroy"];
+t_target [label = "target"];
+
+ability ->  destroy;
+destroy -> t_destroy, target;
+target-> t_target, branch;
+branch -> artifact, creature;
+artifact -> t_artifact;
+creature -> t_creature;
+}
+
+
+/*
+ Can also do the split with unnamed rules:
+""  [shape="diamond"];
+target-> t_target, "";
+"" -> artifact, creature;
+*/
