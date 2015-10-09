@@ -19,8 +19,8 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-examples_file_name(examples_mtg_hand_simulation).
-%examples_file_name(mtg_pot_puri).
+%examples_file_name(examples_mtg_hand_simulation).
+examples_file_name(mtg_pot_puri).
 %examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
@@ -68,8 +68,13 @@ lexicalisation_strategy(none).
 %	corpus. Type selects clauses according to the type of file to
 %	print.
 %
-output_file_name(grammar, output(Filename)):-
-	examples_file_name(E)
+output_file_name(Type, output(Filename)):-
+	(   Type = grammar
+	;   Type = bnf
+	;   Type = ebnf
+	;   Type = hex_bnf
+	)
+	,examples_file_name(E)
 	,language_file_name(L)
 	,output_type(T)
 	,output_format(T, Ext)
@@ -112,8 +117,17 @@ output_file_name(grammar_evaluation, user_output).
 %	* compression; print a compression grammar, used to replace
 %	examples' tokens with the names of productions that cover them;
 %	implies "tags" (and indeed includes the tags grammar).
+%	* bnf; as "grammar" but the output is in Backus-Naur Form.
+%	* hex_bnf; as bnf, but names of nonterminals are output in
+%	hexadecimal codes for use with tools that conform to xml specs
+%	(bleagh) for example Railroad Diagram Generator.
+%	* ebnf; prints grammar in extended bnf.
+%	* dot; print a dot-language file that can be used to generate a
+%	visualisation of the grammar using a program such as graphviz.
 %
-output_type(grammar).
+%	@TODO: implement dot.
+%
+output_type(bnf).
 
 
 %!	output_format(?Type, ?Extension) is det.
@@ -125,6 +139,10 @@ output_type(grammar).
 output_format(grammar, '.pl').
 output_format(tags, '.pl').
 output_format(compression, '.pl').
+output_format(bnf, '.bnf').
+output_format(hex_bnf, '.hbnf').
+output_format(ebnf, '.ebnf').
+output_format(dot, '.dot').
 output_format(evaluation, '.log').
 
 

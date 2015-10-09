@@ -1,9 +1,12 @@
 :-module(grammar_printing, [print_productions/0
 			   ,print_grammar/0
 			   ,print_compressed_corpus/0
-			   ,corpus/1]).
+			   ,corpus/1
+			   ]).
 
 :-use_module(production_induction, [corpus_productions/2]).
+:-use_module(project_root(utilities), [atom_hex/2]).
+
 
 /** <module> Predicates for printing an induced grammar.
 
@@ -183,6 +186,89 @@ print_grammar_file(compression, Grammar_module_name, Stream, S, Ps):-
 		 )
 	       ).
 
+/* Good old-fashioned BNF; not used much these days. */
+print_grammar_file(Type, _, Stream, S, Ps):-
+	Type = bnf
+	% Print the module/2 statement at the start of the grammar module file.
+	,forall(member(P, Ps),
+		(   % Top-level term
+		    P = (S --> N)
+		   ,atomic(N) % As in ability --> destroy
+		->  atomic_list_concat([<, S, >], '', S_)
+		   ,atomic_list_concat([<, N, >], '', N_)
+		   ,atomic_list_concat([S_, ::=, N_], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		    % Restricted GNF nonterminal:
+		;   P = (Ph --> [T], N)
+		   ,atomic(N)
+		->  atomic_list_concat([<, Ph, >], '', Ph_)
+		   ,atomic_list_concat([<, N, >], '', N_)
+		   ,atomic_list_concat([Ph_, ::=, T, N_], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		    % Restricted GNF preterminal
+		;   P = (Ph --> [T])
+		->  atomic_list_concat([<, Ph, >], '', Ph_)
+		   ,atomic_list_concat([Ph_, ::=, T], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		)
+	       ).
+
+/* Failed attempt to print for online tool Railroad Diagram Generator -
+uses xml name defs so can't deal with rules for '/', '+1' etc.  Dang. */
+print_grammar_file(Type, _, Stream, S, Ps):-
+	Type = hex_bnf
+	% Print the module/2 statement at the start of the grammar module file.
+	,forall(member(P, Ps),
+		(   % Top-level term
+		    P = (S --> N)
+		->  atomic_list_concat([S, ::=, N], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		    % Restricted GNF nonterminal:
+		;   P = (Ph --> [T], N)
+		   ,atomic(N)
+		,(	atom_codes(Ph, [C|_])
+		     ,\+ code_type(C, csymf)
+		     ->	 atom_hex(Ph, Ph_)
+		     ;	 Ph_ = Ph
+		 )
+		->  atomic_list_concat([Ph_, ::=, T, N], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		    % Restricted GNF preterminal
+		;   P = (Ph --> [T])
+		,(	atom_codes(Ph, [C|_])
+		     ,\+ code_type(C, csymf)
+		     ->	 atom_hex(Ph, Ph_)
+		     ;	 Ph_ = Ph
+		 )
+		->  atomic_list_concat([Ph_, ::=, T], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		)
+	       ).
+
+/* Print the grammar in ebnf format. Like BNF but extended. With, um. More stuff. */
+print_grammar_file(Type, _, Stream, S, Ps):-
+	Type = ebnf
+	% Print the module/2 statement at the start of the grammar module file.
+	,forall(member(P, Ps),
+		(   % Top-level term
+		    P = (S --> N)
+		->  atomic_list_concat([S, ::=, N], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		    % Restricted GNF nonterminal:
+		;   P = (Ph --> [T], N)
+		   ,atomic(N)
+		->  atomic_list_concat(["'",T,"'"], T_)
+		   ,atomic_list_concat([Ph, ::=, T_, N], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		    % Restricted GNF preterminal
+		;   P = (Ph --> [T])
+		->  atomic_list_concat(["'",T,"'"], T_)
+		   ,atomic_list_concat([Ph, ::=, T_], ' ', Ls)
+		   ,print_term(Stream, Type, Ls)
+		)
+	       ).
+
+
 you_are_here.
 
 
@@ -201,6 +287,19 @@ print_term(S, p, T):-
 
 print_term(S, i, T):-
 	write_term(S, T,[fullstop(false),spacing(next_argument),quoted(true)]).
+
+print_term(S, ebnf, T):-
+	print_term(S, bnf, T).
+
+print_term(S, hex_bnf, T):-
+	print_term(S, bnf, T).
+
+print_term(S, Type, T):-
+	(   Type = bnf
+	;   Type = ebnf
+	;   Type = hex_bnf
+	)
+	,write(S, T), write(S, '\n').
 
 
 %!	grammar_module_exports(+Productions,+Temp,-Acc) is det.

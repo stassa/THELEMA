@@ -1,4 +1,5 @@
-﻿:-module(utilities, [examples_corpus/1
+﻿:-module(utilities, [atom_hex/2
+		    ,examples_corpus/1
 		    ,examples_count/1
 		    ,productions_compressed_strings/3
 		    ,sum_of/3
@@ -24,6 +25,30 @@
 */
 
 :- meta_predicate utilities:productions_compressed_strings(//,*,*).
+
+%!	atom_hex(+Atom,-Hex) is det.
+%
+%	Hex is the list of hexadecimal character codes of characters in
+%	Atom.
+%
+%	Example:
+%
+%      ==
+%      ?- grammar_printing:atom_hex('Your name in hex!', Hex).
+%      Hex = '#x59#x6F#x75#x72#x20#x6E#x61#x6D#x65#x20#x69#x6E#x20#x68#x65#x78#x21'.
+%      ==
+%
+atom_hex(Atom, Hex):-
+	atom_codes(Atom, Codes)
+	,findall(A
+		,(member(C, Codes)
+		 ,format(atom(C_), '~16R', [C])
+		 ,atom_concat('#x',C_, A)
+		 )
+		,As)
+	,atomic_list_concat(As, '', Hex).
+
+
 
 %!	examples_corpus(+Examples) is det.
 %
