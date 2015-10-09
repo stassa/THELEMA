@@ -29,7 +29,7 @@ print_productions:-
 %	learned from the currently configured etc.
 %
 print_grammar:-
-	configuration:grammar_printing(Printing)
+	configuration:output_type(T)
 	,configuration:examples_module(Es)
 	,configuration:language_module(L)
 	,configuration:output_file_name(grammar, O)
@@ -40,7 +40,7 @@ print_grammar:-
 	,expand_file_search_path(O, P)
 	,open(P,write,Stream,[])
         ,module_name(Stream, Module_name)
-	,once(print_grammar_file(Printing, Module_name, Stream, S, Ps))
+	,once(print_grammar_file(T, Module_name, Stream, S, Ps))
 	,close(Stream)
 	,edit(P).
 
@@ -107,7 +107,7 @@ module_name(Stream, Module_name):-
 %	something. Made more sense when print_grammar had an argument
 %	(the Type one).
 %
-print_grammar_file(tree, Grammar_module_name, Stream, S, Ps):-
+print_grammar_file(grammar, Grammar_module_name, Stream, S, Ps):-
 	% Print the module/2 statement at the start of the grammar module file.
 	format(Stream, '~w~w~w~w~w~n'
 	       ,[':-module(',Grammar_module_name,',',[S//0],').'])

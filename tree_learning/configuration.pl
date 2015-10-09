@@ -1,5 +1,5 @@
 :-module(configuration, [examples_file_name/1
-			,grammar_printing/1
+%			,grammar_printing/1
 			,language_file_name/1
 			,lexicalisation_strategy/1
 			,output_file_name/2
@@ -31,28 +31,6 @@ examples_file_name(examples_mtg_hand_simulation).
 
 %examples_file_name(santeria).
 %examples_file_name(santeria_full).
-
-
-%!	grammar_printing(?Type) is det.
-%
-%	What type of grammar to print. One of:
-%
-%	* tree; print a fully hierarchical grammar with every production
-%	connected to the start symbol or to a production connected to
-%	the start symbol.
-%	* tags; print a set of productions that may be used to carve
-%	up a sentence into parts-of-speech, or indeed comrpess it.
-%	* compression; print a compression grammar, used to replace
-%	examples' tokens with the names of productions that cover them;
-%	implies "tags" (and indeed includes the tags grammar).
-%
-%      @TODO: this is redundant; we got output_type.
-%      @KLUDGE: You don't actually need "tags" as a separate option.
-%      We print PsOS into the compression grammar anyway. I don't see
-%      why we need it as a separate file. Mneh, OK, maybe for other
-%      programs...
-%
-grammar_printing(tree).
 
 
 %!	language_file_name(?Name) is det.
@@ -125,9 +103,15 @@ output_file_name(grammar_evaluation, user_output).
 %	What kind of file to print out at the end of an induction run.
 %
 %	One of:
-%	* grammar; print out a full grammar, from the start symbol
-%	defined in the configured language file on down. This is a valid
-%	Prolog file with grammar rules in DCG format.
+%	* grammar; print out a full grammar with every production
+%	connected to the start symbol, or to a production connected to
+%	the start symbol. The output file is a valid Prolog file with
+%	grammar rules in DCG format.
+%	* tags; print a set of productions that may be used to carve
+%	up a sentence into parts-of-speech, or indeed comrpess it.
+%	* compression; print a compression grammar, used to replace
+%	examples' tokens with the names of productions that cover them;
+%	implies "tags" (and indeed includes the tags grammar).
 %
 output_type(grammar).
 
@@ -139,6 +123,8 @@ output_type(grammar).
 %	configured.
 %
 output_format(grammar, '.pl').
+output_format(tags, '.pl').
+output_format(compression, '.pl').
 output_format(evaluation, '.log').
 
 
