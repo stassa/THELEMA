@@ -173,7 +173,6 @@ print_grammar_file(compression, Grammar_module_name, Stream, S, Ps):-
 	       )
 	,write(Stream, '\n')
 	% Print each production unless its name is the start symbol.
-	,you_are_here
 	,forall(member(P-->B, Ps)
 	        ,(   \+ P == S
 		 ->  print_term(Stream, p, P-->B)
@@ -193,7 +192,6 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 	,forall(member(P, Ps),
 		(   % Top-level term
 		    P = (S --> N)
-		   %,atomic(N) % As in ability --> destroy
 		->  sanitise_bnf_identifier(S, S_san)
 		   ,atomic_list_concat([<, S_san, >], '', S_)
 		   ,sanitise_bnf_identifier(N, N_san)
@@ -202,7 +200,6 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
-		   %,atomic(N)
 		->  sanitise_bnf_identifier(Ph, Ph_san)
 		   ,atomic_list_concat([<, Ph_san, >], '', Ph_)
 		   ,sanitise_bnf_identifier(N, N_san)
@@ -255,18 +252,24 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 	,forall(member(P, Ps),
 		(   % Top-level term
 		    P = (S --> N)
-		->  atomic_list_concat([S, ::=, N], ' ', Ls)
+		->  sanitise_bnf_identifier(S, S_san)
+		   ,sanitise_bnf_identifier(N, N_san)
+		   ,atomic_list_concat([S_san, ::=, N_san], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
-		   ,atomic(N)
-		->  atomic_list_concat(["'",T,"'"], T_)
-		   ,atomic_list_concat([Ph, ::=, T_, N], ' ', Ls)
+		->  sanitise_bnf_identifier(T, T_san)
+		   ,atomic_list_concat(["'",T_san,"'"], T_)
+		   ,sanitise_bnf_identifier(Ph, Ph_san)
+		   ,sanitise_bnf_identifier(N, N_san)
+		   ,atomic_list_concat([Ph_san, ::=, T_, N_san], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF preterminal
 		;   P = (Ph --> [T])
-		->  atomic_list_concat(["'",T,"'"], T_)
-		   ,atomic_list_concat([Ph, ::=, T_], ' ', Ls)
+		->  sanitise_bnf_identifier(T, T_san)
+		   ,atomic_list_concat(["'",T_san,"'"], T_)
+		   ,sanitise_bnf_identifier(Ph, Ph_san)
+		   ,atomic_list_concat([Ph_san, ::=, T_], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		)
 	       ).
@@ -277,7 +280,6 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 	% Print start of graph statement
 	,format(Stream, '~w ~w ~w ~n', ['strict digraph', S, '{'])
 	,writeln(Stream, 'ordering="out";\n')
-	%,writeln(Stream, 'node [shape = "box"];\n')
 	,forall(member(P, Ps),
 		(   % Top-level term
 		    P = (S --> N)
@@ -285,7 +287,6 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 		   ,print_dot_language_edge(n,Stream, S, N, [])
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
-		   ,atomic(N)
 		->  % Prefix terminal name with "t_"
 		    % to distinguish from synonymous nonterminal
 		    print_dot_language_node(n, Stream, Ph, Ph, diamond)
@@ -323,7 +324,6 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 	       )
 	,writeln(Stream, '}').
 
-you_are_here.
 
 
 %!	print_term(+Start,+Type,+Term) is det.
@@ -341,27 +341,14 @@ print_term(S, p, T):-
 
 print_term(S, i, T):-
 	write_term(S, T,[fullstop(false),spacing(next_argument),quoted(true)]).
-/*
-print_term(S, ebnf, T):-
-	print_term(S, bnf, T).
 
-print_term(S, hex_bnf, T):-
-	print_term(S, bnf, T).
-*/
 print_term(S, Type, T):-
 	(   Type = bnf
 	;   Type = ebnf
 	;   Type = hex_bnf
 	)
 	% If the term is lexicalised, concatentate its constituents.
-	,format(S, '~w~n', T)
-	%,write(S, T_), write(S, '\n')
-	.
-
-
-sanitise_bnf_identifier(T, T_):-
-	T =.. Params
-	,atomic_list_concat(Params, '_', T_).
+	,format(S, '~w~n', T).
 
 
 
@@ -380,6 +367,7 @@ grammar_module_exports([P-->_B|Ps], Temp, Acc):-
 	 ;   Rule_arity = 0
 	)
 	,grammar_module_exports(Ps,[F//Rule_arity|Temp], Acc).
+
 
 
 %!	compression_nonterminal(+Production,-Nonterminal) is det.
@@ -413,6 +401,18 @@ print_compression_grammar_term(Stream):-
 				    ,'As'=As])
 		    ]
 		   ).
+
+
+
+%!	sanitise_bnf_identifier(+Identifier,-Sanitised) is det.
+%
+%	Sanitise identifiers for output_type/1 = [bnf,ebnf]. Mostly
+%	makes sure to convert lexicalised forms to concatenated, for
+%	example converting "destroy(target)" to "destroy_target".
+%
+sanitise_bnf_identifier(T, T_):-
+	T =.. Params
+	,atomic_list_concat(Params, '_', T_).
 
 
 

@@ -68,13 +68,13 @@ lexicalisation_strategy(greibach).
 %	corpus. Type selects clauses according to the type of file to
 %	print.
 %
-output_file_name(Type, output(Filename)):-
-	(   Type = grammar
-	;   Type = bnf
-	;   Type = ebnf
-	;   Type = hex_bnf
-	)
-	,examples_file_name(E)
+output_file_name(grammar, output(Filename)):-
+	%(   Type = grammar
+	%;   Type = bnf
+	%;   Type = ebnf
+	%;   Type = hex_bnf
+	%)
+	examples_file_name(E)
 	,language_file_name(L)
 	,output_type(T)
 	,output_format(T, Ext)
@@ -132,7 +132,7 @@ output_file_name(grammar_evaluation, user_output).
 %
 %	@TODO: implement dot.
 %
-output_type(bnf).
+output_type(lean_dot).
 
 
 %!	output_format(?Type, ?Extension) is det.
@@ -149,7 +149,7 @@ output_format(hex_bnf, '.hbnf').
 output_format(ebnf, '.ebnf').
 output_format(dot, '.gv').
 output_format(lean_dot, '.gv').
-output_format(evaluation, '.log').
+%output_format(evaluation, '.log').
 
 
 %!	production_augmentation(?Type:atom) is det.
