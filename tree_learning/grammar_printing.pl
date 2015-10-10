@@ -193,14 +193,14 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 	,forall(member(P, Ps),
 		(   % Top-level term
 		    P = (S --> N)
-		   ,atomic(N) % As in ability --> destroy
+		   %,atomic(N) % As in ability --> destroy
 		->  atomic_list_concat([<, S, >], '', S_)
 		   ,atomic_list_concat([<, N, >], '', N_)
 		   ,atomic_list_concat([S_, ::=, N_], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
-		   ,atomic(N)
+		   %,atomic(N)
 		->  atomic_list_concat([<, Ph, >], '', Ph_)
 		   ,atomic_list_concat([<, N, >], '', N_)
 		   ,atomic_list_concat([Ph_, ::=, T, N_], ' ', Ls)
@@ -296,6 +296,28 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 	       )
 	,writeln(Stream, '}').
 
+/* As dot, but with fewer terminals */
+print_grammar_file(Type, _, Stream, S, Ps):-
+	Type = lean_dot
+	% Print start of graph statement
+	,format(Stream, '~w ~w ~w ~n', ['strict digraph', S, '{'])
+	,writeln(Stream, 'ordering="out";\n')
+	,writeln(Stream, 'node [shape = "box"];\n')
+	,forall(member(P, Ps),
+		(   P = (S --> N)
+		->  print_dot_language_node(n, Stream, S, S, doublecircle)
+		   ,print_dot_language_edge(n,Stream, S, N, [])
+		;   P = (Ph --> [T], N)
+		->  print_dot_language_node(n, Stream, Ph, Ph, ellipse)
+		   ,print_dot_language_edge(n,Stream, Ph, N, [])
+		    % Don't print out preterminals explicitly.
+		    % We will print an edge to them from a nonterminal.
+		;   P = (Ph --> [T])
+		->  true
+		)
+	       )
+	,writeln(Stream, '}').
+
 you_are_here.
 
 
@@ -314,20 +336,28 @@ print_term(S, p, T):-
 
 print_term(S, i, T):-
 	write_term(S, T,[fullstop(false),spacing(next_argument),quoted(true)]).
-
+/*
 print_term(S, ebnf, T):-
 	print_term(S, bnf, T).
 
 print_term(S, hex_bnf, T):-
 	print_term(S, bnf, T).
-
+*/
 print_term(S, Type, T):-
 	(   Type = bnf
 	;   Type = ebnf
 	;   Type = hex_bnf
-	;   Type = dot
 	)
-	,write(S, T), write(S, '\n').
+	% If the term is lexicalised, concatentate its constituents.
+	,format(S, '~w~n', T)
+	%,write(S, T_), write(S, '\n')
+	.
+
+
+sanitise_bnf_identifier(T, T_):-
+	T =.. Params
+	,atomic_list_concat(Params, ' ', T_).
+
 
 
 %!	grammar_module_exports(+Productions,+Temp,-Acc) is det.
@@ -387,14 +417,20 @@ print_compression_grammar_term(Stream):-
 %	Clauses are selected according to Type, which can be one of: n
 %	(for a nonterminal node), t (terminal) or p (a pre-terminal).
 %
-print_dot_language_node(n, Stream, Node, Label, Shape):-
-	format(Stream, '~w ~w ~w~w ~w~w~w~n', [Node,'[label =',Label,',','shape = "',Shape,'"];']).
+print_dot_language_node(T, Stream, Node, Label, Shape):-
+	sanitise_dot_language_term(Node, Node_)
+	,sanitise_dot_language_term(Label, Label_)
+	% This is wrong and you'll burn in hell for this:
+	,print_dot_language_node_(T, Stream, Node_, Label_, Shape).
 
-print_dot_language_node(t, Stream, Node, Label, Shape):-
-	format(Stream, '~w~w ~w ~w~w ~w~w~w~n', [t_,Node,'[label =',Label,',','shape = "',Shape,'"];']).
+print_dot_language_node_(n, Stream, Node, Label, Shape):-
+	format(Stream, '"~w" ~w "~w"~w ~w~w~w~n', [Node,'[label =',Label,',','shape = "',Shape,'"];']).
 
-print_dot_language_node(p, Stream, Node, Label, Shape):-
-	format(Stream, '~w ~w ~w~w ~w~w~w~n', [Node,'[label =',Label,',','shape = "',Shape,'"];']).
+print_dot_language_node_(t, Stream, Node, Label, Shape):-
+	format(Stream, '"~w~w" ~w "~w"~w ~w~w~w~n', [t_,Node,'[label =',Label,',','shape = "',Shape,'"];']).
+
+print_dot_language_node_(p, Stream, Node, Label, Shape):-
+	format(Stream, '"~w" ~w "~w"~w ~w~w~w~n', [Node,'[label =',Label,',','shape = "',Shape,'"];']).
 
 
 %!	print_dot_language_edge(+Type,+Stream,+Head,+Synonym,+Tail) is det.
@@ -410,18 +446,46 @@ print_dot_language_node(p, Stream, Node, Label, Shape):-
 %	==
 %
 %	Where S = [H]
+print_dot_language_edge(T, Stream, Head, Synonym, Refs):-
+	sanitise_dot_language_term(Head, Head_)
+	,sanitise_dot_language_term(Synonym, Synonym_)
+	,sanitise_dot_language_term(Refs, Refs_)
+	,print_dot_language_edge_(T, Stream, Head_, Synonym_, Refs_).
+
+% Really bad practice- don't do that.
+print_dot_language_edge_(n, Stream, Head, Synonym, []):-
+	format(Stream, '"~w" ~w "~w"~w~n~n', [Head, ->, Synonym, ;]).
+
+print_dot_language_edge_(n, Stream, Head, Synonym, _Refs):-
+	format(Stream, '"~w" ~w "~w"~w~n~n', [Head, ->, Synonym, ;]).
+
+print_dot_language_edge_(t, Stream, Head, Synonym, Refs):-
+	format(Stream, '"~w" ~w "~w~w"~w "~w"~w~n~n', [Head, ->, t_, Synonym, ',', Refs, ;]).
+
+print_dot_language_edge_(p, Stream, Head, Synonym, []):-
+	format(Stream, '"~w" ~w "~w~w"~w~n~n', [Head, ->, t_,Synonym, ;]).
+
+
+%!	sanitise_dot_language_term(+Term, -Sanitised) is det.
 %
-print_dot_language_edge(n, Stream, Head, Synonym, []):-
-	format(Stream, '~w ~w ~w~w~n~n', [Head, ->, Synonym, ;]).
-
-print_dot_language_edge(n, Stream, Head, Synonym, _Refs):-
-	format(Stream, '~w ~w ~w~w~n~n', [Head, ->, Synonym, ;]).
-
-print_dot_language_edge(t, Stream, Head, T, N):-
-	format(Stream, '~w ~w ~w~w~w ~w~w~n~n', [Head, ->, t_, T, ',', N, ;]).
-
-print_dot_language_edge(p, Stream, Head, T, []):-
-	format(Stream, '~w ~w ~w~w~w~n~n', [Head, ->, t_,T, ;]).
+%	Avoid dot-language escape sequences. Mostly replaces
+%	double-quotes with the atom "double_quotes" and the single quote
+%	with the atom "single_quote".
+%
+%	The reason we do that (and also the horrible non-underscored -
+%	calls-underscored thingy above) is that dot language escapes
+%	only one character, the double-quote, and it escapes it with a
+%	single quote. Which inevitably leads to a big old mess when we
+%	try to print out dot language from Prolog.
+%
+%	Incidentatlly, be aware that sometimes the Graphviz engine seems
+%	to get stuck if it encounters double quotes (possibly even
+%	escaped ones) at which point the way out is to restart the
+%	application.
+%
+sanitise_dot_language_term('"', double_quote).
+sanitise_dot_language_term('\'', single_quote).
+sanitise_dot_language_term(T, T).
 
 
 

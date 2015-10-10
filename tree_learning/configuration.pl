@@ -19,8 +19,8 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-examples_file_name(examples_mtg_hand_simulation).
-%examples_file_name(mtg_pot_puri).
+%examples_file_name(examples_mtg_hand_simulation).
+examples_file_name(mtg_pot_puri).
 %examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
@@ -59,7 +59,7 @@ language_file_name(language_mtg_hand_simulation).
 %	synonym token, ie the token that is the literal name of the
 %	production.
 %
-lexicalisation_strategy(none).
+lexicalisation_strategy(greibach).
 
 
 %!	output_stream(?Type,?Name) is det.
@@ -126,10 +126,13 @@ output_file_name(grammar_evaluation, user_output).
 %	* ebnf; prints grammar in extended bnf.
 %	* dot; print a dot-language file that can be used to generate a
 %	visualisation of the grammar using a program such as graphviz.
+%	* lean_dot; as dot, but only prints nonterminal and
+%	preterminal nodes (dot normally prints terminals also, like in
+%	a parse tree).
 %
 %	@TODO: implement dot.
 %
-output_type(dot).
+output_type(bnf).
 
 
 %!	output_format(?Type, ?Extension) is det.
@@ -144,7 +147,8 @@ output_format(compression, '.pl').
 output_format(bnf, '.bnf').
 output_format(hex_bnf, '.hbnf').
 output_format(ebnf, '.ebnf').
-output_format(dot, '.dot').
+output_format(dot, '.gv').
+output_format(lean_dot, '.gv').
 output_format(evaluation, '.log').
 
 
