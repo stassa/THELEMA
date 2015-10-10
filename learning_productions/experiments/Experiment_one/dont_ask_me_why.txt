@@ -1,7 +1,0 @@
-Or how. I think I ran it like this: 
-
-1st run: first_order and parsd
-2nd run: first order and mode
-3d run: second order and mode
-
-But didn't keep notes.
