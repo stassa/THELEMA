@@ -103,26 +103,30 @@ output_file_name(grammar_evaluation, user_output).
 %	What kind of file to print out at the end of an induction run.
 %
 %	One of:
-%	* grammar; print out a full grammar with every production
-%	connected to the start symbol, or to a production connected to
-%	the start symbol. The output file is a valid Prolog file with
-%	grammar rules in DCG format.
+%	* dcg; print out a full grammar with every production connected
+%	to the start symbol, or to a production connected to the start
+%	symbol. The output file is a valid Prolog file with grammar
+%	rules in DCG format.
 %	* tags; print a set of productions that may be used to carve
 %	up a sentence into parts-of-speech, or indeed comrpess it.
-%	* tree; as "grammar" but with a parameterised start-symbol that
-%	captures the parse tree of a parsed (or generated) phrase.
+%	* tree; as "dcg" but with a parameterised start-symbol that
+%	captures the parse tree of a parsed (or generated) phrase. NOT
+%	YET IMPLEMENTED.
 %	* compression; print a compression grammar, used to replace
 %	examples' tokens with the names of productions that cover them;
-%	implies "tags" (and indeed includes the tags grammar).
-%	* bnf; as "grammar" but the output is in Backus-Naur Form.
+%	implies "tags" (and indeed includes the tags grammar). Not
+%	complete.
+%	* bnf; as "dcg" but the output is in Backus-Naur Form.
 %	* ebnf; prints grammar in extended bnf.
 %	* dot; print a dot-language file that can be used to generate a
 %	visualisation of the grammar using a program such as graphviz.
 %	* lean_dot; as dot, but only prints nonterminal and
-%	preterminal nodes (dot normally prints terminals also, like in
-%	a parse tree).
+%	preterminal nodes (dot explicitly prints terminals also,
+%	kind of like in a parse tree).
 %
-output_type(bnf).
+%	@TODO: Implement tree; complete compression.
+%
+output_type(dot).
 
 
 %!	output_format(?Type, ?Extension) is det.
@@ -131,14 +135,14 @@ output_type(bnf).
 %	extension of the file that pertains to the output_type
 %	configured.
 %
-output_format(grammar, '.pl').
+output_format(dcg, '.pl').
 output_format(tags, '.pl').
 output_format(compression, '.pl').
 output_format(bnf, '.bnf').
 output_format(ebnf, '.ebnf').
 output_format(dot, '.gv').
 output_format(lean_dot, '.gv').
-%output_format(evaluation, '.log').
+output_format(evaluation, '.log').
 
 
 %!	production_augmentation(?Type:atom) is det.

@@ -110,7 +110,7 @@ module_name(Stream, Module_name):-
 %	something. Made more sense when print_grammar had an argument
 %	(the Type one).
 %
-print_grammar_file(grammar, Grammar_module_name, Stream, S, Ps):-
+print_grammar_file(dcg, Grammar_module_name, Stream, S, Ps):-
 	% Print the module/2 statement at the start of the grammar module file.
 	format(Stream, '~w~w~w~w~w~n'
 	       ,[':-module(',Grammar_module_name,',',[S//0],').'])
