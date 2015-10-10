@@ -194,20 +194,25 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 		(   % Top-level term
 		    P = (S --> N)
 		   %,atomic(N) % As in ability --> destroy
-		->  atomic_list_concat([<, S, >], '', S_)
-		   ,atomic_list_concat([<, N, >], '', N_)
+		->  sanitise_bnf_identifier(S, S_san)
+		   ,atomic_list_concat([<, S_san, >], '', S_)
+		   ,sanitise_bnf_identifier(N, N_san)
+		   ,atomic_list_concat([<, N_san, >], '', N_)
 		   ,atomic_list_concat([S_, ::=, N_], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
 		   %,atomic(N)
-		->  atomic_list_concat([<, Ph, >], '', Ph_)
-		   ,atomic_list_concat([<, N, >], '', N_)
+		->  sanitise_bnf_identifier(Ph, Ph_san)
+		   ,atomic_list_concat([<, Ph_san, >], '', Ph_)
+		   ,sanitise_bnf_identifier(N, N_san)
+		   ,atomic_list_concat([<, N_san, >], '', N_)
 		   ,atomic_list_concat([Ph_, ::=, T, N_], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF preterminal
 		;   P = (Ph --> [T])
-		->  atomic_list_concat([<, Ph, >], '', Ph_)
+		-> sanitise_bnf_identifier(Ph, Ph_san)
+		   ,atomic_list_concat([<, Ph_san, >], '', Ph_)
 		   ,atomic_list_concat([Ph_, ::=, T], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		)
@@ -356,7 +361,7 @@ print_term(S, Type, T):-
 
 sanitise_bnf_identifier(T, T_):-
 	T =.. Params
-	,atomic_list_concat(Params, ' ', T_).
+	,atomic_list_concat(Params, '_', T_).
 
 
 
