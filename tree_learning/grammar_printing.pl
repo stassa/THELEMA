@@ -17,10 +17,13 @@
 %	from the currently configured examples and language modules.
 %
 print_productions:-
-	examples_corpus(Cs)
+	configuration:output_type(T)
+	,configuration:language_module(L)
+	,phrase(L:start, [S])
+	,examples_corpus(Cs)
 	,corpus_productions(Cs, Ps)
 	,!
-	,forall(member(P, Ps), writeln(P)).
+	,once(print_grammar_file(T, console, user_output, S, Ps)).
 
 
 
