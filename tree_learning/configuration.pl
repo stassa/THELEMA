@@ -69,11 +69,6 @@ lexicalisation_strategy(greibach).
 %	print.
 %
 output_file_name(grammar, output(Filename)):-
-	%(   Type = grammar
-	%;   Type = bnf
-	%;   Type = ebnf
-	%;   Type = hex_bnf
-	%)
 	examples_file_name(E)
 	,language_file_name(L)
 	,output_type(T)
@@ -120,10 +115,6 @@ output_file_name(grammar_evaluation, user_output).
 %	examples' tokens with the names of productions that cover them;
 %	implies "tags" (and indeed includes the tags grammar).
 %	* bnf; as "grammar" but the output is in Backus-Naur Form.
-%	* hex_bnf; as bnf, but names of nonterminals are output in
-%	hexadecimal codes for use with tools that conform to xml specs
-%	(bleagh) for example Railroad Diagram Generator. This option is
-%	borked; don't use.
 %	* ebnf; prints grammar in extended bnf.
 %	* dot; print a dot-language file that can be used to generate a
 %	visualisation of the grammar using a program such as graphviz.
@@ -131,9 +122,7 @@ output_file_name(grammar_evaluation, user_output).
 %	preterminal nodes (dot normally prints terminals also, like in
 %	a parse tree).
 %
-%	@TODO: implement dot.
-%
-output_type(hex_bnf).
+output_type(bnf).
 
 
 %!	output_format(?Type, ?Extension) is det.
@@ -146,7 +135,6 @@ output_format(grammar, '.pl').
 output_format(tags, '.pl').
 output_format(compression, '.pl').
 output_format(bnf, '.bnf').
-output_format(hex_bnf, '.hbnf').
 output_format(ebnf, '.ebnf').
 output_format(dot, '.gv').
 output_format(lean_dot, '.gv').
