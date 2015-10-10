@@ -276,27 +276,25 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 	,forall(member(P, Ps),
 		(   % Top-level term
 		    P = (S --> N)
-		->  format(Stream, '~w ~w ~w ~w~n', [S,'[label =',S,'shape = "circle"];'])
-		   ,format(Stream, '~w ~w ~w~w~n~n', [S, ->, N, ;])
+		->  print_dot_language_node(n, Stream, S, S, circle)
+		   ,print_dot_language_edge(n,Stream, S, N, [])
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
 		   ,atomic(N)
 		->  % Prefix terminal name with "t_"
 		    % to distinguish from synonymous nonterminal
-		    format(Stream, '~w ~w ~w ~w~n', [Ph,'[label =',Ph,'shape = "diamond"];'])
-		   ,format(Stream, '~w~w ~w ~w ~w~n', [t_,T,'[label =',T,'shape = "box"];'])
-		   ,format(Stream, '~w ~w ~w~w~w ~w~w~n~n', [Ph, ->, t_, T, ',', N, ;])
+		    print_dot_language_node(n, Stream, Ph, Ph, diamond)
+		   ,print_dot_language_node(t, Stream, T, T, box)
+		   ,print_dot_language_edge(t,Stream, Ph, T,N)
 		    % Restricted GNF preterminal
 		;   P = (Ph --> [T])
 		->
-		    format(Stream, '~w ~w ~w ~w~n', [Ph,'[label =',Ph,'shape = "ellipse"];'])
-		   ,format(Stream, '~w~w ~w ~w ~w~n', [t_,T,'[label =',T,'shape = "box"];'])
-		   ,format(Stream, '~w ~w ~w~w~w~n~n', [Ph, ->, t_,T, ;])
+		    print_dot_language_node(p, Stream, Ph, Ph, ellipse)
+		   ,print_dot_language_node(t, Stream, T, T, box)
+		   ,print_dot_language_edge(p, Stream, Ph, T, [])
 		)
 	       )
 	,writeln(Stream, '}').
-
-
 
 you_are_here.
 
@@ -383,10 +381,57 @@ print_compression_grammar_term(Stream):-
 
 
 
+%!	print_dot_language_node(+Type,+Stream,+Node,+Label,+Shape) is det.
+%
+%	Print a node statement in dot-language to the given Stream.
+%	Clauses are selected according to Type, which can be one of: n
+%	(for a nonterminal node), t (terminal) or p (a pre-terminal).
+%
+print_dot_language_node(n, Stream, Node, Label, Shape):-
+	format(Stream, '~w ~w ~w~w ~w~w~w~n', [Node,'[label =',Label,',','shape = "',Shape,'"];']).
+
+print_dot_language_node(t, Stream, Node, Label, Shape):-
+	format(Stream, '~w~w ~w ~w~w ~w~w~w~n', [t_,Node,'[label =',Label,',','shape = "',Shape,'"];']).
+
+print_dot_language_node(p, Stream, Node, Label, Shape):-
+	format(Stream, '~w ~w ~w~w ~w~w~w~n', [Node,'[label =',Label,',','shape = "',Shape,'"];']).
+
+
+%!	print_dot_language_edge(+Type,+Stream,+Head,+Synonym,+Tail) is det.
+%
+%	Print an edge statement in dot-language to the given Stream.
+%	Clauses are selected according to Type which can be one of: n
+%	(nonterminal), t (terminal) or p (pre-terminal).
+%
+%	Head, Synonym and Tail are the constituents of a rule in GNF
+%	format:
+%	==
+%	H --> S, T.
+%	==
+%
+%	Where S = [H]
+%
+print_dot_language_edge(n, Stream, Head, Synonym, []):-
+	format(Stream, '~w ~w ~w~w~n~n', [Head, ->, Synonym, ;]).
+
+print_dot_language_edge(n, Stream, Head, Synonym, _Refs):-
+	format(Stream, '~w ~w ~w~w~n~n', [Head, ->, Synonym, ;]).
+
+print_dot_language_edge(t, Stream, Head, T, N):-
+	format(Stream, '~w ~w ~w~w~w ~w~w~n~n', [Head, ->, t_, T, ',', N, ;]).
+
+print_dot_language_edge(p, Stream, Head, T, []):-
+	format(Stream, '~w ~w ~w~w~w~n~n', [Head, ->, t_,T, ;]).
+
+
+
 %!	corpus(?Corpus) is det.
 %
 %	The corpus stored in the currently configured examples file.
 %	Corpus is a list of token-lists.
+%
+%	@TODO: obsolete after adding examples_corpus/1 in utilities
+%	module (and using it here).
 %
 corpus(Cs):-
 	configuration:examples_module(Es)
