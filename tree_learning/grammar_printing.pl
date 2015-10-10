@@ -1,11 +1,10 @@
 :-module(grammar_printing, [print_productions/0
 			   ,print_grammar/0
 			   ,print_compressed_corpus/0
-			   ,corpus/1
 			   ]).
 
 :-use_module(production_induction, [corpus_productions/2]).
-:-use_module(project_root(utilities), [atom_hex/2]).
+:-use_module(project_root(utilities), [examples_corpus/1]).
 
 
 /** <module> Predicates for printing an induced grammar.
@@ -18,8 +17,7 @@
 %	from the currently configured examples and language modules.
 %
 print_productions:-
-	configuration:examples_module(Es)
-	,findall(C, Es:example_string(C), Cs)
+	examples_corpus(Cs)
 	,corpus_productions(Cs, Ps)
 	,!
 	,forall(member(P, Ps), writeln(P)).
@@ -33,11 +31,10 @@ print_productions:-
 %
 print_grammar:-
 	configuration:output_type(T)
-	,configuration:examples_module(Es)
 	,configuration:language_module(L)
 	,configuration:output_file_name(grammar, O)
 	,phrase(L:start, [S])
-	,findall(C, Es:example_string(C), Cs)
+	,examples_corpus(Cs)
 	,corpus_productions(Cs, Ps)
 	,!
 	,expand_file_search_path(O, P)
@@ -61,7 +58,7 @@ print_compressed_corpus:-
 	,configuration:output_file_name(grammar, Grammar_module_file_name)
 	,use_module(Grammar_module_file_name)
 	,module_name(Grammar_module_file_name, Grammar_module_name)
-	,corpus(Cs)
+	,examples_corpus(Cs)
 	,expand_file_search_path(Compressed_corpus_file_name, Path)
 	,open(Path,write,Stream,[close_on_abort(true)])
 	% Write the module name & exports
@@ -459,17 +456,3 @@ print_dot_language_edge_(p, Stream, Head, Synonym, []):-
 sanitise_dot_language_term('"', double_quote).
 sanitise_dot_language_term('\'', single_quote).
 sanitise_dot_language_term(T, T).
-
-
-
-%!	corpus(?Corpus) is det.
-%
-%	The corpus stored in the currently configured examples file.
-%	Corpus is a list of token-lists.
-%
-%	@TODO: obsolete after adding examples_corpus/1 in utilities
-%	module (and using it here).
-%
-corpus(Cs):-
-	configuration:examples_module(Es)
-	,findall(C, Es:example_string(C), Cs).
