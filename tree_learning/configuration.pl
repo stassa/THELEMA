@@ -19,8 +19,8 @@
 %!	examples_file_name(?Name) is det.
 %
 %	Basename of the examples file to use in induction.
-%examples_file_name(examples_mtg_hand_simulation).
-examples_file_name(mtg_pot_puri).
+examples_file_name(examples_mtg_hand_simulation).
+%examples_file_name(mtg_pot_puri).
 %examples_file_name(examples_mtg_destroy_short).
 %examples_file_name(examples_mtg_all_destroy_one_sentence_per_line).
 %examples_file_name(examples_mtg_all_destroy_cleaned).
@@ -114,6 +114,8 @@ output_file_name(grammar_evaluation, user_output).
 %	grammar rules in DCG format.
 %	* tags; print a set of productions that may be used to carve
 %	up a sentence into parts-of-speech, or indeed comrpess it.
+%	* tree; as "grammar" but with a parameterised start-symbol that
+%	captures the parse tree of a parsed (or generated) phrase.
 %	* compression; print a compression grammar, used to replace
 %	examples' tokens with the names of productions that cover them;
 %	implies "tags" (and indeed includes the tags grammar).
@@ -127,7 +129,7 @@ output_file_name(grammar_evaluation, user_output).
 %
 %	@TODO: implement dot.
 %
-output_type(bnf).
+output_type(dot).
 
 
 %!	output_format(?Type, ?Extension) is det.

@@ -7,8 +7,8 @@
 example_string([destroy,target,creature]).
 %example_string([destroy,all,creatures]).
 example_string([destroy,target,artifact]).
-example_string([exile,target,creature]).
-example_string([destroy,target,creature,if,it,is,black]).
+%example_string([exile,target,creature]).
+%example_string([destroy,target,creature,if,it,is,black]).
 
 
 

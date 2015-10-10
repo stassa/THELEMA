@@ -217,7 +217,6 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 uses xml name defs so can't deal with rules for '/', '+1' etc.  Dang. */
 print_grammar_file(Type, _, Stream, S, Ps):-
 	Type = hex_bnf
-	% Print the module/2 statement at the start of the grammar module file.
 	,forall(member(P, Ps),
 		(   % Top-level term
 		    P = (S --> N)
@@ -248,7 +247,6 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 /* Print the grammar in ebnf format. Like BNF but extended. With, um. More stuff. */
 print_grammar_file(Type, _, Stream, S, Ps):-
 	Type = ebnf
-	% Print the module/2 statement at the start of the grammar module file.
 	,forall(member(P, Ps),
 		(   % Top-level term
 		    P = (S --> N)
@@ -267,6 +265,37 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 		   ,print_term(Stream, Type, Ls)
 		)
 	       ).
+
+/* Print the grammar in dot-language format used to visualise it with GraphViz. */
+print_grammar_file(Type, _, Stream, S, Ps):-
+	Type = dot
+	% Print start of graph statement
+	,format(Stream, '~w ~w ~w ~n', ['strict digraph', S, '{'])
+	,writeln(Stream, 'ordering="out";\n')
+	%,writeln(Stream, 'node [shape = "box"];\n')
+	,forall(member(P, Ps),
+		(   % Top-level term
+		    P = (S --> N)
+		->  format(Stream, '~w ~w ~w ~w~n', [S,'[label =',S,'shape = "circle"];'])
+		   ,format(Stream, '~w ~w ~w~w~n~n', [S, ->, N, ;])
+		    % Restricted GNF nonterminal:
+		;   P = (Ph --> [T], N)
+		   ,atomic(N)
+		->  % Prefix terminal name with "t_"
+		    % to distinguish from synonymous nonterminal
+		    format(Stream, '~w ~w ~w ~w~n', [Ph,'[label =',Ph,'shape = "diamond"];'])
+		   ,format(Stream, '~w~w ~w ~w ~w~n', [t_,T,'[label =',T,'shape = "box"];'])
+		   ,format(Stream, '~w ~w ~w~w~w ~w~w~n~n', [Ph, ->, t_, T, ',', N, ;])
+		    % Restricted GNF preterminal
+		;   P = (Ph --> [T])
+		->
+		    format(Stream, '~w ~w ~w ~w~n', [Ph,'[label =',Ph,'shape = "ellipse"];'])
+		   ,format(Stream, '~w~w ~w ~w ~w~n', [t_,T,'[label =',T,'shape = "box"];'])
+		   ,format(Stream, '~w ~w ~w~w~w~n~n', [Ph, ->, t_,T, ;])
+		)
+	       )
+	,writeln(Stream, '}').
+
 
 
 you_are_here.
@@ -298,6 +327,7 @@ print_term(S, Type, T):-
 	(   Type = bnf
 	;   Type = ebnf
 	;   Type = hex_bnf
+	;   Type = dot
 	)
 	,write(S, T), write(S, '\n').
 
