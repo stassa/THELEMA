@@ -122,7 +122,8 @@ output_file_name(grammar_evaluation, user_output).
 %	* bnf; as "grammar" but the output is in Backus-Naur Form.
 %	* hex_bnf; as bnf, but names of nonterminals are output in
 %	hexadecimal codes for use with tools that conform to xml specs
-%	(bleagh) for example Railroad Diagram Generator.
+%	(bleagh) for example Railroad Diagram Generator. This option is
+%	borked; don't use.
 %	* ebnf; prints grammar in extended bnf.
 %	* dot; print a dot-language file that can be used to generate a
 %	visualisation of the grammar using a program such as graphviz.
@@ -132,7 +133,7 @@ output_file_name(grammar_evaluation, user_output).
 %
 %	@TODO: implement dot.
 %
-output_type(lean_dot).
+output_type(hex_bnf).
 
 
 %!	output_format(?Type, ?Extension) is det.

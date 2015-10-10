@@ -222,26 +222,32 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 	,forall(member(P, Ps),
 		(   % Top-level term
 		    P = (S --> N)
-		->  atomic_list_concat([S, ::=, N], ' ', Ls)
+		->  sanitise_bnf_identifier(S, S_san)
+		   ,atomic_list_concat([S_san, ::=, N], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
-		   ,atomic(N)
-		,(	atom_codes(Ph, [C|_])
+		   ,sanitise_bnf_identifier(Ph, Ph_san)
+		   ,sanitise_bnf_identifier(T, T_san)
+		   ,sanitise_bnf_identifier(N, N_san)
+		   %,atomic(N)
+		,(    atom_codes(Ph_san, [C|_])
 		     ,\+ code_type(C, csymf)
-		     ->	 atom_hex(Ph, Ph_)
-		     ;	 Ph_ = Ph
+		     ->	 atom_hex(Ph_san, Ph_)
+		     ;	 Ph_ = Ph_san
 		 )
-		->  atomic_list_concat([Ph_, ::=, T, N], ' ', Ls)
+		->  atomic_list_concat([Ph_, ::=, T_san, N_san], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF preterminal
 		;   P = (Ph --> [T])
-		,(	atom_codes(Ph, [C|_])
+		   ,sanitise_bnf_identifier(Ph, Ph_san)
+		   ,sanitise_bnf_identifier(T, T_san)
+		,(	atom_codes(Ph_san, [C|_])
 		     ,\+ code_type(C, csymf)
-		     ->	 atom_hex(Ph, Ph_)
-		     ;	 Ph_ = Ph
+		     ->	 atom_hex(Ph_san, Ph_)
+		     ;	 Ph_ = Ph_san
 		 )
-		->  atomic_list_concat([Ph_, ::=, T], ' ', Ls)
+		->  atomic_list_concat([Ph_san, ::=, T_san], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		)
 	       ).
