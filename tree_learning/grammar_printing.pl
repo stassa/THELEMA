@@ -193,24 +193,26 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 		(   % Top-level term
 		    P = (S --> N)
 		->  sanitise_bnf_identifier(S, S_san)
-		   ,atomic_list_concat([<, S_san, >], '', S_)
 		   ,sanitise_bnf_identifier(N, N_san)
+		   ,atomic_list_concat([<, S_san, >], '', S_)
 		   ,atomic_list_concat([<, N_san, >], '', N_)
 		   ,atomic_list_concat([S_, ::=, N_], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
 		->  sanitise_bnf_identifier(Ph, Ph_san)
-		   ,atomic_list_concat([<, Ph_san, >], '', Ph_)
 		   ,sanitise_bnf_identifier(N, N_san)
+		   ,sanitise_bnf_identifier(T, T_san)
+		   ,atomic_list_concat([<, Ph_san, >], '', Ph_)
 		   ,atomic_list_concat([<, N_san, >], '', N_)
-		   ,atomic_list_concat([Ph_, ::=, T, N_], ' ', Ls)
+		   ,atomic_list_concat([Ph_, ::=, T_san, N_], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF preterminal
 		;   P = (Ph --> [T])
 		-> sanitise_bnf_identifier(Ph, Ph_san)
+		   ,sanitise_bnf_identifier(T, T_san)
 		   ,atomic_list_concat([<, Ph_san, >], '', Ph_)
-		   ,atomic_list_concat([Ph_, ::=, T], ' ', Ls)
+		   ,atomic_list_concat([Ph_, ::=, T_san], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		)
 	       ).
@@ -227,17 +229,17 @@ print_grammar_file(Type, _, Stream, S, Ps):-
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF nonterminal:
 		;   P = (Ph --> [T], N)
-		->  sanitise_bnf_identifier(T, T_san)
-		   ,atomic_list_concat(["'",T_san,"'"], T_)
-		   ,sanitise_bnf_identifier(Ph, Ph_san)
+		->  sanitise_bnf_identifier(Ph, Ph_san)
+		   ,sanitise_bnf_identifier(T, T_san)
 		   ,sanitise_bnf_identifier(N, N_san)
+		   ,atomic_list_concat(["'",T_san,"'"], T_)
 		   ,atomic_list_concat([Ph_san, ::=, T_, N_san], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		    % Restricted GNF preterminal
 		;   P = (Ph --> [T])
 		->  sanitise_bnf_identifier(T, T_san)
-		   ,atomic_list_concat(["'",T_san,"'"], T_)
 		   ,sanitise_bnf_identifier(Ph, Ph_san)
+		   ,atomic_list_concat(["'",T_san,"'"], T_)
 		   ,atomic_list_concat([Ph_san, ::=, T_], ' ', Ls)
 		   ,print_term(Stream, Type, Ls)
 		)
@@ -379,8 +381,12 @@ print_compression_grammar_term(Stream):-
 %	example converting "destroy(target)" to "destroy_target".
 %
 sanitise_bnf_identifier(T, T_):-
-	T =.. Params
-	,atomic_list_concat(Params, '_', T_).
+	T =.. [F|Args]
+	% Term may be a compound like and/or or +1/+2 etc.
+	,(   memberchk(F, [/,+])
+	->   term_to_atom(T, T_)
+	 ;   atomic_list_concat([F|Args], '_', T_)
+	).
 
 
 
