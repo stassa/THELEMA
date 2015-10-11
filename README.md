@@ -52,7 +52,7 @@ lexicalisation_strategy(none).
 output_type(dcg).
 production_augmentation(greibach).
 production_composition(synonym).
-rename_built_ins(n_).
+rename_built_ins(n\_).
 ```
 
 If you need to change a setting, remember to enter: 
