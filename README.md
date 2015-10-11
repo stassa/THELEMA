@@ -24,7 +24,9 @@ installed on your system.
 
 Start THELEMA by loading the file: 
 
-``` tree_learning/load_tree_learning.pl ```
+```
+tree_learning/load_tree_learning.pl
+```
 
 On a windows machine you can double-click the file and it will open the Prolog
 console and the Swi-Prolog IDE. On Linux: 
@@ -40,7 +42,9 @@ The shiny happy path through the application
 
 To begin training THELEMA you need to edit the configuration file: 
 
-```tree_learning/configuration.pl```
+```
+tree_learning/configuration.pl
+```
 
 You should read the comments in that file. They will probably make sense after a
 while. To begin with, make sure you have the following options set: 
@@ -52,12 +56,14 @@ lexicalisation_strategy(none).
 output_type(dcg).
 production_augmentation(greibach).
 production_composition(synonym).
-rename_built_ins(n\_).
+rename_built_ins(n_).
 ```
 
 If you need to change a setting, remember to enter: 
 
-``` make.  ```
+``` 
+make. 
+```
 
 At the Prolog top-level, or the changes won't take. 
 
@@ -67,7 +73,9 @@ corpus was used for hand-simulations which explains why it's so tiny).
 
 Start training by entering this query at the Prolog top-level: 
 
-``` print_grammar. ```
+```
+print_grammar. 
+```
 
 THELEMA will place a grammar file in tree\_learning/output/ named after the
 configured examples and language file so that you can easily identify it.  
@@ -89,7 +97,9 @@ You can verify this if by doing the following:
 Prolog instance (don't use the old one or you'll get told off)
 2. Enter this query at the Prolog top-level: 
    
-``` forall(phrase(ability, P), writeln(P)). ```
+```
+forall(phrase(ability, P), writeln(P)). 
+```
 
 If you followed the Shiny Happy Path to the letter, the above query should give
 you a set of nice little derivations reproducing the examples in the training
@@ -133,7 +143,9 @@ Grammar formalisms and output formats
 For now, THELEMA only learns one type of grammar, a determinstic Context-Free
 Grammar in a restricted Greibach Normal Form, where all rules are of the form: 
 
-``` a → aA ```
+``` 
+a → aA 
+```
 
 In other words, a single terminal followed by a single nonterminal. Note that
 the single terminal is always the synonym of the production's left-hand side;
@@ -147,7 +159,9 @@ relations between nonterminals.
 
 To see this in action, set the following option in configuration.pl:
 
-``` output_type(dcg). ```
+``` 
+output_type(dcg). 
+```
 
 Then train THELEMA with "print\_grammar" as above. THELEMA will then print out
 its induced grammar in the dot-language format used for visualisation (the file
