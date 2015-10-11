@@ -24,7 +24,7 @@ installed on your system.
 
 Start THELEMA by loading the file: 
 
-``` tree\_learning/load\_tree\_learning.pl ```
+``` tree_learning/load_tree_learning.pl ```
 
 On a windows machine you can double-click the file and it will open the Prolog
 console and the Swi-Prolog IDE. On Linux: 
@@ -40,19 +40,19 @@ The shiny happy path through the application
 
 To begin training THELEMA you need to edit the configuration file: 
 
-tree\_learning/configuration.pl
+```tree_learning/configuration.pl```
 
 You should read the comments in that file. They will probably make sense after a
 while. To begin with, make sure you have the following options set: 
 
 ```
-examples\_file\_name(examples\_mtg\_hand\_simulation).
-language\_file\_name(language\_mtg\_hand\_simulation).
-lexicalisation\_strategy(none).
-output\_type(dcg).
-production\_augmentation(greibach).
-production\_composition(synonym).
-rename\_built\_ins(n\_).
+examples_file_name(examples_mtg_hand_simulation).
+language_file_name(language_mtg_hand_simulation).
+lexicalisation_strategy(none).
+output_type(dcg).
+production_augmentation(greibach).
+production_composition(synonym).
+rename_built_ins(n_).
 ```
 
 If you need to change a setting, remember to enter: 
@@ -67,7 +67,7 @@ corpus was used for hand-simulations which explains why it's so tiny).
 
 Start training by entering this query at the Prolog top-level: 
 
-``` print\_grammar. ```
+``` print_grammar. ```
 
 THELEMA will place a grammar file in tree\_learning/output/ named after the
 configured examples and language file so that you can easily identify it.  
@@ -147,7 +147,7 @@ relations between nonterminals.
 
 To see this in action, set the following option in configuration.pl:
 
-``` output\_type(dcg). ```
+``` output_type(dcg). ```
 
 Then train THELEMA with "print\_grammar" as above. THELEMA will then print out
 its induced grammar in the dot-language format used for visualisation (the file
