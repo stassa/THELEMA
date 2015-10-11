@@ -24,7 +24,7 @@ installed on your system.
 
 Start THELEMA by loading the file: 
 
-> tree\_learning/load\_tree\_learning.pl
+``` tree\_learning/load\_tree\_learning.pl ```
 
 On a windows machine you can double-click the file and it will open the Prolog
 console and the Swi-Prolog IDE. On Linux: 
@@ -45,17 +45,19 @@ tree\_learning/configuration.pl
 You should read the comments in that file. They will probably make sense after a
 while. To begin with, make sure you have the following options set: 
 
->examples\_file\_name(examples\_mtg\_hand\_simulation).
->language\_file\_name(language\_mtg\_hand\_simulation).
->lexicalisation\_strategy(none).
->output\_type(dcg).
->production\_augmentation(greibach).
->production\_composition(synonym).
->rename\_built\_ins(n\_).
+```
+examples\_file\_name(examples\_mtg\_hand\_simulation).
+language\_file\_name(language\_mtg\_hand\_simulation).
+lexicalisation\_strategy(none).
+output\_type(dcg).
+production\_augmentation(greibach).
+production\_composition(synonym).
+rename\_built\_ins(n\_).
+```
 
 If you need to change a setting, remember to enter: 
 
-> make. 
+``` make.  ```
 
 At the Prolog top-level, or the changes won't take. 
 
@@ -65,7 +67,7 @@ corpus was used for hand-simulations which explains why it's so tiny).
 
 Start training by entering this query at the Prolog top-level: 
 
-> print\_grammar.
+``` print\_grammar. ```
 
 THELEMA will place a grammar file in tree\_learning/output/ named after the
 configured examples and language file so that you can easily identify it.  
@@ -87,7 +89,7 @@ You can verify this if by doing the following:
 Prolog instance (don't use the old one or you'll get told off)
 2. Enter this query at the Prolog top-level: 
    
-> forall(phrase(ability, P), writeln(P)).
+``` forall(phrase(ability, P), writeln(P)). ```
 
 If you followed the Shiny Happy Path to the letter, the above query should give
 you a set of nice little derivations reproducing the examples in the training
@@ -105,9 +107,11 @@ strings.
 Try this; at the Prolog top-level, on the same instance where you loaded the
 output of the Shiny Happy Path, enter the following queries: 
 
-> phrase(ability, [destroy,target,artifact]).
-> phrase(ability, [destroy,target,X]).
-> phrase(ability, [destroy,target,stassa]). 
+```
+phrase(ability, [destroy,target,artifact]).
+phrase(ability, [destroy,target,X]).
+phrase(ability, [destroy,target,stassa]). 
+```
 
 The first query should say "true" and then wait for input. Press "enter" to end
 the search for more answers (if you press ";" the query exits with "false"
@@ -129,7 +133,7 @@ Grammar formalisms and output formats
 For now, THELEMA only learns one type of grammar, a determinstic Context-Free
 Grammar in a restricted Greibach Normal Form, where all rules are of the form: 
 
-> a → aA
+``` a → aA ```
 
 In other words, a single terminal followed by a single nonterminal. Note that
 the single terminal is always the synonym of the production's left-hand side;
@@ -143,7 +147,7 @@ relations between nonterminals.
 
 To see this in action, set the following option in configuration.pl:
 
-> output\_type(dcg).
+``` output\_type(dcg). ```
 
 Then train THELEMA with "print\_grammar" as above. THELEMA will then print out
 its induced grammar in the dot-language format used for visualisation (the file
