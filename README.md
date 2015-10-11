@@ -3,35 +3,35 @@ A TEHory LEarning MAchine for grammar induction.
 
 THELEMA is an inductive logic programming algorithm and a program based on that
 algorithm. The algorithm learns a graph structure from sequential data, for
-instance a grammar from examples of sentences in tagret language. 
+instance a grammar from examples of sentences in a tagret language. 
 
 For the time being THELEMA is taking its first baby steps in its very own blocks
-world: "Ability Text", the Controlled Natural Language at the heart of the
-Collectible Card Game Magic: the Gathering (no affiliation between this project
-and the publishers of that game). 
+world: the Controlled Natural Language at the heart of the Collectible Card Game
+Magic: the Gathering known as "Ability Text" (no affiliation between this
+project and the publishers of that game). 
 
 The image below is a diagram of a grammar THELEMA learned from a small set of 18
 examples of Ability Text. It doesn't need a huge number to learn a half-way decent grammar and
-it's very fast and it's very simple. 
+it's very fast and very simple. 
 
 ![Alt text](/../images/readme_image_files/destroy_short_lexicalised_rgnf.png?raw=true "Lexicalised Restricted-Greibach Normal Form")
 
 Using THELEMA
 =============
 
-THELEMA is written in Prolog. You will need to have Swi-Prolog 7.*.* installed on your
-system. 
+THELEMA is written in Prolog. You will need to have Swi-Prolog 7.0 or later
+installed on your system. 
 
 Start THELEMA by loading the file: 
 
-tree\_learning/load\_tree\_learning.pl
+> tree\_learning/load\_tree\_learning.pl
 
 On a windows machine you can double-click the file and it will open the Prolog
 console and the Swi-Prolog IDE. On Linux: 
 
-a) change directory to tree\_learning
-b) start Swi-Prolog,  and 
-c) enter "[load\_tree\_learning]."
+1. change directory to tree\_learning
+2. start Swi-Prolog,  and 
+3. enter "[load\_tree\_learning]."
 
 On Linux that will *probably* not bring up the IDE. But you never know. 
 
@@ -45,17 +45,17 @@ tree\_learning/configuration.pl
 You should read the comments in that file. They will probably make sense after a
 while. To begin with, make sure you have the following options set: 
 
-examples\_file\_name(examples\_mtg\_hand\_simulation).
-language\_file\_name(language\_mtg\_hand\_simulation).
-lexicalisation\_strategy(none).
-output\_type(dcg).
-production\_augmentation(greibach).
-production\_composition(synonym).
-rename\_built\_ins(n\_).
+>examples\_file\_name(examples\_mtg\_hand\_simulation).
+>language\_file\_name(language\_mtg\_hand\_simulation).
+>lexicalisation\_strategy(none).
+>output\_type(dcg).
+>production\_augmentation(greibach).
+>production\_composition(synonym).
+>rename\_built\_ins(n\_).
 
 If you need to change a setting, remember to enter: 
 
-make. 
+> make. 
 
 At the Prolog top-level, or the changes won't take. 
 
@@ -65,7 +65,7 @@ corpus was used for hand-simulations which explains why it's so tiny).
 
 Start training by entering this query at the Prolog top-level: 
 
-?- print\_grammar.
+> print\_grammar.
 
 THELEMA will place a grammar file in tree\_learning/output/ named after the
 configured examples and language file so that you can easily identify it.  
@@ -83,10 +83,11 @@ described by the grammar.
 
 You can verify this if by doing the following: 
 
-a) Load the output grammar file from the Shiny Happy Path section into a new
+1. Load the output grammar file from the Shiny Happy Path section into a new
 Prolog instance (don't use the old one or you'll get told off)
-b) Enter this query at the Prolog top-level: 
-   ?- forall(phrase(ability, P), writeln(P)).
+2. Enter this query at the Prolog top-level: 
+   
+> forall(phrase(ability, P), writeln(P)).
 
 If you followed the Shiny Happy Path to the letter, the above query should give
 you a set of nice little derivations reproducing the examples in the training
@@ -104,9 +105,9 @@ strings.
 Try this; at the Prolog top-level, on the same instance where you loaded the
 output of the Shiny Happy Path, enter the following queries: 
 
-phrase(ability, [destroy,target,artifact]).
-phrase(ability, [destroy,target,X]).
-phrase(ability, [destroy,target,stassa]). 
+> phrase(ability, [destroy,target,artifact]).
+> phrase(ability, [destroy,target,X]).
+> phrase(ability, [destroy,target,stassa]). 
 
 The first query should say "true" and then wait for input. Press "enter" to end
 the search for more answers (if you press ";" the query exits with "false"
@@ -128,7 +129,7 @@ Grammar formalisms and output formats
 For now, THELEMA only learns one type of grammar, a determinstic Context-Free
 Grammar in a restricted Greibach Normal Form, where all rules are of the form: 
 
-a → aA
+> a → aA
 
 In other words, a single terminal followed by a single nonterminal. Note that
 the single terminal is always the synonym of the production's left-hand side;
@@ -142,7 +143,7 @@ relations between nonterminals.
 
 To see this in action, set the following option in configuration.pl:
 
-output\_type(dcg).
+> output\_type(dcg).
 
 Then train THELEMA with "print\_grammar" as above. THELEMA will then print out
 its induced grammar in the dot-language format used for visualisation (the file
