@@ -11,8 +11,7 @@ Magic: the Gathering known as "Ability Text" (no affiliation between this
 project and the publishers of that game). 
 
 The image below is a diagram of a grammar THELEMA learned from a small set of 18
-examples of Ability Text. It doesn't need a huge number to learn a half-way decent grammar and
-it's very fast and very simple. 
+examples of Ability Text. 
 
 ![Alt text](/../images/readme_image_files/destroy_short_lexicalised_rgnf.png?raw=true "Lexicalised Restricted-Greibach Normal Form")
 
