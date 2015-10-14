@@ -10,10 +10,13 @@ world: the Controlled Natural Language at the heart of the Collectible Card Game
 Magic: the Gathering known as "Ability Text" (no affiliation between this
 project and the publishers of that game). 
 
-The image below is a diagram of a grammar THELEMA learned from a small set of 18
-examples of Ability Text. 
+Here is a diagram of a grammar THELEMA learned from a small set of 18 examples of Ability Text: 
 
-![Alt text](/../images/readme_image_files/destroy_short_lexicalised_rgnf.png?raw=true "Lexicalised Restricted-Greibach Normal Form")
+![Alt text](/../images/readme_image_files/destroy_short_lexicalised_rgnf.png?raw=true "Lexicalised Restricted-Greibach Normal Form (18 examples)")
+
+And here is one learned from a slightly larger set of 177 examples:
+
+![Alt text](https://cdn.rawgit.com/stassa/THELEMA/images/readme_image_files/all_destroy_lexicalised.svg?raw=true "Lexicalised Restricted-Greibach Normal Form (177 examples)")
 
 Using THELEMA
 =============
