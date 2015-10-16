@@ -10,10 +10,9 @@ world: the Controlled Natural Language at the heart of the Collectible Card Game
 Magic: the Gathering known as "Ability Text" (no affiliation between this
 project and the publishers of that game). 
 
-The image below is a diagram of a grammar THELEMA learned from a small set of 18
-examples of Ability Text. 
+Here is a diagram of a grammar THELEMA learned from a small set of 18 examples of Ability Text: 
 
-![Alt text](/../images/readme_image_files/destroy_short_lexicalised_rgnf.png?raw=true "Lexicalised Restricted-Greibach Normal Form")
+![Alt text](/../images/readme_image_files/destroy_short_lexicalised_rgnf.png?raw=true "Lexicalised Restricted-Greibach Normal Form (18 examples)")
 
 Using THELEMA
 =============
@@ -167,6 +166,14 @@ its induced grammar in the dot-language format used for visualisation (the file
 is still placed in tree\_learning/output). You can feed that file directly into
 a visualisation package such as Graphviz to generate a diagram of the induced
 grammar. This is how the image at the start of this file was created. 
+
+With a bit of elbow grease you can even visualise a grammar as a network by
+exporting it into a package like Gephi or Cytoscape. See the image below for
+example, the visualisation of a grammar learned from 177 examples and rendered
+as a network diagram in Gephi: 
+
+![Alt text](https://cdn.rawgit.com/stassa/THELEMA/images/readme_image_files/all_destroy_lexicalised.svg?raw=true "Lexicalised Restricted-Greibach Normal Form (177 examples)")
+
 
 THELEMA can also print out its grammar in the BNF and EBNF formats used in
 parser generators such as Yacc and Bison. Neither of these formats is
