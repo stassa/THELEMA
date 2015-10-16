@@ -159,7 +159,7 @@ relations between nonterminals.
 To see this in action, set the following option in configuration.pl:
 
 ``` 
-output_type(dcg). 
+output_type(lean_dot). 
 ```
 
 Then train THELEMA with "print\_grammar" as above. THELEMA will then print out
