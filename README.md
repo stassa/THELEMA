@@ -1,5 +1,5 @@
 # THELEMA
-A TEHory LEarning MAchine for grammar induction. 
+A THEory LEarning MAchine for grammar induction. 
 
 THELEMA is an inductive logic programming algorithm and a program based on that
 algorithm. The algorithm learns a graph structure from sequential data, for
