@@ -17,8 +17,19 @@ Here is a diagram of a grammar THELEMA learned from a small set of 18 examples o
 Using THELEMA
 =============
 
-THELEMA is written in Prolog. You will need to have Swi-Prolog 7.0 or later
-installed on your system. 
+THELEMA is written in Prolog. You will need to have Swi-Prolog 7.0 to 7.3.13 
+installed on your system.
+
+I repeat: you need a version of Swi Prolog between 7.0 and 7.3.13 to run THELEMA.
+If you have a newer version, you 'll have to exit the Swi Prolog top-level and
+reload the project every time you make a configuration change. Earlier versions 
+of Swi had a bug that I unwittingly exploited (or so it seems), it was fixed in 
+v 7.3.15 or 3.14 and I have to update my code- but until then, make sure you have 
+the right version of Swi. Earlier versions are right out of the question also- 7.x
+is to Swi what 3.4 is to Python. Except Swi 7.x rocks. 
+
+Enough with that. Here's how to run this thing
+----------------------------------------------
 
 Start THELEMA by loading the file: 
 
